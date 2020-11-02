@@ -59,14 +59,18 @@ func (c *deleteModel) Exec() interface{} {
 		}
 	} else {
 		err := query.Transaction(func(tx *gorm.DB) error {
-			if err := c.prep(tx); err != nil {
-				return err
+			if c.prep != nil {
+				if err := c.prep(tx); err != nil {
+					return err
+				}
 			}
 			if err := tx.Delete(c.model).Error; err != nil {
 				return err
 			}
-			if err := c.after(tx); err != nil {
-				return err
+			if c.after != nil {
+				if err := c.after(tx); err != nil {
+					return err
+				}
 			}
 			return nil
 		})

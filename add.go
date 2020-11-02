@@ -18,12 +18,12 @@ func (c *addModel) After(hook func(tx *gorm.DB) error) *addModel {
 func (c *addModel) Exec(value interface{}) interface{} {
 	query := c.db
 	if c.after == nil {
-		if err := query.Create(&value).Error; err != nil {
+		if err := query.Create(value).Error; err != nil {
 			return err
 		}
 	} else {
 		err := query.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Create(&value).Error; err != nil {
+			if err := tx.Create(value).Error; err != nil {
 				return err
 			}
 			if err := c.after(tx); err != nil {
