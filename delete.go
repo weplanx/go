@@ -1,7 +1,7 @@
 package curd
 
 import (
-	"github.com/kainonly/iris-helper/res"
+	"github.com/kainonly/gin-helper/res"
 	"gorm.io/gorm"
 )
 

@@ -1,6 +1,6 @@
 package curd
 
-import "github.com/kainonly/iris-helper/res"
+import "github.com/kainonly/gin-helper/res"
 
 type ListsBody struct {
 	Where Conditions
