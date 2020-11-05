@@ -1,22 +1,23 @@
-package curd
+package operates
 
 import (
+	"github.com/kainonly/gin-curd/typ"
 	"github.com/kainonly/gin-helper/res"
 	"gorm.io/gorm"
 )
 
-type addModel struct {
-	common
+type AddModel struct {
+	typ.Common
 	after func(tx *gorm.DB) error
 }
 
-func (c *addModel) After(hook func(tx *gorm.DB) error) *addModel {
+func (c *AddModel) After(hook func(tx *gorm.DB) error) *AddModel {
 	c.after = hook
 	return c
 }
 
-func (c *addModel) Exec(value interface{}) interface{} {
-	query := c.db
+func (c *AddModel) Exec(value interface{}) interface{} {
+	query := c.Db
 	if c.after == nil {
 		if err := query.Create(value).Error; err != nil {
 			return err

@@ -1,46 +1,47 @@
-package curd
+package operates
 
 import (
+	"github.com/kainonly/gin-curd/typ"
 	"github.com/kainonly/gin-helper/res"
 	"gorm.io/gorm"
 )
 
 type EditBody struct {
 	Id     interface{}
-	Where  Conditions
+	Where  typ.Conditions
 	Switch bool
 }
 
-type editModel struct {
-	common
-	model      interface{}
-	body       EditBody
-	conditions Conditions
-	query      Query
+type EditModel struct {
+	typ.Common
+	Model      interface{}
+	Body       EditBody
+	conditions typ.Conditions
+	query      typ.Query
 	after      func(tx *gorm.DB) error
 }
 
-func (c *editModel) Where(conditions Conditions) *editModel {
+func (c *EditModel) Where(conditions typ.Conditions) *EditModel {
 	c.conditions = conditions
 	return c
 }
 
-func (c *editModel) Query(query Query) *editModel {
+func (c *EditModel) Query(query typ.Query) *EditModel {
 	c.query = query
 	return c
 }
 
-func (c *editModel) After(hook func(tx *gorm.DB) error) *editModel {
+func (c *EditModel) After(hook func(tx *gorm.DB) error) *EditModel {
 	c.after = hook
 	return c
 }
 
-func (c *editModel) Exec(value interface{}) interface{} {
-	query := c.db.Model(c.model)
-	if c.body.Id != nil {
-		query = query.Where("`id` = ?", c.body.Id)
+func (c *EditModel) Exec(value interface{}) interface{} {
+	query := c.Db.Model(c.Model)
+	if c.Body.Id != nil {
+		query = query.Where("`id` = ?", c.Body.Id)
 	} else {
-		conditions := append(c.conditions, c.body.Where...)
+		conditions := append(c.conditions, c.Body.Where...)
 		for _, condition := range conditions {
 			query = query.Where("`"+condition[0].(string)+"` "+condition[1].(string)+" ?", condition[2])
 		}

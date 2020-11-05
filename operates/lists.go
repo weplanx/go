@@ -1,9 +1,12 @@
-package curd
+package operates
 
-import "github.com/kainonly/gin-helper/res"
+import (
+	"github.com/kainonly/gin-curd/typ"
+	"github.com/kainonly/gin-helper/res"
+)
 
 type ListsBody struct {
-	Where Conditions
+	Where typ.Conditions
 	Order []string
 	Page  Pagination
 }
@@ -13,54 +16,54 @@ type Pagination struct {
 	Limit int64
 }
 
-type listsModel struct {
-	common
-	model      interface{}
-	body       ListsBody
-	conditions Conditions
-	query      Query
+type ListsModel struct {
+	typ.Common
+	Model      interface{}
+	Body       ListsBody
+	conditions typ.Conditions
+	query      typ.Query
 	orders     []string
 	field      []string
 }
 
-func (c *listsModel) Where(conditions Conditions) *listsModel {
+func (c *ListsModel) Where(conditions typ.Conditions) *ListsModel {
 	c.conditions = conditions
 	return c
 }
 
-func (c *listsModel) Query(query Query) *listsModel {
+func (c *ListsModel) Query(query typ.Query) *ListsModel {
 	c.query = query
 	return c
 }
 
-func (c *listsModel) OrderBy(orders []string) *listsModel {
+func (c *ListsModel) OrderBy(orders []string) *ListsModel {
 	c.orders = orders
 	return c
 }
 
-func (c *listsModel) Field(field []string) *listsModel {
+func (c *ListsModel) Field(field []string) *ListsModel {
 	c.field = field
 	return c
 }
 
-func (c *listsModel) Exec() interface{} {
+func (c *ListsModel) Exec() interface{} {
 	var lists []map[string]interface{}
-	query := c.db.Model(c.model)
-	conditions := append(c.conditions, c.body.Where...)
+	query := c.Db.Model(c.Model)
+	conditions := append(c.conditions, c.Body.Where...)
 	for _, condition := range conditions {
 		query = query.Where("`"+condition[0].(string)+"` "+condition[1].(string)+" ?", condition[2])
 	}
 	if c.query != nil {
 		query = c.query(query)
 	}
-	orders := append(c.orders, c.body.Order...)
+	orders := append(c.orders, c.Body.Order...)
 	for _, order := range orders {
 		query = query.Order(order)
 	}
 	if len(c.field) != 0 {
 		query = query.Select(c.field)
 	}
-	page := c.body.Page
+	page := c.Body.Page
 	if page != (Pagination{}) {
 		query = query.
 			Limit(int(page.Limit)).

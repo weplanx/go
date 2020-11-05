@@ -1,51 +1,52 @@
-package curd
+package operates
 
 import (
+	"github.com/kainonly/gin-curd/typ"
 	"github.com/kainonly/gin-helper/res"
 	"gorm.io/gorm"
 )
 
 type DeleteBody struct {
 	Id    interface{}
-	Where Conditions
+	Where typ.Conditions
 }
 
-type deleteModel struct {
-	common
-	model      interface{}
-	body       DeleteBody
-	conditions Conditions
-	query      Query
+type DeleteModel struct {
+	typ.Common
+	Model      interface{}
+	Body       DeleteBody
+	conditions typ.Conditions
+	query      typ.Query
 	prep       func(tx *gorm.DB) error
 	after      func(tx *gorm.DB) error
 }
 
-func (c *deleteModel) Where(conditions Conditions) *deleteModel {
+func (c *DeleteModel) Where(conditions typ.Conditions) *DeleteModel {
 	c.conditions = conditions
 	return c
 }
 
-func (c *deleteModel) Query(query Query) *deleteModel {
+func (c *DeleteModel) Query(query typ.Query) *DeleteModel {
 	c.query = query
 	return c
 }
 
-func (c *deleteModel) Prep(hook func(tx *gorm.DB) error) *deleteModel {
+func (c *DeleteModel) Prep(hook func(tx *gorm.DB) error) *DeleteModel {
 	c.prep = hook
 	return c
 }
 
-func (c *deleteModel) After(hook func(tx *gorm.DB) error) *deleteModel {
+func (c *DeleteModel) After(hook func(tx *gorm.DB) error) *DeleteModel {
 	c.after = hook
 	return c
 }
 
-func (c *deleteModel) Exec() interface{} {
-	query := c.db
-	if c.body.Id != nil {
-		query = query.Where("`id` = ?", c.body.Id)
+func (c *DeleteModel) Exec() interface{} {
+	query := c.Db
+	if c.Body.Id != nil {
+		query = query.Where("`id` = ?", c.Body.Id)
 	} else {
-		conditions := append(c.conditions, c.body.Where...)
+		conditions := append(c.conditions, c.Body.Where...)
 		for _, condition := range conditions {
 			query = query.Where("`"+condition[0].(string)+"` "+condition[1].(string)+" ?", condition[2])
 		}
@@ -54,7 +55,7 @@ func (c *deleteModel) Exec() interface{} {
 		query = c.query(query)
 	}
 	if c.after == nil && c.prep == nil {
-		if err := query.Delete(c.model).Error; err != nil {
+		if err := query.Delete(c.Model).Error; err != nil {
 			return err
 		}
 	} else {
@@ -64,7 +65,7 @@ func (c *deleteModel) Exec() interface{} {
 					return err
 				}
 			}
-			if err := tx.Delete(c.model).Error; err != nil {
+			if err := tx.Delete(c.Model).Error; err != nil {
 				return err
 			}
 			if c.after != nil {
