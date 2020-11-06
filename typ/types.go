@@ -8,3 +8,4 @@ type Common struct {
 
 type Conditions [][]interface{}
 type Query func(tx *gorm.DB) *gorm.DB
+type JSON map[string]interface{}

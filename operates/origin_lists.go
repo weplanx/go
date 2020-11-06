@@ -2,7 +2,6 @@ package operates
 
 import (
 	"github.com/kainonly/gin-curd/typ"
-	"github.com/kainonly/gin-helper/res"
 )
 
 type OriginListsBody struct {
@@ -58,5 +57,8 @@ func (c *OriginListsModel) Exec() interface{} {
 		query = query.Select(c.field)
 	}
 	query.Find(&lists)
-	return res.Data(lists)
+	return typ.JSON{
+		"error": 0,
+		"data":  lists,
+	}
 }

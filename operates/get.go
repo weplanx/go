@@ -2,7 +2,6 @@ package operates
 
 import (
 	"github.com/kainonly/gin-curd/typ"
-	"github.com/kainonly/gin-helper/res"
 )
 
 type GetBody struct {
@@ -63,5 +62,8 @@ func (c *GetModel) Exec() interface{} {
 		query = query.Select(c.field)
 	}
 	query.First(&data)
-	return res.Data(data)
+	return typ.JSON{
+		"error": 0,
+		"data":  data,
+	}
 }

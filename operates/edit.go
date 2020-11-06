@@ -2,7 +2,6 @@ package operates
 
 import (
 	"github.com/kainonly/gin-curd/typ"
-	"github.com/kainonly/gin-helper/res"
 	"gorm.io/gorm"
 )
 
@@ -51,10 +50,13 @@ func (c *EditModel) Exec(value interface{}) interface{} {
 	}
 	if c.after == nil {
 		if err := query.Updates(value).Error; err != nil {
-			return err
+			return typ.JSON{
+				"error": 1,
+				"msg":   err.Error(),
+			}
 		}
 	} else {
-		err := query.Transaction(func(tx *gorm.DB) error {
+		if err := query.Transaction(func(tx *gorm.DB) error {
 			if err := tx.Updates(value).Error; err != nil {
 				return err
 			}
@@ -62,10 +64,15 @@ func (c *EditModel) Exec(value interface{}) interface{} {
 				return err
 			}
 			return nil
-		})
-		if err != nil {
-			return res.Error(err)
+		}); err != nil {
+			return typ.JSON{
+				"error": 1,
+				"msg":   err.Error(),
+			}
 		}
 	}
-	return res.Ok()
+	return typ.JSON{
+		"error": 0,
+		"msg":   "ok",
+	}
 }

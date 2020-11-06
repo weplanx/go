@@ -2,7 +2,6 @@ package operates
 
 import (
 	"github.com/kainonly/gin-curd/typ"
-	"github.com/kainonly/gin-helper/res"
 	"gorm.io/gorm"
 )
 
@@ -56,10 +55,13 @@ func (c *DeleteModel) Exec() interface{} {
 	}
 	if c.after == nil && c.prep == nil {
 		if err := query.Delete(c.Model).Error; err != nil {
-			return err
+			return typ.JSON{
+				"error": 1,
+				"msg":   err.Error(),
+			}
 		}
 	} else {
-		err := query.Transaction(func(tx *gorm.DB) error {
+		if err := query.Transaction(func(tx *gorm.DB) error {
 			if c.prep != nil {
 				if err := c.prep(tx); err != nil {
 					return err
@@ -74,10 +76,15 @@ func (c *DeleteModel) Exec() interface{} {
 				}
 			}
 			return nil
-		})
-		if err != nil {
-			return res.Error(err)
+		}); err != nil {
+			return typ.JSON{
+				"error": 1,
+				"msg":   err.Error(),
+			}
 		}
 	}
-	return res.Ok()
+	return typ.JSON{
+		"error": 0,
+		"msg":   "ok",
+	}
 }
