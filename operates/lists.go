@@ -6,7 +6,7 @@ import (
 
 type ListsBody struct {
 	Where typ.Conditions
-	Order []string
+	Order typ.Orders
 	Page  Pagination
 }
 
@@ -21,7 +21,7 @@ type ListsModel struct {
 	Body       ListsBody
 	conditions typ.Conditions
 	query      typ.Query
-	orders     []string
+	orders     typ.Orders
 	field      []string
 }
 
@@ -35,7 +35,7 @@ func (c *ListsModel) Query(query typ.Query) *ListsModel {
 	return c
 }
 
-func (c *ListsModel) OrderBy(orders []string) *ListsModel {
+func (c *ListsModel) OrderBy(orders typ.Orders) *ListsModel {
 	c.orders = orders
 	return c
 }
@@ -55,9 +55,11 @@ func (c *ListsModel) Exec() interface{} {
 	if c.query != nil {
 		query = c.query(query)
 	}
-	orders := append(c.orders, c.Body.Order...)
-	for _, order := range orders {
-		query = query.Order(order)
+	for filed, sort := range c.Body.Order {
+		c.orders[filed] = sort
+	}
+	for filed, sort := range c.orders {
+		query = query.Order(filed + " " + sort)
 	}
 	if len(c.field) != 0 {
 		query = query.Select(c.field)

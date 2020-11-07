@@ -7,5 +7,6 @@ type Common struct {
 }
 
 type Conditions [][]interface{}
+type Orders map[string]string
 type Query func(tx *gorm.DB) *gorm.DB
 type JSON map[string]interface{}

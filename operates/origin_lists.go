@@ -6,7 +6,7 @@ import (
 
 type OriginListsBody struct {
 	Where typ.Conditions
-	Order []string
+	Order typ.Orders
 }
 
 type OriginListsModel struct {
@@ -15,7 +15,7 @@ type OriginListsModel struct {
 	Body       OriginListsBody
 	conditions typ.Conditions
 	query      typ.Query
-	orders     []string
+	orders     typ.Orders
 	field      []string
 }
 
@@ -29,7 +29,7 @@ func (c *OriginListsModel) Query(query typ.Query) *OriginListsModel {
 	return c
 }
 
-func (c *OriginListsModel) OrderBy(orders []string) *OriginListsModel {
+func (c *OriginListsModel) OrderBy(orders typ.Orders) *OriginListsModel {
 	c.orders = orders
 	return c
 }
@@ -49,9 +49,11 @@ func (c *OriginListsModel) Exec() interface{} {
 	if c.query != nil {
 		query = c.query(query)
 	}
-	orders := append(c.orders, c.Body.Order...)
-	for _, order := range orders {
-		query = query.Order(order)
+	for filed, sort := range c.Body.Order {
+		c.orders[filed] = sort
+	}
+	for filed, sort := range c.orders {
+		query = query.Order(filed + " " + sort)
 	}
 	if len(c.field) != 0 {
 		query = query.Select(c.field)

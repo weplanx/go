@@ -7,7 +7,7 @@ import (
 type GetBody struct {
 	Id    interface{}
 	Where typ.Conditions
-	Order []string
+	Order typ.Orders
 }
 
 type GetModel struct {
@@ -16,7 +16,7 @@ type GetModel struct {
 	Body       GetBody
 	conditions typ.Conditions
 	query      typ.Query
-	orders     []string
+	orders     typ.Orders
 	field      []string
 }
 
@@ -30,7 +30,7 @@ func (c *GetModel) Query(query typ.Query) *GetModel {
 	return c
 }
 
-func (c *GetModel) OrderBy(orders []string) *GetModel {
+func (c *GetModel) OrderBy(orders typ.Orders) *GetModel {
 	c.orders = orders
 	return c
 }
@@ -54,9 +54,11 @@ func (c *GetModel) Exec() interface{} {
 	if c.query != nil {
 		query = c.query(query)
 	}
-	orders := append(c.orders, c.Body.Order...)
-	for _, order := range orders {
-		query = query.Order(order)
+	for filed, sort := range c.Body.Order {
+		c.orders[filed] = sort
+	}
+	for filed, sort := range c.orders {
+		query = query.Order(filed + " " + sort)
 	}
 	if len(c.field) != 0 {
 		query = query.Select(c.field)
