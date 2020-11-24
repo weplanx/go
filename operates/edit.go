@@ -50,10 +50,7 @@ func (c *EditModel) Exec(value interface{}) interface{} {
 	}
 	if c.after == nil {
 		if err := query.Updates(value).Error; err != nil {
-			return typ.JSON{
-				"error": 1,
-				"msg":   err.Error(),
-			}
+			return err
 		}
 	} else {
 		if err := query.Transaction(func(tx *gorm.DB) error {
@@ -65,14 +62,8 @@ func (c *EditModel) Exec(value interface{}) interface{} {
 			}
 			return nil
 		}); err != nil {
-			return typ.JSON{
-				"error": 1,
-				"msg":   err.Error(),
-			}
+			return err
 		}
 	}
-	return typ.JSON{
-		"error": 0,
-		"msg":   "ok",
-	}
+	return true
 }

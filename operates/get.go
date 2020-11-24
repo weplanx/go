@@ -64,8 +64,5 @@ func (c *GetModel) Exec() interface{} {
 		query = query.Select(c.field)
 	}
 	query.First(&data)
-	return typ.JSON{
-		"error": 0,
-		"data":  data,
-	}
+	return data
 }

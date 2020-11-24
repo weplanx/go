@@ -55,10 +55,7 @@ func (c *DeleteModel) Exec() interface{} {
 	}
 	if c.after == nil && c.prep == nil {
 		if err := query.Delete(c.Model).Error; err != nil {
-			return typ.JSON{
-				"error": 1,
-				"msg":   err.Error(),
-			}
+			return err
 		}
 	} else {
 		if err := query.Transaction(func(tx *gorm.DB) error {
@@ -77,14 +74,8 @@ func (c *DeleteModel) Exec() interface{} {
 			}
 			return nil
 		}); err != nil {
-			return typ.JSON{
-				"error": 1,
-				"msg":   err.Error(),
-			}
+			return err
 		}
 	}
-	return typ.JSON{
-		"error": 0,
-		"msg":   "ok",
-	}
+	return true
 }

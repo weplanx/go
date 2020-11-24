@@ -59,8 +59,5 @@ func (c *OriginListsModel) Exec() interface{} {
 		query = query.Select(c.field)
 	}
 	query.Find(&lists)
-	return typ.JSON{
-		"error": 0,
-		"data":  lists,
-	}
+	return lists
 }

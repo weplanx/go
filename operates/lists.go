@@ -72,11 +72,8 @@ func (c *ListsModel) Exec() interface{} {
 	}
 	var total int64
 	query.Count(&total).Find(&lists)
-	return typ.JSON{
-		"error": 0,
-		"data": typ.JSON{
-			"lists": lists,
-			"total": total,
-		},
+	return map[string]interface{}{
+		"lists": lists,
+		"total": total,
 	}
 }
