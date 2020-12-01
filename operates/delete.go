@@ -43,11 +43,11 @@ func (c *DeleteModel) After(hook func(tx *gorm.DB) error) *DeleteModel {
 func (c *DeleteModel) Exec() interface{} {
 	query := c.Db
 	if c.Body.Id != nil {
-		query = query.Where("`id` = ?", c.Body.Id)
+		query = query.Where("id = ?", c.Body.Id)
 	} else {
 		conditions := append(c.conditions, c.Body.Where...)
 		for _, condition := range conditions {
-			query = query.Where("`"+condition[0].(string)+"` "+condition[1].(string)+" ?", condition[2])
+			query = query.Where(condition[0].(string)+" "+condition[1].(string)+" ?", condition[2])
 		}
 	}
 	if c.query != nil {

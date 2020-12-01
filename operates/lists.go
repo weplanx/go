@@ -50,13 +50,17 @@ func (c *ListsModel) Exec() interface{} {
 	query := c.Db.Model(c.Model)
 	conditions := append(c.conditions, c.Body.Where...)
 	for _, condition := range conditions {
-		query = query.Where("`"+condition[0].(string)+"` "+condition[1].(string)+" ?", condition[2])
+		query = query.Where(condition[0].(string)+" "+condition[1].(string)+" ?", condition[2])
 	}
 	if c.query != nil {
 		query = c.query(query)
 	}
-	for filed, sort := range c.Body.Order {
-		c.orders[filed] = sort
+	if len(c.Body.Order) != 0 {
+		for filed, sort := range c.Body.Order {
+			c.orders[filed] = sort
+		}
+	} else {
+		c.orders = typ.Orders{"id": "desc"}
 	}
 	for filed, sort := range c.orders {
 		query = query.Order(filed + " " + sort)
