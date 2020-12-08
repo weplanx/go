@@ -1,16 +1,31 @@
-package typ
+package curd
 
-import "gorm.io/gorm"
+type originListsAPI interface {
+	GetConditions() Conditions
+	GetOrders() Orders
+}
 
 type OriginLists struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
+type listsAPI interface {
+	GetConditions() Conditions
+	GetOrders() Orders
+	GetPagination() Pagination
+}
+
 type Lists struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 	Pagination `json:"page" binding:"required"`
+}
+
+type getAPI interface {
+	GetId() interface{}
+	GetConditions() Conditions
+	GetOrders() Orders
 }
 
 type Get struct {
@@ -21,6 +36,12 @@ type Get struct {
 
 func (c Get) GetId() interface{} {
 	return c.Id
+}
+
+type editAPI interface {
+	GetId() interface{}
+	IsSwitch() bool
+	GetConditions() Conditions
 }
 
 type Edit struct {
@@ -35,6 +56,11 @@ func (c Edit) GetId() interface{} {
 
 func (c Edit) IsSwitch() bool {
 	return c.Switch
+}
+
+type deleteAPI interface {
+	GetId() interface{}
+	GetConditions() Conditions
 }
 
 type Delete struct {
@@ -52,8 +78,6 @@ func (c Conditions) GetConditions() Conditions {
 	return c
 }
 
-type Query func(tx *gorm.DB) *gorm.DB
-
 type Orders map[string]string
 
 func (c Orders) GetOrders() Orders {
@@ -68,5 +92,3 @@ type Pagination struct {
 func (c Pagination) GetPagination() Pagination {
 	return c
 }
-
-type Hook func(tx *gorm.DB) error
