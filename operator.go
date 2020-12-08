@@ -6,6 +6,10 @@ type Operator interface {
 	apply(exec *execute)
 }
 
+// Plan a model expression
+//	@param `model` interface{} GORM defined model
+//	@param `body` interface{} Request body
+//	@return Operator
 func Plan(model interface{}, body interface{}) Operator {
 	return &planOperator{
 		model: model,
@@ -22,6 +26,9 @@ func (c *planOperator) apply(exec *execute) {
 	exec.planOperator = c
 }
 
+// Set condition array
+//	@param `value` Conditions Condition array
+//	@return Operator
 func Where(value Conditions) Operator {
 	return &whereOperator{conditions: value}
 }
@@ -34,6 +41,9 @@ func (c *whereOperator) apply(exec *execute) {
 	exec.whereOperator = c
 }
 
+// Set sub query
+//	@param `fn` func(tx *gorm.DB) *gorm.DB
+//	@return Operator
 func SubQuery(fn func(tx *gorm.DB) *gorm.DB) Operator {
 	return &subQueryOperator{query: fn}
 }
@@ -46,6 +56,9 @@ func (c *subQueryOperator) apply(exec *execute) {
 	exec.subQueryOperator = c
 }
 
+// Set order by
+//	@param `value` Orders
+//	@return Operator
 func OrderBy(value Orders) Operator {
 	return &orderByOperator{orders: value}
 }
@@ -58,6 +71,10 @@ func (c *orderByOperator) apply(exec *execute) {
 	exec.orderByOperator = c
 }
 
+// Set selecting specific fields
+//	@param `value` []string
+//	@param `exclude` bool
+//	@return Operator
 func Field(value []string, exclude bool) Operator {
 	return &fieldOperator{fields: value, exclude: exclude}
 }
@@ -71,6 +88,9 @@ func (c *fieldOperator) apply(exec *execute) {
 	exec.fieldOperator = c
 }
 
+// Set update
+//	@param `status` string
+//	@return Operator
 func Update(status string) Operator {
 	return &updateOperator{status: status}
 }
@@ -83,6 +103,9 @@ func (c *updateOperator) apply(exec *execute) {
 	exec.updateOperator = c
 }
 
+// After hook
+//	@param `fn` func(tx *gorm.DB) error
+//	@return Operator
 func After(fn func(tx *gorm.DB) error) Operator {
 	return &afterHook{after: fn}
 }
@@ -95,6 +118,9 @@ func (c *afterHook) apply(exec *execute) {
 	exec.afterHook = c
 }
 
+// Prep hook
+//	@param `fn` func(tx *gorm.DB) error
+//	@return Operator
 func Prep(fn func(tx *gorm.DB) error) Operator {
 	return &prepHook{prep: fn}
 }

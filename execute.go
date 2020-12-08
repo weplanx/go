@@ -17,6 +17,7 @@ type execute struct {
 	*prepHook
 }
 
+// Set primary key or condition array query
 func (c *execute) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) *gorm.DB {
 	if id != nil {
 		tx = tx.Where("id = ?", id)
@@ -26,6 +27,7 @@ func (c *execute) setIdOrConditions(tx *gorm.DB, id interface{}, value Condition
 	return tx
 }
 
+// Set condition array query
 func (c *execute) setConditions(tx *gorm.DB, value Conditions) *gorm.DB {
 	conditions := append(c.conditions, value...)
 	for _, condition := range conditions {
@@ -35,6 +37,7 @@ func (c *execute) setConditions(tx *gorm.DB, value Conditions) *gorm.DB {
 	return tx
 }
 
+// Set order by query
 func (c *execute) setOrders(tx *gorm.DB, value Orders) *gorm.DB {
 	if len(c.orders) == 0 {
 		c.orders = c.opt.Orders
@@ -49,6 +52,7 @@ func (c *execute) setOrders(tx *gorm.DB, value Orders) *gorm.DB {
 	return tx
 }
 
+// Set field
 func (c *execute) setFields(tx *gorm.DB) *gorm.DB {
 	if len(c.fields) != 0 {
 		if !c.fieldOperator.exclude {
@@ -60,31 +64,33 @@ func (c *execute) setFields(tx *gorm.DB) *gorm.DB {
 	return tx
 }
 
+// Execute origin lists
 func (c *execute) Originlists() interface{} {
 	var lists []map[string]interface{}
 	tx := c.tx.Model(c.model)
 	apis := c.body.(originListsAPI)
-	tx = c.setConditions(tx, apis.GetConditions())
+	tx = c.setConditions(tx, apis.getConditions())
 	if c.query != nil {
 		tx = c.query(tx)
 	}
-	tx = c.setOrders(tx, apis.GetOrders())
+	tx = c.setOrders(tx, apis.getOrders())
 	tx = c.setFields(tx)
 	tx.Find(&lists)
 	return lists
 }
 
+// Execute lists
 func (c *execute) Lists() interface{} {
 	var lists []map[string]interface{}
 	tx := c.tx.Model(c.model)
 	apis := c.body.(listsAPI)
-	tx = c.setConditions(tx, apis.GetConditions())
+	tx = c.setConditions(tx, apis.getConditions())
 	if c.query != nil {
 		tx = c.query(tx)
 	}
-	tx = c.setOrders(tx, apis.GetOrders())
+	tx = c.setOrders(tx, apis.getOrders())
 	tx = c.setFields(tx)
-	page := apis.GetPagination()
+	page := apis.getPagination()
 	tx = tx.Limit(int(page.Limit)).Offset(int((page.Index - 1) * page.Limit))
 	var total int64
 	tx.Count(&total).Find(&lists)
@@ -94,20 +100,22 @@ func (c *execute) Lists() interface{} {
 	}
 }
 
+// Execute get
 func (c *execute) Get() interface{} {
 	data := make(map[string]interface{})
 	tx := c.tx.Model(c.model)
 	apis := c.body.(getAPI)
-	tx = c.setIdOrConditions(tx, apis.GetId(), apis.GetConditions())
+	tx = c.setIdOrConditions(tx, apis.getId(), apis.getConditions())
 	if c.query != nil {
 		tx = c.query(tx)
 	}
-	tx = c.setOrders(tx, apis.GetOrders())
+	tx = c.setOrders(tx, apis.getOrders())
 	tx = c.setFields(tx)
 	tx.First(&data)
 	return data
 }
 
+// Execute add
 func (c *execute) Add(value interface{}) interface{} {
 	tx := c.tx
 	if c.after == nil {
@@ -115,6 +123,7 @@ func (c *execute) Add(value interface{}) interface{} {
 			return err
 		}
 	} else {
+		// There is a hook to start the transaction
 		if err := tx.Transaction(func(ttx *gorm.DB) error {
 			if err := ttx.Create(value).Error; err != nil {
 				return err
@@ -130,14 +139,15 @@ func (c *execute) Add(value interface{}) interface{} {
 	return true
 }
 
+// Execute edit
 func (c *execute) Edit(value interface{}) interface{} {
 	tx := c.tx.Model(c.model)
 	apis := c.body.(editAPI)
-	tx = c.setIdOrConditions(tx, apis.GetId(), apis.GetConditions())
+	tx = c.setIdOrConditions(tx, apis.getId(), apis.getConditions())
 	if c.query != nil {
 		tx = c.query(tx)
 	}
-	if apis.IsSwitch() {
+	if apis.isSwitch() {
 		status := c.opt.UpdateStatus
 		if c.status != "" {
 			status = c.status
@@ -159,6 +169,7 @@ func (c *execute) Edit(value interface{}) interface{} {
 			return err
 		}
 	} else {
+		// There is a hook to start the transaction
 		if err := tx.Transaction(func(txx *gorm.DB) error {
 			if err := txx.Updates(value).Error; err != nil {
 				return err
@@ -174,10 +185,11 @@ func (c *execute) Edit(value interface{}) interface{} {
 	return true
 }
 
+// Execute delete
 func (c *execute) Delete() interface{} {
 	tx := c.tx
 	apis := c.body.(deleteAPI)
-	tx = c.setIdOrConditions(tx, apis.GetId(), apis.GetConditions())
+	tx = c.setIdOrConditions(tx, apis.getId(), apis.getConditions())
 	if c.query != nil {
 		tx = c.query(tx)
 	}
@@ -186,6 +198,7 @@ func (c *execute) Delete() interface{} {
 			return err
 		}
 	} else {
+		// There is a hook to start the transaction
 		if err := tx.Transaction(func(ttx *gorm.DB) error {
 			if c.prep != nil {
 				if err := c.prep(ttx); err != nil {

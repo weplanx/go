@@ -10,11 +10,20 @@ type Curd struct {
 }
 
 type Option struct {
-	Orders       Orders
+
+	// Default order by, Orders{"id": "desc"}
+	Orders Orders
+
+	// Default updated status field, "status"
 	UpdateStatus string
-	UpdateOmit   []string
+
+	// Default updated exclude fields, []string{"id", "create_time"}
+	UpdateOmit []string
 }
 
+// Initialize the curd auxiliary library
+//	@param `tx` *gorm.DB
+//	@return Curd
 func Initialize(tx *gorm.DB) *Curd {
 	return &Curd{
 		tx: tx,
@@ -26,10 +35,15 @@ func Initialize(tx *gorm.DB) *Curd {
 	}
 }
 
+// Set curd auxiliary configuration
+//	@param `option` Option
 func (c *Curd) Set(option Option) {
 	c.Option = &option
 }
 
+// Start Curd operation process
+//	@param `operates` ...Operator
+//	@return execute
 func (c *Curd) Operates(operates ...Operator) *execute {
 	exec := &execute{
 		tx:               c.tx,

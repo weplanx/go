@@ -1,94 +1,128 @@
 package curd
 
 type originListsAPI interface {
-	GetConditions() Conditions
-	GetOrders() Orders
+	getConditions() Conditions
+	getOrders() Orders
 }
 
+// General definition of origin list request body
 type OriginLists struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
 type listsAPI interface {
-	GetConditions() Conditions
-	GetOrders() Orders
-	GetPagination() Pagination
+	getConditions() Conditions
+	getOrders() Orders
+	getPagination() Pagination
 }
 
+// General definition of list request body
 type Lists struct {
+
+	// Condition array
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
-	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
+
+	// Order by
+	Orders `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
+
+	// Page definition
 	Pagination `json:"page" binding:"required"`
 }
 
 type getAPI interface {
-	GetId() interface{}
-	GetConditions() Conditions
-	GetOrders() Orders
+	getId() interface{}
+	getConditions() Conditions
+	getOrders() Orders
 }
 
+// General definition of get request body
 type Get struct {
-	Id         interface{} `json:"id" binding:"required_without=Conditions"`
+
+	// Primary key
+	Id interface{} `json:"id" binding:"required_without=Conditions"`
+
+	// Condition array
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
-	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
+
+	// Order by
+	Orders `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-func (c Get) GetId() interface{} {
+func (c Get) getId() interface{} {
 	return c.Id
 }
 
 type editAPI interface {
-	GetId() interface{}
-	IsSwitch() bool
-	GetConditions() Conditions
+	getId() interface{}
+	isSwitch() bool
+	getConditions() Conditions
 }
 
+// General definition of edit request body, choose one of primary key or condition array
 type Edit struct {
-	Id         interface{} `json:"id" binding:"required_without=Conditions"`
-	Switch     bool        `json:"switch"`
+
+	// Primary key
+	Id interface{} `json:"id" binding:"required_without=Conditions"`
+
+	// Only the status field is updated
+	Switch bool `json:"switch"`
+
+	// Condition array
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
 }
 
-func (c Edit) GetId() interface{} {
+func (c Edit) getId() interface{} {
 	return c.Id
 }
 
-func (c Edit) IsSwitch() bool {
+func (c Edit) isSwitch() bool {
 	return c.Switch
 }
 
 type deleteAPI interface {
-	GetId() interface{}
-	GetConditions() Conditions
+	getId() interface{}
+	getConditions() Conditions
 }
 
+// General definition of delete request body, choose one of primary key or condition array
 type Delete struct {
-	Id         interface{} `json:"id" binding:"required_without=Conditions"`
+
+	// Primary key
+	Id interface{} `json:"id" binding:"required_without=Conditions"`
+
+	// Condition array
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
 }
 
-func (c Delete) GetId() interface{} {
+func (c Delete) getId() interface{} {
 	return c.Id
 }
 
+// Array condition definition
 type Conditions [][]interface{}
 
-func (c Conditions) GetConditions() Conditions {
+func (c Conditions) getConditions() Conditions {
 	return c
 }
 
+// Order definition
 type Orders map[string]string
 
-func (c Orders) GetOrders() Orders {
+func (c Orders) getOrders() Orders {
 	return c
 }
 
+// Paging request field definition.
 type Pagination struct {
+
+	// the paging index
 	Index int64 `json:"index" binding:"gt=0,number,required"`
+
+	// the page size
 	Limit int64 `json:"limit" binding:"gt=0,number,required"`
 }
 
-func (c Pagination) GetPagination() Pagination {
+func (c Pagination) getPagination() Pagination {
 	return c
 }
