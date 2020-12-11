@@ -23,11 +23,11 @@ jobs:
         with:
           mysql version: '5.7'
           mysql database: 'tests'
-          mysql root password: 'password'
+          mysql root password: 'pass'
 
       - uses: actions/checkout@v2
 
-#      - name: Test MySQL
-#        run: go test -v ./...
-#        env:
-#          mysql_dsn: ${{ secrets.mysql_dsn }}
+      - name: Test MySQL
+        run: go test example
+        env:
+          mysql_dsn: root:pass@tcp(dell:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local
