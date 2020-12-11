@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Test MySQL
-        run: go test example
+        run: cd example && go test -v example
         env:
           GO111MODULE: on
           mysql_dsn: root:pass@tcp(dell:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local
