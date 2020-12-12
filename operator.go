@@ -89,7 +89,7 @@ func (c *fieldOperator) apply(exec *execute) {
 }
 
 // Set update
-//	@param `status` string
+//	@param `status` string When switch is true, update the status field
 //	@return Operator
 func Update(status string) Operator {
 	return &updateOperator{status: status}
@@ -103,7 +103,7 @@ func (c *updateOperator) apply(exec *execute) {
 	exec.updateOperator = c
 }
 
-// After hook
+// After hook, when the return is error, the transaction will be rolled back
 //	@param `fn` func(tx *gorm.DB) error
 //	@return Operator
 func After(fn func(tx *gorm.DB) error) Operator {
@@ -118,7 +118,7 @@ func (c *afterHook) apply(exec *execute) {
 	exec.afterHook = c
 }
 
-// Prep hook
+// Preparation hook, the transaction will be terminated early when the return is error
 //	@param `fn` func(tx *gorm.DB) error
 //	@return Operator
 func Prep(fn func(tx *gorm.DB) error) Operator {
