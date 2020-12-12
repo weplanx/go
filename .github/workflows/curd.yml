@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Test MySQL
-        run: cd example && go test -v -coverprofile=../profile.cov example
+        run: cd example && go test -v -race -covermode atomi -coverprofile=../profile.cov example
         env:
           GO111MODULE: on
           DSN: root:pass@tcp(127.0.0.1:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local
