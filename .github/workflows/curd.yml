@@ -1,4 +1,4 @@
-name: Test MySQL
+name: Test CURD
 
 on:
   push:
@@ -13,9 +13,6 @@ jobs:
   test:
     name: Build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mysql: [ '5.7', '8.0' ]
     steps:
       - uses: actions/setup-go@v2
         with:
@@ -24,7 +21,6 @@ jobs:
       - name: Set up MySQL
         uses: mirromutth/mysql-action@v1.1
         with:
-          mysql version: ${{ matrix.mysql }}
           mysql database: 'tests'
           mysql root password: 'pass'
 
@@ -34,4 +30,4 @@ jobs:
         run: cd example && go test -v example
         env:
           GO111MODULE: on
-          mysql_dsn: root:pass@tcp(127.0.0.1:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local
+          DSN: root:pass@tcp(127.0.0.1:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local

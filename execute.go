@@ -90,10 +90,11 @@ func (c *execute) Lists() interface{} {
 	}
 	tx = c.setOrders(tx, apis.getOrders())
 	tx = c.setFields(tx)
+	var total int64
+	tx.Count(&total)
 	page := apis.getPagination()
 	tx = tx.Limit(int(page.Limit)).Offset(int((page.Index - 1) * page.Limit))
-	var total int64
-	tx.Count(&total).Find(&lists)
+	tx.Find(&lists)
 	return map[string]interface{}{
 		"lists": lists,
 		"total": total,
@@ -189,7 +190,12 @@ func (c *execute) Edit(value interface{}) interface{} {
 func (c *execute) Delete() interface{} {
 	tx := c.tx
 	apis := c.body.(deleteAPI)
-	tx = c.setIdOrConditions(tx, apis.getId(), apis.getConditions())
+	id := apis.getId()
+	if id != nil {
+		tx = tx.Where("id in ?", id)
+	} else {
+		tx = c.setConditions(tx, apis.getConditions())
+	}
 	if c.query != nil {
 		tx = c.query(tx)
 	}
