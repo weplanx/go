@@ -33,6 +33,6 @@ jobs:
           DSN: root:pass@tcp(127.0.0.1:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local
 
       - name: Send coverage
-          env:
-            COVERALLS_TOKEN: ${{ secrets.token }}
-          run: goveralls -coverprofile=covprofile -service=github
+        env:
+          COVERALLS_TOKEN: ${{ secrets.token }}
+        run: goveralls -coverprofile=covprofile -service=github
