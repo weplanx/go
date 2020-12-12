@@ -1,4 +1,4 @@
-name: Test CURD
+name: CURD Tests
 
 on:
   push:
@@ -27,17 +27,13 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Test MySQL
-        run: cd example && go test -v -race -covermode atomic -coverprofile=../covprofile  example
+        run: go test -v -coverprofile=profile.cov ./...
         env:
           GO111MODULE: on
           DSN: root:pass@tcp(127.0.0.1:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local
 
-      - name: Install goveralls
-        env:
-          GO111MODULE: off
-        run: go get github.com/mattn/goveralls
-
       - name: Send coverage
-        env:
-          COVERALLS_TOKEN: ${{ secrets.TOKEN }}
-        run: goveralls -coverprofile=covprofile -service=github
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: profile.cov
+          parallel: true

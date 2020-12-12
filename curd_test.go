@@ -1,10 +1,10 @@
-package example
+package curd_test
 
 import (
 	"errors"
-	"example/model"
 	jsoniter "github.com/json-iterator/go"
 	curd "github.com/kainonly/gin-curd"
+	"github.com/kainonly/gin-curd/model"
 	. "gopkg.in/check.v1"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
