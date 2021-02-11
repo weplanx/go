@@ -2,6 +2,8 @@ package curd
 
 import (
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"strings"
 )
 
 type execute struct {
@@ -31,8 +33,18 @@ func (c *execute) setIdOrConditions(tx *gorm.DB, id interface{}, value Condition
 func (c *execute) setConditions(tx *gorm.DB, value Conditions) *gorm.DB {
 	conditions := append(c.conditions, value...)
 	for _, condition := range conditions {
-		query := condition[0].(string) + " " + condition[1].(string) + " ?"
-		tx = tx.Where(query, condition[2])
+		if !strings.Contains(condition[0].(string), "->") {
+			query := condition[0].(string) + " " + condition[1].(string) + " ?"
+			tx = tx.Where(query, condition[2])
+		} else {
+			column := strings.Split(condition[0].(string), "->")
+			tx = tx.Where(
+				"json_extract(?,?) "+condition[1].(string)+" ?",
+				clause.Table{Name: column[0]},
+				"$."+strings.Join(column[1:], "."),
+				condition[2],
+			)
+		}
 	}
 	return tx
 }
