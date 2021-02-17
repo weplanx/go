@@ -36,12 +36,30 @@ func (s *MySuite) SetUpTest(c *C) {
 		c.Error(err)
 	}
 	data := []model.Example{
-		{KeyId: "main", Name: "Common Module"},
-		{KeyId: "resource", Name: "Resource Module"},
-		{KeyId: "acl", Name: "Acl Module"},
-		{KeyId: "policy", Name: "Policy Module"},
-		{KeyId: "admin", Name: "Admin Module"},
-		{KeyId: "role", Name: "Role Module"},
+		{KeyId: "main", Name: model.Object{
+			"zh_cn": "公共模块",
+			"en_us": "Common Module",
+		}},
+		{KeyId: "acl", Name: model.Object{
+			"zh_cn": "访问控制模块",
+			"en_us": "Acl Module",
+		}},
+		{KeyId: "resource", Name: model.Object{
+			"zh_cn": "资源控制模块",
+			"en_us": "Resource Module",
+		}},
+		{KeyId: "policy", Name: model.Object{
+			"zh_cn": "策略模块",
+			"en_us": "Policy Module",
+		}},
+		{KeyId: "admin", Name: model.Object{
+			"zh_cn": "管理员模块",
+			"en_us": "Admin Module",
+		}},
+		{KeyId: "role", Name: model.Object{
+			"zh_cn": "权限组模块",
+			"en_us": "Role Module",
+		}},
 	}
 	if err = s.db.Create(&data).Error; err != nil {
 		c.Error(err)
@@ -60,7 +78,7 @@ type originListsBody struct {
 func (s *MySuite) TestOriginLists(c *C) {
 	var body originListsBody
 	if err = jsoniter.Unmarshal(
-		[]byte(`{"where":[["name","like","%R%"]]}`),
+		[]byte(`{"where":[["name->en_us","like","%R%"]]}`),
 		&body,
 	); err != nil {
 		c.Error(err)
@@ -134,7 +152,7 @@ func (s *MySuite) TestLists(c *C) {
 	for index, data := range lists {
 		keys[index] = data["key_id"].(string)
 	}
-	c.Assert(keys, DeepEquals, []string{"acl", "policy"})
+	c.Assert(keys, DeepEquals, []string{"resource", "policy"})
 }
 
 func (s *MySuite) TestListsQuery(c *C) {
@@ -163,7 +181,7 @@ func (s *MySuite) TestListsQuery(c *C) {
 	for index, data := range lists {
 		keys[index] = data["key_id"].(string)
 	}
-	c.Assert(keys, DeepEquals, []string{"resource", "acl", "policy"})
+	c.Assert(keys, DeepEquals, []string{"acl", "resource", "policy"})
 }
 
 type getBody struct {
@@ -247,23 +265,30 @@ func (s *MySuite) TestGetQualification(c *C) {
 
 func (s *MySuite) TestAdd(c *C) {
 	data := &model.Example{
-		KeyId:  "test",
-		Name:   "Test Module",
+		KeyId: "test",
+		Name: model.Object{
+			"zh_cn": "测试模块",
+			"en_us": "Test Module",
+		},
 		Status: true,
 	}
 	success := s.curd.Operates().Add(&data)
 	c.Assert(success, Equals, true)
 	var expect model.Example
 	s.db.Model(&model.Example{}).Where("key_id = ?", "test").First(&expect)
-	c.Assert(expect.Name, Equals, "Test Module")
+	c.Assert(expect.Name["zh_cn"], Equals, "测试模块")
+	c.Assert(expect.Name["en_us"], Equals, "Test Module")
 	duplicate := s.curd.Operates().Add(&data)
 	c.Assert(duplicate.(error), NotNil)
 }
 
 func (s *MySuite) TestAddAfter(c *C) {
 	data1 := &model.Example{
-		KeyId:  "test",
-		Name:   "Test Module",
+		KeyId: "test",
+		Name: model.Object{
+			"zh_cn": "测试模块",
+			"en_us": "Test Module",
+		},
 		Status: true,
 	}
 	success := s.curd.Operates(
@@ -275,7 +300,8 @@ func (s *MySuite) TestAddAfter(c *C) {
 	c.Assert(success, Equals, true)
 	var expect model.Example
 	s.db.Model(&model.Example{}).Where("key_id = ?", "test").First(&expect)
-	c.Assert(expect.Name, Equals, "Test Module")
+	c.Assert(expect.Name["zh_cn"], Equals, "测试模块")
+	c.Assert(expect.Name["en_us"], Equals, "Test Module")
 	duplicate := s.curd.Operates(
 		curd.After(func(tx *gorm.DB) error {
 			c.Log("after success")
@@ -284,8 +310,11 @@ func (s *MySuite) TestAddAfter(c *C) {
 	).Add(&data1)
 	c.Assert(duplicate.(error), NotNil)
 	data2 := &model.Example{
-		KeyId:  "failed",
-		Name:   "Failed Module",
+		KeyId: "failed",
+		Name: model.Object{
+			"zh_cn": "失败",
+			"en_us": "Failed",
+		},
 		Status: true,
 	}
 	failed := s.curd.Operates(
@@ -297,9 +326,9 @@ func (s *MySuite) TestAddAfter(c *C) {
 }
 
 type editBody struct {
-	KeyId  string `json:"key_id"`
-	Name   string `json:"name"`
-	Status bool   `json:"status"`
+	KeyId  string       `json:"key_id"`
+	Name   model.Object `json:"name"`
+	Status bool         `json:"status"`
 	curd.Edit
 }
 
@@ -307,7 +336,7 @@ func (s *MySuite) TestEdit(c *C) {
 	var body editBody
 	var expect model.Example
 	if err = jsoniter.Unmarshal(
-		[]byte(`{"id":1,"key_id":"main","name":"Update Module","status":true,"switch":false}`),
+		[]byte(`{"id":1,"key_id":"main","name":{"zh_cn":"更新模块","en_us":"Update Module"},"status":true,"switch":false}`),
 		&body,
 	); err != nil {
 		c.Error(err)
@@ -322,8 +351,8 @@ func (s *MySuite) TestEdit(c *C) {
 	).Edit(data1)
 	c.Assert(result1, Equals, true)
 	s.db.Model(&model.Example{}).Where("id = ?", 1).First(&expect)
-	c.Assert(expect.Name, Equals, "Update Module")
-
+	c.Assert(expect.Name["zh_cn"], Equals, "更新模块")
+	c.Assert(expect.Name["en_us"], Equals, "Update Module")
 	data1.KeyId = "acl"
 	duplicate := s.curd.Operates(
 		curd.Plan(&model.Example{}, body),
@@ -411,7 +440,7 @@ func (s *MySuite) TestEditQuery(c *C) {
 	var body editBody
 	var expect model.Example
 	if err = jsoniter.Unmarshal(
-		[]byte(`{"id":1,"key_id":"main","name":"Update Module","status":true,"switch":false}`),
+		[]byte(`{"id":1,"key_id":"main","name":{"zh_cn":"更新模块","en_us":"Update Module"},"status":true,"switch":false}`),
 		&body,
 	); err != nil {
 		c.Error(err)
@@ -429,14 +458,15 @@ func (s *MySuite) TestEditQuery(c *C) {
 	).Edit(data)
 	c.Assert(result, Equals, true)
 	s.db.Model(&model.Example{}).Where("id = ?", 1).First(&expect)
-	c.Assert(expect.Name, Equals, "Update Module")
+	c.Assert(expect.Name["zh_cn"], Equals, "更新模块")
+	c.Assert(expect.Name["en_us"], Equals, "Update Module")
 }
 
 func (s *MySuite) TestEditAfter(c *C) {
 	var body editBody
 	var expect model.Example
 	if err = jsoniter.Unmarshal(
-		[]byte(`{"id":1,"key_id":"main","name":"Update Module","status":true,"switch":false}`),
+		[]byte(`{"id":1,"key_id":"main","name":{"zh_cn":"更新模块","en_us":"Update Module"},"status":true,"switch":false}`),
 		&body,
 	); err != nil {
 		c.Error(err)
@@ -455,7 +485,8 @@ func (s *MySuite) TestEditAfter(c *C) {
 	).Edit(data)
 	c.Assert(result, Equals, true)
 	s.db.Model(&model.Example{}).Where("id = ?", 1).First(&expect)
-	c.Assert(expect.Name, Equals, "Update Module")
+	c.Assert(expect.Name["zh_cn"], Equals, "更新模块")
+	c.Assert(expect.Name["en_us"], Equals, "Update Module")
 
 	data.KeyId = "acl"
 	duplicate := s.curd.Operates(
