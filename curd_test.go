@@ -7,6 +7,7 @@ import (
 	"github.com/kainonly/gin-curd/model"
 	. "gopkg.in/check.v1"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"os"
 	"testing"
@@ -25,8 +26,17 @@ var _ = Suite(&MySuite{})
 
 func (s *MySuite) SetUpTest(c *C) {
 	dsn := os.Getenv("DSN")
-	if s.db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{}); err != nil {
-		c.Error(err)
+	switch os.Getenv("DRIVE") {
+	case "mysql":
+		if s.db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{}); err != nil {
+			c.Error(err)
+		}
+		break
+	case "postgres":
+		if s.db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{}); err != nil {
+			c.Error(err)
+		}
+		break
 	}
 	s.curd = curd.Initialize(s.db)
 	if err = s.db.Migrator().DropTable(&model.Example{}); err != nil {
@@ -77,8 +87,12 @@ type originListsBody struct {
 
 func (s *MySuite) TestOriginLists(c *C) {
 	var body originListsBody
+	data := []byte(`{"where":[["name->en_us","like","%R%"]]}`)
+	if os.Getenv("DRIVE") == "postgres" {
+		data = []byte(`{"where":[["name::json->>'en_us'","like","%R%"]]}`)
+	}
 	if err = jsoniter.Unmarshal(
-		[]byte(`{"where":[["name->en_us","like","%R%"]]}`),
+		data,
 		&body,
 	); err != nil {
 		c.Error(err)

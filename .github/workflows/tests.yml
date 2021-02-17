@@ -31,6 +31,7 @@ jobs:
         env:
           GO111MODULE: on
           DSN: root:pass@tcp(127.0.0.1:3306)/tests?charset=utf8mb4&parseTime=True&loc=Local
+          DRIVE: mysql
 
       - uses: shogo82148/actions-goveralls@v1
         with:

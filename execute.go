@@ -33,7 +33,7 @@ func (c *execute) setIdOrConditions(tx *gorm.DB, id interface{}, value Condition
 func (c *execute) setConditions(tx *gorm.DB, value Conditions) *gorm.DB {
 	conditions := append(c.conditions, value...)
 	for _, condition := range conditions {
-		if !strings.Contains(condition[0].(string), "->") {
+		if !(strings.Contains(condition[0].(string), "->") && tx.Name() == "mysql") {
 			query := condition[0].(string) + " " + condition[1].(string) + " ?"
 			tx = tx.Where(query, condition[2])
 		} else {
