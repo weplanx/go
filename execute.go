@@ -78,7 +78,7 @@ func (c *execute) setFields(tx *gorm.DB) *gorm.DB {
 
 // Execute origin lists
 func (c *execute) Originlists() interface{} {
-	var lists []map[string]interface{}
+	lists := make([]map[string]interface{}, 0)
 	tx := c.tx.Model(c.model)
 	apis := c.body.(originListsAPI)
 	tx = c.setConditions(tx, apis.getConditions())
@@ -93,7 +93,7 @@ func (c *execute) Originlists() interface{} {
 
 // Execute lists
 func (c *execute) Lists() interface{} {
-	var lists []map[string]interface{}
+	lists := make([]map[string]interface{}, 0)
 	tx := c.tx.Model(c.model)
 	apis := c.body.(listsAPI)
 	tx = c.setConditions(tx, apis.getConditions())
