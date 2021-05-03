@@ -76,7 +76,7 @@ func (c *execute) setFields(tx *gorm.DB) *gorm.DB {
 	return tx
 }
 
-// Execute origin lists
+// Originlists execute origin lists
 func (c *execute) Originlists() interface{} {
 	lists := make([]map[string]interface{}, 0)
 	tx := c.tx.Model(c.model)
@@ -91,7 +91,7 @@ func (c *execute) Originlists() interface{} {
 	return lists
 }
 
-// Execute lists
+// Lists execute lists
 func (c *execute) Lists() interface{} {
 	lists := make([]map[string]interface{}, 0)
 	tx := c.tx.Model(c.model)
@@ -113,7 +113,7 @@ func (c *execute) Lists() interface{} {
 	}
 }
 
-// Execute get
+// Get execute get
 func (c *execute) Get() interface{} {
 	data := make(map[string]interface{})
 	tx := c.tx.Model(c.model)
@@ -128,7 +128,7 @@ func (c *execute) Get() interface{} {
 	return data
 }
 
-// Execute add
+// Add execute add
 func (c *execute) Add(value interface{}) interface{} {
 	tx := c.tx
 	if c.after == nil {
@@ -152,7 +152,7 @@ func (c *execute) Add(value interface{}) interface{} {
 	return true
 }
 
-// Execute edit
+// Edit execute edit
 func (c *execute) Edit(value interface{}) interface{} {
 	tx := c.tx.Model(c.model)
 	apis := c.body.(editAPI)
@@ -198,7 +198,7 @@ func (c *execute) Edit(value interface{}) interface{} {
 	return true
 }
 
-// Execute delete
+// Delete execute delete
 func (c *execute) Delete() interface{} {
 	tx := c.tx
 	apis := c.body.(deleteAPI)

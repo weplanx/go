@@ -7,9 +7,6 @@ type Operator interface {
 }
 
 // Plan a model expression
-//	@param `model` interface{} GORM defined model
-//	@param `body` interface{} Request body
-//	@return Operator
 func Plan(model interface{}, body interface{}) Operator {
 	return &planOperator{
 		model: model,
@@ -26,9 +23,7 @@ func (c *planOperator) apply(exec *execute) {
 	exec.planOperator = c
 }
 
-// Set condition array
-//	@param `value` Conditions Condition array
-//	@return Operator
+// Where set condition array
 func Where(value Conditions) Operator {
 	return &whereOperator{conditions: value}
 }
@@ -41,9 +36,7 @@ func (c *whereOperator) apply(exec *execute) {
 	exec.whereOperator = c
 }
 
-// Set sub query
-//	@param `fn` func(tx *gorm.DB) *gorm.DB
-//	@return Operator
+// SubQuery set sub query
 func SubQuery(fn func(tx *gorm.DB) *gorm.DB) Operator {
 	return &subQueryOperator{query: fn}
 }
@@ -56,9 +49,7 @@ func (c *subQueryOperator) apply(exec *execute) {
 	exec.subQueryOperator = c
 }
 
-// Set order by
-//	@param `value` Orders
-//	@return Operator
+// OrderBy set order by
 func OrderBy(value Orders) Operator {
 	return &orderByOperator{orders: value}
 }
@@ -71,10 +62,7 @@ func (c *orderByOperator) apply(exec *execute) {
 	exec.orderByOperator = c
 }
 
-// Set selecting specific fields
-//	@param `value` []string
-//	@param `exclude` bool
-//	@return Operator
+// Field set selecting specific fields
 func Field(value []string, exclude bool) Operator {
 	return &fieldOperator{fields: value, exclude: exclude}
 }
@@ -88,9 +76,7 @@ func (c *fieldOperator) apply(exec *execute) {
 	exec.fieldOperator = c
 }
 
-// Set update
-//	@param `status` string When switch is true, update the status field
-//	@return Operator
+// Update set update
 func Update(status string) Operator {
 	return &updateOperator{status: status}
 }
@@ -104,8 +90,6 @@ func (c *updateOperator) apply(exec *execute) {
 }
 
 // After hook, when the return is error, the transaction will be rolled back
-//	@param `fn` func(tx *gorm.DB) error
-//	@return Operator
 func After(fn func(tx *gorm.DB) error) Operator {
 	return &afterHook{after: fn}
 }
@@ -118,9 +102,7 @@ func (c *afterHook) apply(exec *execute) {
 	exec.afterHook = c
 }
 
-// Preparation hook, the transaction will be terminated early when the return is error
-//	@param `fn` func(tx *gorm.DB) error
-//	@return Operator
+// Prep Preparation hook, the transaction will be terminated early when the return is error
 func Prep(fn func(tx *gorm.DB) error) Operator {
 	return &prepHook{prep: fn}
 }

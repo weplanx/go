@@ -5,7 +5,7 @@ type originListsAPI interface {
 	getOrders() Orders
 }
 
-// General definition of origin list request body
+// OriginLists general definition of origin list request body
 type OriginLists struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
@@ -17,7 +17,7 @@ type listsAPI interface {
 	getPagination() Pagination
 }
 
-// General definition of list request body
+// Lists general definition of list request body
 type Lists struct {
 
 	// Condition array
@@ -36,7 +36,7 @@ type getAPI interface {
 	getOrders() Orders
 }
 
-// General definition of get request body
+// Get general definition of get request body
 type Get struct {
 
 	// Primary key
@@ -59,7 +59,7 @@ type editAPI interface {
 	getConditions() Conditions
 }
 
-// General definition of edit request body, choose one of primary key or condition array
+// Edit general definition of edit request body, choose one of primary key or condition array
 type Edit struct {
 
 	// Primary key
@@ -85,7 +85,7 @@ type deleteAPI interface {
 	getConditions() Conditions
 }
 
-// General definition of delete request body, choose one of primary key or condition array
+// Delete general definition of delete request body, choose one of primary key or condition array
 type Delete struct {
 
 	// Primary key
@@ -99,21 +99,21 @@ func (c Delete) getId() interface{} {
 	return c.Id
 }
 
-// Array condition definition
+// Conditions array condition definition
 type Conditions [][]interface{}
 
 func (c Conditions) getConditions() Conditions {
 	return c
 }
 
-// Order definition
+// Orders definition
 type Orders map[string]string
 
 func (c Orders) getOrders() Orders {
 	return c
 }
 
-// Paging request field definition.
+// Pagination paging request field definition.
 type Pagination struct {
 
 	// the paging index
