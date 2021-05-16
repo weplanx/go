@@ -1,4 +1,4 @@
-# gin-curd
+# Gin Curd
 
 Provide CURD auxiliary library for gin
 
