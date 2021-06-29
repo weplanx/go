@@ -3,11 +3,11 @@ package bit
 import "gorm.io/gorm"
 
 type Bit struct {
-	db *gorm.DB
+	tx *gorm.DB
 }
 
 func Initialize(db *gorm.DB) *Bit {
-	return &Bit{db: db}
+	return &Bit{tx: db}
 }
 
 type CrudOption func(*Crud)
@@ -20,7 +20,7 @@ func SetOrderBy(orders []string) CrudOption {
 
 func (x *Bit) Crud(model interface{}, options ...CrudOption) *Crud {
 	crud := &Crud{
-		db:    x.db,
+		tx:    x.tx,
 		model: model,
 	}
 	for _, apply := range options {
