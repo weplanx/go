@@ -5,28 +5,34 @@ import (
 	"net/http"
 )
 
-type Ok gin.H
-type Create gin.H
-
 func Bind(handlerFn interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if fn, ok := handlerFn.(func(c *gin.Context) interface{}); ok {
 			switch result := fn(c).(type) {
-			case Ok:
-				c.JSON(http.StatusOK, result)
+			case string:
+				c.JSON(http.StatusOK, gin.H{
+					"code": 0,
+					"msg":  result,
+				})
 				break
-			case Create:
-				c.JSON(http.StatusCreated, result)
+			case gin.H:
+				c.JSON(http.StatusOK, gin.H{
+					"code": 0,
+					"data": result,
+				})
 				break
 			case error:
-				c.JSON(http.StatusBadRequest, gin.H{
-					"msg": result.Error(),
+				code, exists := c.Get("code")
+				if !exists {
+					code = 1
+				}
+				c.JSON(http.StatusOK, gin.H{
+					"code": code,
+					"msg":  result.Error(),
 				})
 				break
 			default:
-				c.JSON(http.StatusNoContent, gin.H{
-					"msg": "ok",
-				})
+				c.Status(http.StatusNotFound)
 			}
 		}
 	}
