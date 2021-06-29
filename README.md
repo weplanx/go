@@ -1,3 +1,3 @@
 # Gin Planx
 
-Use gorm to quickly generate the CRUD function API of the gin framework
+Use gorm to quickly generate the function API of the gin framework
