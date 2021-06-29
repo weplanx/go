@@ -1,4 +1,4 @@
-package mvc
+package bit
 
 import (
 	"github.com/gin-gonic/gin"

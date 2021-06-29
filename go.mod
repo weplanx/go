@@ -1,4 +1,4 @@
-module github.com/kainonly/gin-planx
+module github.com/kainonly/gin-bit
 
 go 1.13
 
