@@ -1,19 +1,24 @@
 package bit
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
 
-const context = "complex"
+const complexStart = "complex.start"
+const complexComplete = "complex.complete"
 
 type complexVar struct {
-	body interface{}
-	data interface{}
+	Body  interface{}
+	data  interface{}
+	query func(tx *gorm.DB) *gorm.DB
 }
 
 type Operator func(*complexVar)
 
 func SetBody(body interface{}) Operator {
 	return func(c *complexVar) {
-		c.body = body
+		c.Body = body
 	}
 }
 
@@ -23,10 +28,16 @@ func SetData(data interface{}) Operator {
 	}
 }
 
+func Query(query func(tx *gorm.DB) *gorm.DB) Operator {
+	return func(c *complexVar) {
+		c.query = query
+	}
+}
+
 func Complex(c *gin.Context, operator ...Operator) {
 	v := new(complexVar)
 	for _, operator := range operator {
 		operator(v)
 	}
-	c.Set(context, v)
+	c.Set(complexStart, v)
 }

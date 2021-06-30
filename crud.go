@@ -63,9 +63,9 @@ func (x *Crud) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
 	return tx
 }
 
-func (x *Crud) getComplexVar(c *gin.Context, body interface{}) *complexVar {
+func (x *Crud) makeComplexVar(c *gin.Context, body interface{}) *complexVar {
 	var v *complexVar
-	if value, exists := c.Get(context); exists {
+	if value, exists := c.Get(complexStart); exists {
 		v = value.(*complexVar)
 	} else {
 		v = &complexVar{}
@@ -73,19 +73,28 @@ func (x *Crud) getComplexVar(c *gin.Context, body interface{}) *complexVar {
 	if v.data == nil {
 		v.data = reflect.New(reflect.TypeOf(x.model)).Interface()
 	}
-	if v.body == nil {
-		v.body = body
+	if v.Body == nil {
+		v.Body = body
 	}
+	c.Set(complexComplete, v)
 	return v
 }
 
+func (x *Crud) GetComplexVar(c *gin.Context) *complexVar {
+	value, _ := c.Get(complexComplete)
+	return value.(*complexVar)
+}
+
 func (x *Crud) Get(c *gin.Context) interface{} {
-	v := x.getComplexVar(c, &GetBody{})
-	if err := c.ShouldBindJSON(v.body); err != nil {
+	v := x.makeComplexVar(c, &GetBody{})
+	if err := c.ShouldBindJSON(v.Body); err != nil {
 		return err
 	}
-	body := v.body.(apis)
+	body := v.Body.(apis)
 	tx := x.tx.Model(x.model)
+	if v.query != nil {
+		tx = v.query(tx)
+	}
 	tx = x.setIdOrConditions(tx, body.GetId(), body.GetConditions())
 	tx.First(v.data)
 	return v.data
