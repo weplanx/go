@@ -15,12 +15,6 @@ func Bind(handlerFn interface{}) gin.HandlerFunc {
 					"msg":  result,
 				})
 				break
-			case gin.H:
-				c.JSON(http.StatusOK, gin.H{
-					"code": 0,
-					"data": result,
-				})
-				break
 			case error:
 				code, exists := c.Get("code")
 				if !exists {
@@ -32,7 +26,14 @@ func Bind(handlerFn interface{}) gin.HandlerFunc {
 				})
 				break
 			default:
-				c.Status(http.StatusNotFound)
+				if result != nil {
+					c.JSON(http.StatusOK, gin.H{
+						"code": 0,
+						"data": result,
+					})
+				} else {
+					c.Status(http.StatusNotFound)
+				}
 			}
 		}
 	}

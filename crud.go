@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"strings"
+	"reflect"
 )
 
 type Crud struct {
@@ -16,13 +16,31 @@ type Crud struct {
 // Conditions array condition definition
 type Conditions [][]interface{}
 
+func (c Conditions) GetConditions() Conditions {
+	return c
+}
+
 // Orders definition
 type Orders map[string]string
 
-type GetAPI struct {
+func (c Orders) GetOrders() Orders {
+	return c
+}
+
+type apis interface {
+	GetId() interface{}
+	GetConditions() Conditions
+	GetOrders() Orders
+}
+
+type GetBody struct {
 	Id         interface{} `json:"id" binding:"required_without=Conditions"`
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
+}
+
+func (x *GetBody) GetId() interface{} {
+	return x.Id
 }
 
 func (x *Crud) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) *gorm.DB {
@@ -36,33 +54,39 @@ func (x *Crud) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) 
 
 func (x *Crud) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
 	for _, condition := range conditions {
-		if !(strings.Contains(condition[0].(string), "->") && tx.Name() == "mysql") {
-			tx = tx.Where(
-				"? "+condition[1].(string)+" ?",
-				clause.Column{Name: condition[0].(string)},
-				condition[2],
-			)
-		} else {
-			column := strings.Split(condition[0].(string), "->")
-			tx = tx.Where(
-				"json_extract(?,?) "+condition[1].(string)+" ?",
-				clause.Table{Name: column[0]},
-				"$."+strings.Join(column[1:], "."),
-				condition[2],
-			)
-		}
+		tx = tx.Where(
+			"? "+condition[1].(string)+" ?",
+			clause.Column{Name: condition[0].(string)},
+			condition[2],
+		)
 	}
 	return tx
 }
 
+func (x *Crud) getComplexVar(c *gin.Context, body interface{}) *complexVar {
+	var v *complexVar
+	if value, exists := c.Get(context); exists {
+		v = value.(*complexVar)
+	} else {
+		v = &complexVar{}
+	}
+	if v.data == nil {
+		v.data = reflect.New(reflect.TypeOf(x.model)).Interface()
+	}
+	if v.body == nil {
+		v.body = body
+	}
+	return v
+}
+
 func (x *Crud) Get(c *gin.Context) interface{} {
-	var body GetAPI
-	if err := c.ShouldBindJSON(&body); err != nil {
+	v := x.getComplexVar(c, &GetBody{})
+	if err := c.ShouldBindJSON(v.body); err != nil {
 		return err
 	}
-	data := make(map[string]interface{})
+	body := v.body.(apis)
 	tx := x.tx.Model(x.model)
-	tx = x.setIdOrConditions(tx, body.Id, body.Conditions)
-	tx.First(&data)
-	return gin.H(data)
+	tx = x.setIdOrConditions(tx, body.GetId(), body.GetConditions())
+	tx.First(v.data)
+	return v.data
 }
