@@ -12,9 +12,9 @@ func Initialize(db *gorm.DB) *Bit {
 
 type CrudOption func(*Crud)
 
-func SetOrderBy(orders []string) CrudOption {
+func SetOrders(orders Orders) CrudOption {
 	return func(option *Crud) {
-		option.orderBy = orders
+		option.orders = orders
 	}
 }
 
