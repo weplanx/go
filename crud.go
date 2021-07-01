@@ -16,17 +16,20 @@ type Crud struct {
 // Conditions array condition definition
 type Conditions [][]interface{}
 
+// GetConditions get array condition definition
 func (c Conditions) GetConditions() Conditions {
 	return c
 }
 
-// Orders definition
+// Orders order definition
 type Orders map[string]string
 
+// GetOrders get order definition
 func (c Orders) GetOrders() Orders {
 	return c
 }
 
+// Set ID or array conditions
 func (x *Crud) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) *gorm.DB {
 	if id != nil {
 		return tx.Where("id = ?", id)
@@ -35,6 +38,7 @@ func (x *Crud) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) 
 	}
 }
 
+// Set array conditions
 func (x *Crud) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
 	for _, condition := range conditions {
 		tx = tx.Where(
@@ -46,6 +50,7 @@ func (x *Crud) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
 	return tx
 }
 
+// Set orders
 func (x *Crud) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
 	for field, order := range x.orders {
 		tx = tx.Order(field + " " + order)
@@ -56,32 +61,36 @@ func (x *Crud) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
 	return tx
 }
 
-func (x *Crud) setComplexVar(c *gin.Context, operator ...Operator) *complexVar {
-	var v *complexVar
-	if value, exists := c.Get(complexStart); exists {
-		v = value.(*complexVar)
+// Set mixed
+func (x *Crud) setMixed(c *gin.Context, operator ...Operator) *mixed {
+	var v *mixed
+	if value, exists := c.Get(mixedStart); exists {
+		v = value.(*mixed)
 	} else {
-		v = &complexVar{}
+		v = &mixed{}
 	}
 	for _, operator := range operator {
 		operator(v)
 	}
-	c.Set(complexComplete, v)
+	c.Set(mixedComplete, v)
 	return v
 }
 
-func (x *Crud) GetComplexVar(c *gin.Context) *complexVar {
-	value, _ := c.Get(complexComplete)
-	return value.(*complexVar)
+// GetMixed get mixed vars
+func (x *Crud) GetMixed(c *gin.Context) *mixed {
+	value, _ := c.Get(mixedComplete)
+	return value.(*mixed)
 }
 
+// OriginListsBody general definition of list body
 type OriginListsBody struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
+// OriginLists general definition of list request
 func (x *Crud) OriginLists(c *gin.Context) interface{} {
-	v := x.setComplexVar(c,
+	v := x.setMixed(c,
 		SetBody(&OriginListsBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.model))).Interface()),
 	)
@@ -104,23 +113,29 @@ func (x *Crud) OriginLists(c *gin.Context) interface{} {
 	return v.data
 }
 
+// Pagination page properties
+//	Index: page number
+//	Limit: number of pages
 type Pagination struct {
 	Index int `json:"index" binding:"gt=0,number,required"`
 	Limit int `json:"limit" binding:"gt=0,number,required"`
 }
 
+// GetPagination get page properties
 func (x Pagination) GetPagination() Pagination {
 	return x
 }
 
+// ListsBody general definition of page body
 type ListsBody struct {
 	Pagination `json:"page" binding:"required"`
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
+// Lists general definition of page data
 func (x *Crud) Lists(c *gin.Context) interface{} {
-	v := x.setComplexVar(c,
+	v := x.setMixed(c,
 		SetBody(&ListsBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.model))).Interface()),
 	)
@@ -151,18 +166,21 @@ func (x *Crud) Lists(c *gin.Context) interface{} {
 	}
 }
 
+// GetBody general definition of get body
 type GetBody struct {
 	Id         interface{} `json:"id" binding:"required_without=Conditions"`
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
+// GetId get id
 func (x *GetBody) GetId() interface{} {
 	return x.Id
 }
 
+// Get general definition of get data request
 func (x *Crud) Get(c *gin.Context) interface{} {
-	v := x.setComplexVar(c,
+	v := x.setMixed(c,
 		SetBody(&GetBody{}),
 		SetData(reflect.New(reflect.TypeOf(x.model)).Interface()),
 	)
@@ -186,8 +204,9 @@ func (x *Crud) Get(c *gin.Context) interface{} {
 	return v.data
 }
 
+// Add general definition of create data request
 func (x *Crud) Add(c *gin.Context) interface{} {
-	v := x.setComplexVar(c)
+	v := x.setMixed(c)
 	data := v.data
 	if data == nil {
 		v.Body = reflect.New(reflect.TypeOf(x.model)).Interface()
@@ -213,18 +232,21 @@ func (x *Crud) Add(c *gin.Context) interface{} {
 	return "ok"
 }
 
+// EditBody general definition of edit body
 type EditBody struct {
 	Id         interface{} `json:"id" binding:"required_without=Conditions"`
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
 	Switch     *bool `json:"switch"`
 }
 
+// GetId get id
 func (x *EditBody) GetId() interface{} {
 	return x.Id
 }
 
+// Edit general definition of edit data request
 func (x *Crud) Edit(c *gin.Context) interface{} {
-	v := x.setComplexVar(c)
+	v := x.setMixed(c)
 	var body interface{}
 	data := v.data
 	if data == nil {
@@ -277,17 +299,20 @@ func (x *Crud) Edit(c *gin.Context) interface{} {
 	return "ok"
 }
 
+// DeleteBody general definition of delete body
 type DeleteBody struct {
 	Id         interface{} `json:"id" binding:"required_without=Conditions"`
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
 }
 
+// GetId get id
 func (x *DeleteBody) GetId() interface{} {
 	return x.Id
 }
 
+// Delete general definition of delete data request
 func (x *Crud) Delete(c *gin.Context) interface{} {
-	v := x.setComplexVar(c,
+	v := x.setMixed(c,
 		SetBody(&DeleteBody{}),
 		SetData(reflect.New(reflect.TypeOf(x.model)).Interface()),
 	)
