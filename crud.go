@@ -187,11 +187,10 @@ func (x *Crud) Get(c *gin.Context) interface{} {
 }
 
 func (x *Crud) Add(c *gin.Context) interface{} {
-	v := x.setComplexVar(c,
-		SetBody(reflect.New(reflect.TypeOf(x.model)).Interface()),
-	)
+	v := x.setComplexVar(c)
 	data := v.data
 	if data == nil {
+		v.Body = reflect.New(reflect.TypeOf(x.model)).Interface()
 		if err := c.ShouldBindJSON(v.Body); err != nil {
 			return err
 		}
@@ -204,6 +203,70 @@ func (x *Crud) Add(c *gin.Context) interface{} {
 		if v.txNext != nil {
 			ID := reflect.ValueOf(data).Elem().FieldByName("ID").Interface()
 			if err = v.txNext(tx, ID); err != nil {
+				return
+			}
+		}
+		return
+	}); err != nil {
+		return err
+	}
+	return "ok"
+}
+
+type EditBody struct {
+	Id         interface{} `json:"id" binding:"required_without=Conditions"`
+	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
+	Switch     *bool `json:"switch"`
+}
+
+func (x *EditBody) GetId() interface{} {
+	return x.Id
+}
+
+func (x *Crud) Edit(c *gin.Context) interface{} {
+	v := x.setComplexVar(c)
+	var body interface{}
+	data := v.data
+	if data == nil {
+		v.Body = reflect.New(reflect.StructOf([]reflect.StructField{
+			{
+				Name:      "EditBody",
+				Type:      reflect.TypeOf(EditBody{}),
+				Anonymous: true,
+			},
+			{
+				Name:      "Updates",
+				Type:      reflect.TypeOf(x.model),
+				Anonymous: true,
+			},
+		})).Interface()
+		if err := c.ShouldBindJSON(v.Body); err != nil {
+			return err
+		}
+		elem := reflect.ValueOf(v.Body).Elem()
+		body = elem.FieldByName("EditBody").Interface()
+		data = elem.FieldByName("Updates").Interface()
+	}
+	tx := x.tx.Model(x.model)
+	if v.query != nil {
+		tx = v.query(tx)
+	}
+	if body != nil {
+		b := body.(EditBody)
+		tx = x.setIdOrConditions(tx, b.Id, b.Conditions)
+	} else {
+		b := v.Body.(interface {
+			GetId() interface{}
+			GetConditions() Conditions
+		})
+		tx = x.setIdOrConditions(tx, b.GetId(), b.GetConditions())
+	}
+	if err := tx.Transaction(func(txx *gorm.DB) (err error) {
+		if err = txx.Updates(data).Error; err != nil {
+			return
+		}
+		if v.txNext != nil {
+			if err = v.txNext(txx, data); err != nil {
 				return
 			}
 		}
