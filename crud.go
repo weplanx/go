@@ -190,17 +190,24 @@ func (x *Crud) Add(c *gin.Context) interface{} {
 	v := x.setComplexVar(c,
 		SetBody(reflect.New(reflect.TypeOf(x.model)).Interface()),
 	)
-	if err := c.ShouldBindJSON(v.Body); err != nil {
-		return err
+	data := v.data
+	if data == nil {
+		if err := c.ShouldBindJSON(v.Body); err != nil {
+			return err
+		}
+		data = v.Body
 	}
-	if err := x.tx.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(v.Body).Error; err != nil {
-			return err
+	if err := x.tx.Transaction(func(tx *gorm.DB) (err error) {
+		if err = tx.Create(data).Error; err != nil {
+			return
 		}
-		if err := v.query(tx).Error; err != nil {
-			return err
+		if v.txNext != nil {
+			ID := reflect.ValueOf(data).Elem().FieldByName("ID").Interface()
+			if err = v.txNext(tx, ID); err != nil {
+				return
+			}
 		}
-		return nil
+		return
 	}); err != nil {
 		return err
 	}

@@ -9,9 +9,10 @@ const complexStart = "complex.start"
 const complexComplete = "complex.complete"
 
 type complexVar struct {
-	Body  interface{}
-	data  interface{}
-	query func(tx *gorm.DB) *gorm.DB
+	Body   interface{}
+	data   interface{}
+	query  func(tx *gorm.DB) *gorm.DB
+	txNext func(tx *gorm.DB, args ...interface{}) error
 }
 
 type Operator func(*complexVar)
@@ -32,9 +33,15 @@ func SetData(data interface{}) Operator {
 	}
 }
 
-func Query(query func(tx *gorm.DB) *gorm.DB) Operator {
+func Query(fn func(tx *gorm.DB) *gorm.DB) Operator {
 	return func(c *complexVar) {
-		c.query = query
+		c.query = fn
+	}
+}
+
+func TxNext(fn func(tx *gorm.DB, args ...interface{}) error) Operator {
+	return func(c *complexVar) {
+		c.txNext = fn
 	}
 }
 
