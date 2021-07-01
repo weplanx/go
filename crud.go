@@ -276,3 +276,50 @@ func (x *Crud) Edit(c *gin.Context) interface{} {
 	}
 	return "ok"
 }
+
+type DeleteBody struct {
+	Id         interface{} `json:"id" binding:"required_without=Conditions"`
+	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
+}
+
+func (x *DeleteBody) GetId() interface{} {
+	return x.Id
+}
+
+func (x *Crud) Delete(c *gin.Context) interface{} {
+	v := x.setComplexVar(c,
+		SetBody(&DeleteBody{}),
+		SetData(reflect.New(reflect.TypeOf(x.model)).Interface()),
+	)
+	if err := c.ShouldBindJSON(v.Body); err != nil {
+		return err
+	}
+	body := v.Body.(interface {
+		GetId() interface{}
+		GetConditions() Conditions
+	})
+	tx := x.tx.Model(x.model)
+	if v.query != nil {
+		tx = v.query(tx)
+	}
+	id := body.GetId()
+	if id != nil {
+		tx = tx.Where("id in (?)", id)
+	} else {
+		tx = x.setConditions(tx, body.GetConditions())
+	}
+	if err := tx.Transaction(func(txx *gorm.DB) (err error) {
+		if err = txx.Delete(v.data).Error; err != nil {
+			return
+		}
+		if v.txNext != nil {
+			if err = v.txNext(txx); err != nil {
+				return
+			}
+		}
+		return
+	}); err != nil {
+		return err
+	}
+	return "ok"
+}
