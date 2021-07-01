@@ -18,13 +18,17 @@ type Operator func(*complexVar)
 
 func SetBody(body interface{}) Operator {
 	return func(c *complexVar) {
-		c.Body = body
+		if c.Body == nil {
+			c.Body = body
+		}
 	}
 }
 
 func SetData(data interface{}) Operator {
 	return func(c *complexVar) {
-		c.data = data
+		if c.data == nil {
+			c.data = data
+		}
 	}
 }
 

@@ -56,18 +56,15 @@ func (x *Crud) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
 	return tx
 }
 
-func (x *Crud) setComplexVar(c *gin.Context, body interface{}, data interface{}) *complexVar {
+func (x *Crud) setComplexVar(c *gin.Context, operator ...Operator) *complexVar {
 	var v *complexVar
 	if value, exists := c.Get(complexStart); exists {
 		v = value.(*complexVar)
 	} else {
 		v = &complexVar{}
 	}
-	if v.data == nil {
-		v.data = data
-	}
-	if v.Body == nil {
-		v.Body = body
+	for _, operator := range operator {
+		operator(v)
 	}
 	c.Set(complexComplete, v)
 	return v
@@ -85,8 +82,8 @@ type OriginListsBody struct {
 
 func (x *Crud) OriginLists(c *gin.Context) interface{} {
 	v := x.setComplexVar(c,
-		&OriginListsBody{},
-		reflect.New(reflect.SliceOf(reflect.TypeOf(x.model))).Interface(),
+		SetBody(&OriginListsBody{}),
+		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.model))).Interface()),
 	)
 	if err := c.ShouldBindJSON(v.Body); err != nil {
 		return err
@@ -124,8 +121,8 @@ type ListsBody struct {
 
 func (x *Crud) Lists(c *gin.Context) interface{} {
 	v := x.setComplexVar(c,
-		&ListsBody{},
-		reflect.New(reflect.SliceOf(reflect.TypeOf(x.model))).Interface(),
+		SetBody(&ListsBody{}),
+		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.model))).Interface()),
 	)
 	if err := c.ShouldBindJSON(v.Body); err != nil {
 		return err
@@ -166,8 +163,8 @@ func (x *GetBody) GetId() interface{} {
 
 func (x *Crud) Get(c *gin.Context) interface{} {
 	v := x.setComplexVar(c,
-		&GetBody{},
-		reflect.New(reflect.TypeOf(x.model)).Interface(),
+		SetBody(&GetBody{}),
+		SetData(reflect.New(reflect.TypeOf(x.model)).Interface()),
 	)
 	if err := c.ShouldBindJSON(v.Body); err != nil {
 		return err
@@ -187,4 +184,25 @@ func (x *Crud) Get(c *gin.Context) interface{} {
 		return err
 	}
 	return v.data
+}
+
+func (x *Crud) Add(c *gin.Context) interface{} {
+	v := x.setComplexVar(c,
+		SetBody(reflect.New(reflect.TypeOf(x.model)).Interface()),
+	)
+	if err := c.ShouldBindJSON(v.Body); err != nil {
+		return err
+	}
+	if err := x.tx.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(v.Body).Error; err != nil {
+			return err
+		}
+		if err := v.query(tx).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return "ok"
 }
