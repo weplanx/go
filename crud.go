@@ -52,10 +52,10 @@ func (x *Crud) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
 
 // Set orders
 func (x *Crud) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
-	for field, order := range x.orders {
+	for field, order := range orders {
 		tx = tx.Order(field + " " + order)
 	}
-	for field, order := range orders {
+	for field, order := range x.orders {
 		tx = tx.Order(field + " " + order)
 	}
 	return tx
