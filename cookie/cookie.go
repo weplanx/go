@@ -16,19 +16,18 @@ type Option struct {
 
 type Cookie struct {
 	Option
-	Ctx          *gin.Context
 	HttpSameSite http.SameSite
 }
 
-func (x *Cookie) Get(name string) (string, error) {
-	return x.Ctx.Cookie(name)
+func (x *Cookie) Get(c *gin.Context, name string) (string, error) {
+	return c.Cookie(name)
 }
 
-func (x *Cookie) Set(name string, value string) {
-	x.Ctx.SetCookie(name, value, x.MaxAge, x.Path, x.Domain, x.Secure, x.HttpOnly)
-	x.Ctx.SetSameSite(x.HttpSameSite)
+func (x *Cookie) Set(c *gin.Context, name string, value string) {
+	c.SetCookie(name, value, x.MaxAge, x.Path, x.Domain, x.Secure, x.HttpOnly)
+	c.SetSameSite(x.HttpSameSite)
 }
 
-func (x *Cookie) Del(name string) {
-	x.Set(name, "")
+func (x *Cookie) Del(c *gin.Context, name string) {
+	x.Set(c, name, "")
 }

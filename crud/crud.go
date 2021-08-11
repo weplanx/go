@@ -7,21 +7,40 @@ import (
 	"reflect"
 )
 
-type Option func(*Crud)
+type Crud struct {
+	Db *gorm.DB
+}
+
+// Make 创建控制器通用资源操作
+//	参数:
+//	 model: 模型名称
+//	 options: 配置
+func (x *Crud) Make(model interface{}, options ...Option) *Resource {
+	c := &Resource{
+		Db:    x.Db,
+		Model: model,
+	}
+	for _, apply := range options {
+		apply(c)
+	}
+	return c
+}
+
+type Resource struct {
+	Db     *gorm.DB
+	Model  interface{}
+	orders Orders
+}
+
+type Option func(*Resource)
 
 // SetOrders 设置默认排序
 //	参数:
 //	 orders: map[string]string
 func SetOrders(orders Orders) Option {
-	return func(option *Crud) {
+	return func(option *Resource) {
 		option.orders = orders
 	}
-}
-
-type Crud struct {
-	Db     *gorm.DB
-	Model  interface{}
-	orders Orders
 }
 
 // Conditions 条件数组
@@ -39,7 +58,7 @@ func (c Orders) GetOrders() Orders {
 }
 
 // Set 设置 ID 或 条件数组
-func (x *Crud) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) *gorm.DB {
+func (x *Resource) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) *gorm.DB {
 	if id != nil {
 		return tx.Where("id = ?", id)
 	} else {
@@ -48,7 +67,7 @@ func (x *Crud) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) 
 }
 
 // Set 设置条件数组
-func (x *Crud) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
+func (x *Resource) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
 	for _, condition := range conditions {
 		tx = tx.Where(
 			"? "+condition[1].(string)+" ?",
@@ -60,7 +79,7 @@ func (x *Crud) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
 }
 
 // Set 设置排序
-func (x *Crud) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
+func (x *Resource) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
 	for field, order := range orders {
 		tx = tx.Order(field + " " + order)
 	}
@@ -71,7 +90,7 @@ func (x *Crud) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
 }
 
 // Set 设置混合操作
-func (x *Crud) setMix(c *gin.Context, operator ...Operator) *mix {
+func (x *Resource) setMix(c *gin.Context, operator ...Operator) *mix {
 	var v *mix
 	if value, exists := c.Get(mixStart); exists {
 		v = value.(*mix)
@@ -86,7 +105,7 @@ func (x *Crud) setMix(c *gin.Context, operator ...Operator) *mix {
 }
 
 // GetMixVar 获取混合变量
-func (x *Crud) GetMixVar(c *gin.Context) *mix {
+func (x *Resource) GetMixVar(c *gin.Context) *mix {
 	value, _ := c.Get(mixComplete)
 	return value.(*mix)
 }
@@ -98,7 +117,7 @@ type OriginListsBody struct {
 }
 
 // OriginLists 获取原始列表资源
-func (x *Crud) OriginLists(c *gin.Context) interface{} {
+func (x *Resource) OriginLists(c *gin.Context) interface{} {
 	v := x.setMix(c,
 		SetBody(&OriginListsBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
@@ -139,7 +158,7 @@ type ListsBody struct {
 }
 
 // Lists 获取分页列表资源
-func (x *Crud) Lists(c *gin.Context) interface{} {
+func (x *Resource) Lists(c *gin.Context) interface{} {
 	v := x.setMix(c,
 		SetBody(&ListsBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
@@ -183,7 +202,7 @@ func (x *GetBody) GetId() interface{} {
 }
 
 // Get 获取单条资源
-func (x *Crud) Get(c *gin.Context) interface{} {
+func (x *Resource) Get(c *gin.Context) interface{} {
 	v := x.setMix(c,
 		SetBody(&GetBody{}),
 		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
@@ -209,7 +228,7 @@ func (x *Crud) Get(c *gin.Context) interface{} {
 }
 
 // Add 创建资源
-func (x *Crud) Add(c *gin.Context) interface{} {
+func (x *Resource) Add(c *gin.Context) interface{} {
 	v := x.setMix(c)
 	data := v.data
 	if data == nil {
@@ -248,7 +267,7 @@ func (x *EditBody) GetId() interface{} {
 }
 
 // Edit 更新资源
-func (x *Crud) Edit(c *gin.Context) interface{} {
+func (x *Resource) Edit(c *gin.Context) interface{} {
 	v := x.setMix(c)
 	var body interface{}
 	data := v.data
@@ -313,7 +332,7 @@ func (x *DeleteBody) GetId() interface{} {
 }
 
 // Delete 删除资源
-func (x *Crud) Delete(c *gin.Context) interface{} {
+func (x *Resource) Delete(c *gin.Context) interface{} {
 	v := x.setMix(c,
 		SetBody(&DeleteBody{}),
 		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),

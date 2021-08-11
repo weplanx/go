@@ -1,46 +1,47 @@
 package bit
 
 import (
-	"github.com/gin-gonic/gin"
+	"errors"
 	"github.com/kainonly/go-bit/cipher"
 	"github.com/kainonly/go-bit/cookie"
 	"github.com/kainonly/go-bit/crud"
 	"github.com/mitchellh/mapstructure"
+	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
+	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 type Config map[string]interface{}
 
-type Bit struct {
-	Config Config
-	Db     *gorm.DB
-}
-
-// Initialize 初始化辅助工具
-func Initialize(db *gorm.DB, config Config) *Bit {
-	return &Bit{config, db}
-}
-
-// Crud 创建控制器通用资源操作
-//	参数:
-//	 model: 模型名称
-//	 options: 配置
-func (x *Bit) Crud(model interface{}, options ...crud.Option) *crud.Crud {
-	c := &crud.Crud{
-		Db:    x.Db,
-		Model: model,
+// LoadConfiguration 初始化应用配置
+func LoadConfiguration() (config Config, err error) {
+	if _, err = os.Stat("./config.yml"); os.IsNotExist(err) {
+		err = errors.New("the configuration file does not exist")
+		return
 	}
-	for _, apply := range options {
-		apply(c)
+	var buf []byte
+	buf, err = ioutil.ReadFile("./config.yml")
+	if err != nil {
+		return
 	}
-	return c
+	err = yaml.Unmarshal(buf, &config)
+	if err != nil {
+		return
+	}
+	return
 }
 
-// Cookie 创建 Cookie 工具
-func (x *Bit) Cookie(ctx *gin.Context) (c *cookie.Cookie, err error) {
+// InitializeCrud 初始化 CRUD 工具
+func InitializeCrud(db *gorm.DB) *crud.Crud {
+	return &crud.Crud{Db: db}
+}
+
+// InitializeCookie 创建 Cookie 工具
+func InitializeCookie(config Config) (x *cookie.Cookie, err error) {
 	var option cookie.Option
-	if err = mapstructure.Decode(x.Config["cookie"], &option); err != nil {
+	if err = mapstructure.Decode(config["cookie"], &option); err != nil {
 		return
 	}
 	var samesite http.SameSite
@@ -57,15 +58,14 @@ func (x *Bit) Cookie(ctx *gin.Context) (c *cookie.Cookie, err error) {
 	default:
 		samesite = http.SameSiteDefaultMode
 	}
-	c = &cookie.Cookie{
+	x = &cookie.Cookie{
 		Option:       option,
-		Ctx:          ctx,
 		HttpSameSite: samesite,
 	}
 	return
 }
 
-// InitializeCipher 初始化数据加密工具
+// InitializeCipher 初始化数据加密
 func InitializeCipher(config Config) (*cipher.Cipher, error) {
 	return cipher.Make(config["cipher"].(string))
 }
