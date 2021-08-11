@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Random generates a random string of the specified length
+// Random 生成随机数
 func Random(length int, letterRunes ...rune) string {
 	b := make([]rune, length)
 	if len(letterRunes) == 0 {
@@ -20,27 +20,27 @@ func Random(length int, letterRunes ...rune) string {
 	return string(b)
 }
 
-// Uuid generates a UUID (version 4)
+// Uuid 生成 UUID
 func Uuid() uuid.UUID {
 	return uuid.New()
 }
 
-// Camel converts the given string to CamelCase
+// Camel 字符串风格 CamelCase
 func Camel(str string) string {
 	return xstrings.ToCamelCase(str)
 }
 
-// Snake converts the given string to snake_case
+// Snake 字符串风格 snake_case
 func Snake(str string) string {
 	return xstrings.ToSnakeCase(str)
 }
 
-// Kebab converts the given string to kebab-case
+// Kebab 字符串风格 kebab-case
 func Kebab(str string) string {
 	return xstrings.ToKebabCase(str)
 }
 
-// Limit truncates the given string to the specified length
+// Limit 省略
 func Limit(str string, length int) string {
 	return str[:length-1] + "..."
 }

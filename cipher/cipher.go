@@ -8,23 +8,19 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-type Option struct {
-	Key string `yaml:"key"`
-}
-
 type Cipher struct {
 	aead   cipher.AEAD
 	hashId *hashids.HashID
 }
 
 // Make 初始化数据加密
-func Make(option Option) (x *Cipher, err error) {
+func Make(key string) (x *Cipher, err error) {
 	x = new(Cipher)
-	if x.aead, err = chacha20poly1305.NewX([]byte(option.Key)); err != nil {
+	if x.aead, err = chacha20poly1305.NewX([]byte(key)); err != nil {
 		return
 	}
 	hd := hashids.NewData()
-	hd.Salt = option.Key
+	hd.Salt = key
 	if x.hashId, err = hashids.NewWithData(hd); err != nil {
 		return
 	}
