@@ -1,4 +1,4 @@
-package password
+package hash
 
 import (
 	"github.com/alexedwards/argon2id"
