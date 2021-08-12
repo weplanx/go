@@ -15,62 +15,63 @@ var (
 	RefreshTokenInvalid = errors.New("refresh token is invalid")
 )
 
+type Authx struct {
+	Scenes map[string]*Auth
+}
+
+func New(options map[string]Option) *Authx {
+	scenes := make(map[string]*Auth)
+	for k, v := range options {
+		scenes[k] = &Auth{
+			Option: v,
+		}
+	}
+	return &Authx{scenes}
+}
+
 type Option struct {
-	Key       string
-	Issuer    string
-	Audience  []string
-	NotBefore int64
-	Expires   int64
+	Key string   `mapstructure:"key"`
+	Iss string   `mapstructure:"iss"`
+	Aud []string `mapstructure:"aud"`
+	Nbf int64    `mapstructure:"nbf"`
+	Exp int64    `mapstructure:"exp"`
 }
 
 type Auth struct {
-	signKey    []byte
-	signMethod jwt.SigningMethod
-	iss        string
-	aud        []string
-	nbf        int64
-	exp        time.Duration
-	cookie     *cookie.Cookie
-	refreshFn  RefreshFn
+	Option
+	Sub       string
+	cookie    *cookie.Cookie
+	refreshFn RefreshFn
 }
 
-type Args struct {
-	Method    jwt.SigningMethod
-	UseCookie *cookie.Cookie
-	RefreshFn RefreshFn
-}
-
-func Make(option Option, args Args) *Auth {
-	return &Auth{
-		signKey:    []byte(option.Key),
-		signMethod: args.Method,
-		iss:        option.Issuer,
-		aud:        option.Audience,
-		nbf:        option.NotBefore,
-		exp:        time.Duration(option.Expires) * time.Second,
-		cookie:     args.UseCookie,
-		refreshFn:  args.RefreshFn,
-	}
+func (x *Authx) Make(name string, cookie *cookie.Cookie, refreshFn RefreshFn) *Auth {
+	auth := x.Scenes[name]
+	auth.Sub = name
+	auth.cookie = cookie
+	auth.refreshFn = refreshFn
+	return auth
 }
 
 // Create 创建认证
-func (x *Auth) Create(c *gin.Context, sub interface{}, uid interface{}, data interface{}) (raw string, err error) {
+func (x *Auth) Create(c *gin.Context, uid string, data interface{}) (tokenString string, err error) {
 	claims := jwt.MapClaims{
 		"iat":  time.Now().Unix(),
-		"nbf":  time.Now().Add(time.Second * time.Duration(x.nbf)).Unix(),
-		"exp":  time.Now().Add(x.exp).Unix(),
+		"nbf":  time.Now().Add(time.Second * time.Duration(x.Nbf)).Unix(),
+		"exp":  time.Now().Add(time.Second * time.Duration(x.Exp)).Unix(),
 		"jti":  str.Uuid().String(),
-		"sub":  sub,
+		"iss":  x.Iss,
+		"aud":  x.Aud,
+		"sub":  x.Sub,
 		"uid":  uid,
 		"data": data,
 	}
-	token := jwt.NewWithClaims(x.signMethod, claims)
-	if raw, err = token.SignedString(x.signKey); err != nil {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	if tokenString, err = token.SignedString([]byte(x.Key)); err != nil {
 		return
 	}
-	//if x.cookie != nil {
-	//	x.cookie.Set(c, raw)
-	//}
+	if x.cookie != nil {
+		x.cookie.Set(c, "access_token:"+x.Sub, tokenString)
+	}
 	if x.refreshFn != nil {
 		x.refreshFn.Factory(claims)
 	}
@@ -80,25 +81,27 @@ func (x *Auth) Create(c *gin.Context, sub interface{}, uid interface{}, data int
 
 // Verify 鉴权认证
 func (x *Auth) Verify(c *gin.Context, args ...interface{}) (err error) {
-	var raw string
+	var tokenString string
 	if x.cookie != nil {
-		//if raw, err = c.Cookie(x.cookie.Name); err != nil {
-		//	return UserLoginError
-		//}
+		if tokenString, err = x.cookie.Get(c, "access_token:"+x.Sub); err != nil {
+			return Expired
+		}
 	} else {
 		if len(args) != 0 {
-			raw = args[0].(string)
+			tokenString = args[0].(string)
+		} else {
+			return Expired
 		}
 	}
-	if raw == "" {
+	if tokenString == "" {
 		return Expired
 	}
 	var token *jwt.Token
-	if token, err = jwt.Parse(raw, func(token *jwt.Token) (interface{}, error) {
+	if token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return x.signKey, nil
+		return []byte(x.Key), nil
 	}); err != nil {
 		if ve, ok := err.(*jwt.ValidationError); ok {
 			if ve.Errors == jwt.ValidationErrorExpired && x.refreshFn != nil && token != nil {
@@ -108,20 +111,22 @@ func (x *Auth) Verify(c *gin.Context, args ...interface{}) (err error) {
 				}
 				updateClaims := jwt.MapClaims{
 					"iat":  time.Now().Unix(),
-					"nbf":  time.Now().Add(time.Second * time.Duration(x.nbf)).Unix(),
-					"exp":  time.Now().Add(x.exp).Unix(),
+					"nbf":  time.Now().Add(time.Second * time.Duration(x.Nbf)).Unix(),
+					"exp":  time.Now().Add(time.Second * time.Duration(x.Exp)).Unix(),
 					"jti":  str.Uuid().String(),
+					"iss":  claims["iss"],
+					"aud":  claims["aud"],
 					"sub":  claims["sub"],
 					"uid":  claims["uid"],
 					"data": claims["data"],
 				}
-				token = jwt.NewWithClaims(x.signMethod, updateClaims)
-				if raw, err = token.SignedString(x.signKey); err != nil {
+				token = jwt.NewWithClaims(jwt.SigningMethodHS256, updateClaims)
+				if tokenString, err = token.SignedString([]byte(x.Key)); err != nil {
 					return
 				}
-				//if x.cookie != nil {
-				//	x.cookie.Set(c, raw)
-				//}
+				if x.cookie != nil {
+					x.cookie.Set(c, "access_token:"+x.Sub, tokenString)
+				}
 				c.Set("token", token)
 			}
 		}
@@ -144,9 +149,9 @@ func (x *Auth) Destory(c *gin.Context, args ...interface{}) (err error) {
 	if !exists {
 		return fmt.Errorf("environment verification is abnormal")
 	}
-	//if x.cookie != nil {
-	//	x.cookie.Set(c, "")
-	//}
+	if x.cookie != nil {
+		x.cookie.Del(c, "access_token:"+x.Sub)
+	}
 	if x.refreshFn != nil {
 		if err = x.refreshFn.Destory(claims.(jwt.MapClaims)); err != nil {
 			return

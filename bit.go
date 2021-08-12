@@ -2,6 +2,7 @@ package bit
 
 import (
 	"errors"
+	"github.com/kainonly/go-bit/authx"
 	"github.com/kainonly/go-bit/cipher"
 	"github.com/kainonly/go-bit/cookie"
 	"github.com/kainonly/go-bit/crud"
@@ -9,7 +10,6 @@ import (
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 	"io/ioutil"
-	"net/http"
 	"os"
 )
 
@@ -40,7 +40,7 @@ func InitializeCrud(db *gorm.DB) *crud.Crud {
 
 // InitializeCipher 初始化数据加密
 func InitializeCipher(config Config) (*cipher.Cipher, error) {
-	return cipher.Make(config["cipher"].(string))
+	return cipher.New(config["cipher"].(string))
 }
 
 // InitializeCookie 创建 Cookie 工具
@@ -49,27 +49,13 @@ func InitializeCookie(config Config) (x *cookie.Cookie, err error) {
 	if err = mapstructure.Decode(config["cookie"], &option); err != nil {
 		return
 	}
-	var samesite http.SameSite
-	switch option.SameSite {
-	case "lax":
-		samesite = http.SameSiteLaxMode
-		break
-	case "strict":
-		samesite = http.SameSiteStrictMode
-		break
-	case "none":
-		samesite = http.SameSiteNoneMode
-		break
-	default:
-		samesite = http.SameSiteDefaultMode
-	}
-	x = &cookie.Cookie{
-		Option:       option,
-		HttpSameSite: samesite,
-	}
-	return
+	return cookie.New(option), nil
 }
 
-func InitializeAuth() {
-
+func InitializeAuthx(config Config) (x *authx.Authx, err error) {
+	var option map[string]authx.Option
+	if err = mapstructure.Decode(config["auth"], &option); err != nil {
+		return
+	}
+	return authx.New(option), nil
 }

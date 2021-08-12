@@ -19,6 +19,27 @@ type Cookie struct {
 	HttpSameSite http.SameSite
 }
 
+func New(option Option) *Cookie {
+	var samesite http.SameSite
+	switch option.SameSite {
+	case "lax":
+		samesite = http.SameSiteLaxMode
+		break
+	case "strict":
+		samesite = http.SameSiteStrictMode
+		break
+	case "none":
+		samesite = http.SameSiteNoneMode
+		break
+	default:
+		samesite = http.SameSiteDefaultMode
+	}
+	return &Cookie{
+		option,
+		samesite,
+	}
+}
+
 func (x *Cookie) Get(c *gin.Context, name string) (string, error) {
 	return c.Cookie(name)
 }

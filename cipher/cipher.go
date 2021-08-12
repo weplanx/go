@@ -13,8 +13,8 @@ type Cipher struct {
 	hashId *hashids.HashID
 }
 
-// Make 初始化数据加密
-func Make(key string) (x *Cipher, err error) {
+// New 初始化数据加密
+func New(key string) (x *Cipher, err error) {
 	x = new(Cipher)
 	if x.aead, err = chacha20poly1305.NewX([]byte(key)); err != nil {
 		return
