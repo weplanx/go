@@ -9,7 +9,6 @@ import (
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 )
@@ -19,7 +18,7 @@ type Config map[string]interface{}
 // LoadConfiguration 初始化应用配置
 func LoadConfiguration() (config Config, err error) {
 	if _, err = os.Stat("./config.yml"); os.IsNotExist(err) {
-		err = errors.New("the configuration file does not exist")
+		err = errors.New("the configuration file path [./config.yml] does not exist")
 		return
 	}
 	var buf []byte
@@ -47,11 +46,9 @@ func InitializeCipher(config Config) (*cipher.Cipher, error) {
 // InitializeCookie 创建 Cookie 工具
 func InitializeCookie(config Config) (x *cookie.Cookie, err error) {
 	var option cookie.Option
-	log.Println(config["cookie"])
 	if err = mapstructure.Decode(config["cookie"], &option); err != nil {
 		return
 	}
-	log.Println(option)
 	var samesite http.SameSite
 	switch option.SameSite {
 	case "lax":
