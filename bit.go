@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 )
@@ -38,12 +39,19 @@ func InitializeCrud(db *gorm.DB) *crud.Crud {
 	return &crud.Crud{Db: db}
 }
 
+// InitializeCipher 初始化数据加密
+func InitializeCipher(config Config) (*cipher.Cipher, error) {
+	return cipher.Make(config["cipher"].(string))
+}
+
 // InitializeCookie 创建 Cookie 工具
 func InitializeCookie(config Config) (x *cookie.Cookie, err error) {
 	var option cookie.Option
+	log.Println(config["cookie"])
 	if err = mapstructure.Decode(config["cookie"], &option); err != nil {
 		return
 	}
+	log.Println(option)
 	var samesite http.SameSite
 	switch option.SameSite {
 	case "lax":
@@ -65,7 +73,6 @@ func InitializeCookie(config Config) (x *cookie.Cookie, err error) {
 	return
 }
 
-// InitializeCipher 初始化数据加密
-func InitializeCipher(config Config) (*cipher.Cipher, error) {
-	return cipher.Make(config["cipher"].(string))
+func InitializeAuth() {
+
 }
