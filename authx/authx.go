@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt"
-	"github.com/kainonly/go-bit/str"
 	"time"
 )
 
@@ -36,12 +35,12 @@ func (x *Authx) Make(name string) *Auth {
 }
 
 // Create 创建认证
-func (x *Auth) Create(uid string, data interface{}) (tokenString string, err error) {
+func (x *Auth) Create(jti string, uid string, data interface{}) (tokenString string, err error) {
 	claims := jwt.MapClaims{
 		"iat":  time.Now().Unix(),
 		"nbf":  time.Now().Add(time.Second * time.Duration(x.Nbf)).Unix(),
 		"exp":  time.Now().Add(time.Second * time.Duration(x.Exp)).Unix(),
-		"jti":  str.Uuid().String(),
+		"jti":  jti,
 		"iss":  x.Iss,
 		"aud":  x.Aud,
 		"sub":  x.Sub,
