@@ -10,7 +10,7 @@ var x *Cipher
 var err error
 
 func TestMain(m *testing.M) {
-	x, err = Make(Option{Key: "6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK"})
+	x, err = New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
 	if err != nil {
 		log.Fatalln(err)
 	}

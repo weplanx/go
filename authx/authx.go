@@ -70,7 +70,7 @@ func (x *Auth) Create(c *gin.Context, uid string, data interface{}) (tokenString
 		return
 	}
 	if x.cookie != nil {
-		x.cookie.Set(c, "access_token:"+x.Sub, tokenString)
+		x.cookie.Set(c, x.Sub+":access_token", tokenString)
 	}
 	if x.refreshFn != nil {
 		x.refreshFn.Factory(claims)
@@ -83,7 +83,7 @@ func (x *Auth) Create(c *gin.Context, uid string, data interface{}) (tokenString
 func (x *Auth) Verify(c *gin.Context, args ...interface{}) (err error) {
 	var tokenString string
 	if x.cookie != nil {
-		if tokenString, err = x.cookie.Get(c, "access_token:"+x.Sub); err != nil {
+		if tokenString, err = x.cookie.Get(c, x.Sub+":access_token"); err != nil {
 			return Expired
 		}
 	} else {
@@ -125,7 +125,7 @@ func (x *Auth) Verify(c *gin.Context, args ...interface{}) (err error) {
 					return
 				}
 				if x.cookie != nil {
-					x.cookie.Set(c, "access_token:"+x.Sub, tokenString)
+					x.cookie.Set(c, x.Sub+":access_token", tokenString)
 				}
 				c.Set("token", token)
 			}
@@ -150,7 +150,7 @@ func (x *Auth) Destory(c *gin.Context, args ...interface{}) (err error) {
 		return fmt.Errorf("environment verification is abnormal")
 	}
 	if x.cookie != nil {
-		x.cookie.Del(c, "access_token:"+x.Sub)
+		x.cookie.Del(c, x.Sub+":access_token")
 	}
 	if x.refreshFn != nil {
 		if err = x.refreshFn.Destory(claims.(jwt.MapClaims)); err != nil {
