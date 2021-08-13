@@ -1,8 +1,11 @@
 package hash
 
 import (
+	"errors"
 	"github.com/alexedwards/argon2id"
 )
+
+var Invalid = errors.New("invalid password verification")
 
 // Make 创建密码
 func Make(text string, options ...*argon2id.Params) (string, error) {
@@ -14,6 +17,13 @@ func Make(text string, options ...*argon2id.Params) (string, error) {
 }
 
 // Verify 验证密码
-func Verify(text string, hashText string) (bool, error) {
-	return argon2id.ComparePasswordAndHash(text, hashText)
+func Verify(text string, hashText string) error {
+	result, err := argon2id.ComparePasswordAndHash(text, hashText)
+	if err != nil {
+		return err
+	}
+	if !result {
+		return Invalid
+	}
+	return nil
 }

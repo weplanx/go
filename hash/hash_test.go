@@ -17,11 +17,9 @@ func TestMake(t *testing.T) {
 }
 
 func TestCheck(t *testing.T) {
-	result, err := Verify(`pass@VAN1234`, checkHash)
-	if err != nil {
+	if err := Verify(`pass@VAN1234`, checkHash); err != nil {
 		t.Error(err)
 	}
-	t.Log(result)
 }
 
 func TestMakeExtend(t *testing.T) {
@@ -38,12 +36,7 @@ func TestMakeExtend(t *testing.T) {
 }
 
 func TestCheckExtend(t *testing.T) {
-	result, err := Verify(
-		`pass`,
-		checkHash,
-	)
-	if err != nil {
+	if err := Verify(`pass`, checkHash); err != nil {
 		t.Error(err)
 	}
-	t.Log(result)
 }
