@@ -6,12 +6,12 @@ import (
 )
 
 type Option struct {
-	MaxAge   int    `mapstructure:"max_age"`
-	Path     string `mapstructure:"path"`
-	Domain   string `mapstructure:"domain"`
-	Secure   bool   `mapstructure:"secure"`
-	HttpOnly bool   `mapstructure:"http_only"`
-	SameSite string `mapstructure:"same_site"`
+	MaxAge   int    `yaml:"max_age"`
+	Path     string `yaml:"path"`
+	Domain   string `yaml:"domain"`
+	Secure   bool   `yaml:"secure"`
+	HttpOnly bool   `yaml:"http_only"`
+	SameSite string `yaml:"same_site"`
 }
 
 type Cookie struct {

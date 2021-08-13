@@ -30,11 +30,11 @@ func New(options map[string]Option) *Authx {
 }
 
 type Option struct {
-	Key string   `mapstructure:"key"`
-	Iss string   `mapstructure:"iss"`
-	Aud []string `mapstructure:"aud"`
-	Nbf int64    `mapstructure:"nbf"`
-	Exp int64    `mapstructure:"exp"`
+	Key string   `yaml:"key"`
+	Iss string   `yaml:"iss"`
+	Aud []string `yaml:"aud"`
+	Nbf int64    `yaml:"nbf"`
+	Exp int64    `yaml:"exp"`
 }
 
 type Auth struct {

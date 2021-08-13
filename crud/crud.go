@@ -11,6 +11,10 @@ type Crud struct {
 	Db *gorm.DB
 }
 
+func New(db *gorm.DB) *Crud {
+	return &Crud{db}
+}
+
 // Make 创建控制器通用资源操作
 //	参数:
 //	 model: 模型名称
