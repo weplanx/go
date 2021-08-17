@@ -1,4 +1,4 @@
-package crud
+package mvc
 
 import (
 	"github.com/gin-gonic/gin"
