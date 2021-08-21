@@ -114,6 +114,43 @@ func (x *Resource) GetMixVar(c *gin.Context) *mix {
 	return value.(*mix)
 }
 
+// GetBody 获取单条资源请求体
+type GetBody struct {
+	Id         interface{} `json:"id" binding:"required_without=Conditions"`
+	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
+	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
+}
+
+func (x *GetBody) GetId() interface{} {
+	return x.Id
+}
+
+// Get 获取单条资源
+func (x *Resource) Get(c *gin.Context) interface{} {
+	v := x.setMix(c,
+		SetBody(&GetBody{}),
+		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
+	)
+	if err := c.ShouldBindJSON(v.Body); err != nil {
+		return err
+	}
+	body := v.Body.(interface {
+		GetId() interface{}
+		GetConditions() Conditions
+		GetOrders() Orders
+	})
+	tx := x.Db.WithContext(c).Model(x.Model)
+	if v.query != nil {
+		tx = v.query(tx)
+	}
+	tx = x.setIdOrConditions(tx, body.GetId(), body.GetConditions())
+	tx = x.setOrders(tx, body.GetOrders())
+	if err := tx.First(v.data).Error; err != nil {
+		return err
+	}
+	return v.data
+}
+
 // OriginListsBody 获取原始列表资源请求体
 type OriginListsBody struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
@@ -133,7 +170,7 @@ func (x *Resource) OriginLists(c *gin.Context) interface{} {
 		GetConditions() Conditions
 		GetOrders() Orders
 	})
-	tx := x.Db.Model(x.Model)
+	tx := x.Db.WithContext(c).Model(x.Model)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
@@ -175,7 +212,7 @@ func (x *Resource) Lists(c *gin.Context) interface{} {
 		GetConditions() Conditions
 		GetOrders() Orders
 	})
-	tx := x.Db.Model(x.Model)
+	tx := x.Db.WithContext(c).Model(x.Model)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
@@ -194,43 +231,6 @@ func (x *Resource) Lists(c *gin.Context) interface{} {
 	}
 }
 
-// GetBody 获取单条资源请求体
-type GetBody struct {
-	Id         interface{} `json:"id" binding:"required_without=Conditions"`
-	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
-	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
-}
-
-func (x *GetBody) GetId() interface{} {
-	return x.Id
-}
-
-// Get 获取单条资源
-func (x *Resource) Get(c *gin.Context) interface{} {
-	v := x.setMix(c,
-		SetBody(&GetBody{}),
-		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
-	)
-	if err := c.ShouldBindJSON(v.Body); err != nil {
-		return err
-	}
-	body := v.Body.(interface {
-		GetId() interface{}
-		GetConditions() Conditions
-		GetOrders() Orders
-	})
-	tx := x.Db.Model(x.Model)
-	if v.query != nil {
-		tx = v.query(tx)
-	}
-	tx = x.setIdOrConditions(tx, body.GetId(), body.GetConditions())
-	tx = x.setOrders(tx, body.GetOrders())
-	if err := tx.First(v.data).Error; err != nil {
-		return err
-	}
-	return v.data
-}
-
 // Add 创建资源
 func (x *Resource) Add(c *gin.Context) interface{} {
 	v := x.setMix(c)
@@ -242,7 +242,7 @@ func (x *Resource) Add(c *gin.Context) interface{} {
 		}
 		data = v.Body
 	}
-	if err := x.Db.Transaction(func(tx *gorm.DB) (err error) {
+	if err := x.Db.WithContext(c).Transaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Create(data).Error; err != nil {
 			return
 		}
@@ -261,13 +261,12 @@ func (x *Resource) Add(c *gin.Context) interface{} {
 
 // EditBody 更新资源请求体
 type EditBody struct {
-	Id         interface{} `json:"id" binding:"required_without=Conditions"`
+	ID         interface{} `json:"id" binding:"required_without=Conditions"`
 	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
-	Switch     *bool `json:"switch"`
 }
 
-func (x *EditBody) GetId() interface{} {
-	return x.Id
+func (x *EditBody) GetID() interface{} {
+	return x.ID
 }
 
 // Edit 更新资源
@@ -283,9 +282,9 @@ func (x *Resource) Edit(c *gin.Context) interface{} {
 				Anonymous: true,
 			},
 			{
-				Name:      "Updates",
-				Type:      reflect.TypeOf(x.Model),
-				Anonymous: true,
+				Name: "Updates",
+				Type: reflect.TypeOf(x.Model),
+				Tag:  "updates",
 			},
 		})).Interface()
 		if err := c.ShouldBindJSON(v.Body); err != nil {
@@ -295,13 +294,13 @@ func (x *Resource) Edit(c *gin.Context) interface{} {
 		body = elem.FieldByName("EditBody").Interface()
 		data = elem.FieldByName("Updates").Interface()
 	}
-	tx := x.Db.Model(x.Model)
+	tx := x.Db.WithContext(c).Model(x.Model)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
 	if body != nil {
 		b := body.(EditBody)
-		tx = x.setIdOrConditions(tx, b.Id, b.Conditions)
+		tx = x.setIdOrConditions(tx, b.ID, b.Conditions)
 	} else {
 		b := v.Body.(interface {
 			GetId() interface{}
@@ -348,7 +347,7 @@ func (x *Resource) Delete(c *gin.Context) interface{} {
 		GetId() interface{}
 		GetConditions() Conditions
 	})
-	tx := x.Db.Model(x.Model)
+	tx := x.Db.WithContext(c).Model(x.Model)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
