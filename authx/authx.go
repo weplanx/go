@@ -35,7 +35,7 @@ func (x *Authx) Make(name string) *Auth {
 }
 
 // Create 创建认证
-func (x *Auth) Create(jti string, uid string, data interface{}) (tokenString string, err error) {
+func (x *Auth) Create(jti string, data map[string]interface{}) (tokenString string, err error) {
 	claims := jwt.MapClaims{
 		"iat":  time.Now().Unix(),
 		"nbf":  time.Now().Add(time.Second * time.Duration(x.Nbf)).Unix(),
@@ -44,7 +44,6 @@ func (x *Auth) Create(jti string, uid string, data interface{}) (tokenString str
 		"iss":  x.Iss,
 		"aud":  x.Aud,
 		"sub":  x.Sub,
-		"uid":  uid,
 		"data": data,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
