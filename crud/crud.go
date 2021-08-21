@@ -3,7 +3,6 @@ package crud
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"reflect"
 )
 
@@ -48,7 +47,7 @@ func SetOrders(orders Orders) Option {
 }
 
 // Conditions 条件数组
-type Conditions [][]interface{}
+type Conditions [][3]interface{}
 
 func (c Conditions) GetConditions() Conditions {
 	return c
@@ -62,25 +61,25 @@ func (c Orders) GetOrders() Orders {
 }
 
 // Set 设置 ID 或 条件数组
-func (x *Resource) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) *gorm.DB {
-	if id != nil {
-		return tx.Where("id = ?", id)
-	} else {
-		return x.setConditions(tx, value)
-	}
-}
+//func (x *Resource) setIdOrConditions(tx *gorm.DB, id interface{}, value Conditions) *gorm.DB {
+//	if id != nil {
+//		return tx.Where("id = ?", id)
+//	} else {
+//		return x.setConditions(tx, value)
+//	}
+//}
 
 // Set 设置条件数组
-func (x *Resource) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
-	for _, condition := range conditions {
-		tx = tx.Where(
-			"? "+condition[1].(string)+" ?",
-			clause.Column{Name: condition[0].(string)},
-			condition[2],
-		)
-	}
-	return tx
-}
+//func (x *Resource) setConditions(tx *gorm.DB, conditions Conditions) *gorm.DB {
+//	for _, condition := range conditions {
+//		tx = tx.Where(
+//			"? "+condition[1].(string)+" ?",
+//			clause.Column{Name: condition[0].(string)},
+//			condition[2],
+//		)
+//	}
+//	return tx
+//}
 
 // Set 设置排序
 func (x *Resource) setOrders(tx *gorm.DB, orders Orders) *gorm.DB {
@@ -114,43 +113,6 @@ func (x *Resource) GetMixVar(c *gin.Context) *mix {
 	return value.(*mix)
 }
 
-// GetBody 获取单条资源请求体
-type GetBody struct {
-	Id         interface{} `json:"id" binding:"required_without=Conditions"`
-	Conditions `json:"where" binding:"required_without=Id,gte=0,dive,len=3,dive,required"`
-	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
-}
-
-func (x *GetBody) GetId() interface{} {
-	return x.Id
-}
-
-// Get 获取单条资源
-func (x *Resource) Get(c *gin.Context) interface{} {
-	v := x.setMix(c,
-		SetBody(&GetBody{}),
-		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
-	)
-	if err := c.ShouldBindJSON(v.Body); err != nil {
-		return err
-	}
-	body := v.Body.(interface {
-		GetId() interface{}
-		GetConditions() Conditions
-		GetOrders() Orders
-	})
-	tx := x.Db.WithContext(c).Model(x.Model)
-	if v.query != nil {
-		tx = v.query(tx)
-	}
-	tx = x.setIdOrConditions(tx, body.GetId(), body.GetConditions())
-	tx = x.setOrders(tx, body.GetOrders())
-	if err := tx.First(v.data).Error; err != nil {
-		return err
-	}
-	return v.data
-}
-
 // OriginListsBody 获取原始列表资源请求体
 type OriginListsBody struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
@@ -174,8 +136,10 @@ func (x *Resource) OriginLists(c *gin.Context) interface{} {
 	if v.query != nil {
 		tx = v.query(tx)
 	}
-	tx = x.setConditions(tx, body.GetConditions())
-	tx = x.setOrders(tx, body.GetOrders())
+	tx = tx.Clauses(
+		x.toClauseWhere(body.GetConditions()),
+		x.toClauseOrderBy(body.GetOrders()),
+	)
 	if err := tx.Find(v.data).Error; err != nil {
 		return err
 	}
@@ -216,8 +180,10 @@ func (x *Resource) Lists(c *gin.Context) interface{} {
 	if v.query != nil {
 		tx = v.query(tx)
 	}
-	tx = x.setConditions(tx, body.GetConditions())
-	tx = x.setOrders(tx, body.GetOrders())
+	tx = tx.Clauses(
+		x.toClauseWhere(body.GetConditions()),
+		x.toClauseOrderBy(body.GetOrders()),
+	)
 	var total int64
 	tx.Count(&total)
 	page := body.GetPagination()
