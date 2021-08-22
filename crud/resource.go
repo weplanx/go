@@ -14,6 +14,7 @@ type Resource struct {
 
 type Option func(*Resource)
 
+// 生成查询子句
 func (x *Resource) toClauseWhere(conds Conditions) clause.Where {
 	exprs := make([]clause.Expression, 0)
 	for _, v := range conds {
@@ -24,6 +25,7 @@ func (x *Resource) toClauseWhere(conds Conditions) clause.Where {
 	}
 }
 
+// 生成排序子句
 func (x *Resource) toClauseOrderBy(orders Orders) clause.OrderBy {
 	columns := make([]clause.OrderByColumn, 0)
 	for k, v := range orders {
