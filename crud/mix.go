@@ -5,8 +5,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const mixStart = "mix.start"
-const mixComplete = "mix.complete"
+const (
+	MixStart    = "mix.start"
+	MixComplete = "mix.complete"
+)
 
 type mix struct {
 	Body   interface{}
@@ -68,5 +70,5 @@ func Mix(c *gin.Context, operator ...Operator) {
 	for _, operator := range operator {
 		operator(v)
 	}
-	c.Set(mixStart, v)
+	c.Set(MixStart, v)
 }
