@@ -7,16 +7,12 @@ import (
 
 var Invalid = errors.New("invalid password verification")
 
-// Make 创建密码
-func Make(text string, options ...*argon2id.Params) (string, error) {
-	option := argon2id.DefaultParams
-	if len(options) != 0 {
-		option = options[0]
-	}
-	return argon2id.CreateHash(text, option)
+// Make create password
+func Make(text string) (string, error) {
+	return argon2id.CreateHash(text, argon2id.DefaultParams)
 }
 
-// Verify 验证密码
+// Verify verify password
 func Verify(text string, hashText string) error {
 	result, err := argon2id.ComparePasswordAndHash(text, hashText)
 	if err != nil {
