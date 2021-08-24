@@ -1,16 +1,17 @@
 package cipher
 
 import (
+	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"testing"
 )
 
-var x *Cipher
+var c *Cipher
 var err error
 
 func TestMain(m *testing.M) {
-	x, err = New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
+	c, err = New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -18,28 +19,18 @@ func TestMain(m *testing.M) {
 }
 
 func TestDexId(t *testing.T) {
-	hash, err := x.EncodeId([]int{651})
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(hash)
-	val, err := x.DecodeId(hash)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(val)
+	hash, err := c.EncodeId([]int{651})
+	assert.Nil(t, err)
+	val, err := c.DecodeId(hash)
+	assert.Nil(t, err)
+	assert.Equal(t, val, []int{651})
 }
 
 func TestDexData(t *testing.T) {
 	data := []byte("Gophers, gophers, gophers everywhere!")
-	ciphertext, err := x.Encode(data)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(ciphertext)
-	result, err := x.Decode(ciphertext)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(string(result))
+	ciphertext, err := c.Encode(data)
+	assert.Nil(t, err)
+	result, err := c.Decode(ciphertext)
+	assert.Nil(t, err)
+	assert.Equal(t, data, result)
 }

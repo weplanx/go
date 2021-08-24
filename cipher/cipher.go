@@ -13,7 +13,7 @@ type Cipher struct {
 	hashId *hashids.HashID
 }
 
-// New 初始化数据加密
+// New initialize data encryption
 func New(key string) (x *Cipher, err error) {
 	x = new(Cipher)
 	if x.aead, err = chacha20poly1305.NewX([]byte(key)); err != nil {
@@ -27,17 +27,17 @@ func New(key string) (x *Cipher, err error) {
 	return
 }
 
-// EncodeId ID 加密
+// EncodeId ID encryption
 func (x *Cipher) EncodeId(value []int) (string, error) {
 	return x.hashId.Encode(value)
 }
 
-// DecodeId ID 解密
+// DecodeId ID decryption
 func (x *Cipher) DecodeId(value string) ([]int, error) {
 	return x.hashId.DecodeWithError(value)
 }
 
-// Encode 数据加密
+// Encode data encryption
 func (x *Cipher) Encode(data []byte) (string, error) {
 	nonce := make([]byte, x.aead.NonceSize(), x.aead.NonceSize()+len(data)+x.aead.Overhead())
 	if _, err := rand.Read(nonce); err != nil {
@@ -47,7 +47,7 @@ func (x *Cipher) Encode(data []byte) (string, error) {
 	return base64.StdEncoding.EncodeToString(encrypted), nil
 }
 
-// Decode 数据解密
+// Decode data decryption
 func (x *Cipher) Decode(text string) ([]byte, error) {
 	encrypted, err := base64.StdEncoding.DecodeString(text)
 	if err != nil {
