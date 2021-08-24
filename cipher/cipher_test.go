@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-var c *Cipher
-var err error
+var x *Cipher
 
 func TestMain(m *testing.M) {
-	c, err = New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
+	var err error
+	x, err = New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -19,18 +19,18 @@ func TestMain(m *testing.M) {
 }
 
 func TestDexId(t *testing.T) {
-	hash, err := c.EncodeId([]int{651})
+	hash, err := x.EncodeId([]int{651})
 	assert.Nil(t, err)
-	val, err := c.DecodeId(hash)
+	val, err := x.DecodeId(hash)
 	assert.Nil(t, err)
 	assert.Equal(t, val, []int{651})
 }
 
 func TestDexData(t *testing.T) {
 	data := []byte("Gophers, gophers, gophers everywhere!")
-	ciphertext, err := c.Encode(data)
+	ciphertext, err := x.Encode(data)
 	assert.Nil(t, err)
-	result, err := c.Decode(ciphertext)
+	result, err := x.Decode(ciphertext)
 	assert.Nil(t, err)
 	assert.Equal(t, data, result)
 }

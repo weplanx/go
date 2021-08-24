@@ -12,29 +12,49 @@ var (
 )
 
 type Authx struct {
+
+	// Multi-scene authentication
 	Scenes map[string]*Auth
 }
 
+// New create authentication
+// 	- scenes Multi-scene authentication, the key is equal to subject
 func New(scenes map[string]*Auth) *Authx {
 	return &Authx{scenes}
 }
 
 type Auth struct {
-	Key string   `yaml:"key"`
-	Iss string   `yaml:"iss"`
+
+	// Key used for signing
+	Key string `yaml:"key"`
+
+	// Identifies principal that issued the JWT
+	Iss string `yaml:"iss"`
+
+	// Identifies the recipients that the JWT is intended for
 	Aud []string `yaml:"aud"`
-	Sub string   `yaml:"sub"`
-	Nbf int64    `yaml:"nbf"`
-	Exp int64    `yaml:"exp"`
+
+	// Identifies the subject of the JWT.
+	Sub string `yaml:"sub"`
+
+	// Identifies the time on which the JWT will start to be accepted for processing
+	Nbf int64 `yaml:"nbf"`
+
+	// Identifies the expiration time on and after which the JWT must not be accepted for processing
+	Exp int64 `yaml:"exp"`
 }
 
+// Make obtain scene authorization
+// 	- name Scene name
 func (x *Authx) Make(name string) *Auth {
 	auth := x.Scenes[name]
 	auth.Sub = name
 	return auth
 }
 
-// Create 创建认证
+// Create create authentication token
+// 	- jti Case-sensitive unique identifier of the token even among different issuers
+// 	- data Custom claims
 func (x *Auth) Create(jti string, data map[string]interface{}) (tokenString string, err error) {
 	claims := jwt.MapClaims{
 		"iat":  time.Now().Unix(),
@@ -50,7 +70,8 @@ func (x *Auth) Create(jti string, data map[string]interface{}) (tokenString stri
 	return token.SignedString([]byte(x.Key))
 }
 
-// Verify 鉴权认证
+// Verify Authentication
+// 	- tokenString The token string
 func (x *Auth) Verify(tokenString string) (claims jwt.MapClaims, err error) {
 	if tokenString == "" {
 		return nil, Expired
