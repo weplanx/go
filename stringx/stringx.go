@@ -1,4 +1,4 @@
-package str
+package stringx
 
 import (
 	"github.com/google/uuid"
@@ -20,8 +20,8 @@ func Random(n int) string {
 }
 
 // Uuid UUID
-func Uuid() uuid.UUID {
-	return uuid.New()
+func Uuid() string {
+	return uuid.New().String()
 }
 
 // Camel CamelCase
@@ -39,7 +39,7 @@ func Kebab(str string) string {
 	return xstrings.ToKebabCase(str)
 }
 
-// Limit 省略
+// Limit text ellipsis
 func Limit(str string, length int) string {
 	return str[:length-1] + "..."
 }

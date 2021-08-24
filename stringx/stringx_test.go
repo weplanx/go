@@ -1,4 +1,4 @@
-package str
+package stringx
 
 import (
 	"github.com/go-playground/validator/v10"
@@ -13,7 +13,7 @@ func TestRandom(t *testing.T) {
 }
 
 func TestUuid(t *testing.T) {
-	assert.Nil(t, validator.New().Var(Uuid().String(), "uuid"))
+	assert.Nil(t, validator.New().Var(Uuid(), "uuid"))
 }
 
 func TestCamel(t *testing.T) {
