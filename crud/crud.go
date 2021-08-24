@@ -52,15 +52,26 @@ func (x *Crud) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
 
 // Set default initial mix
 func (x *Crud) mixed(c *gin.Context, operator ...Operator) *mixed {
-	var v *mixed
-	if value, exists := c.Get(MixStart); exists {
-		v = value.(*mixed)
-	} else {
-		v = &mixed{}
-	}
+	v := new(mixed)
 	for _, operator := range operator {
 		operator(v)
 	}
+	if value, exists := c.Get(MixStart); exists {
+		mix := value.(*mixed)
+		if mix.Body != nil {
+			v.Body = mix.Body
+		}
+		if mix.data != nil {
+			v.data = mix.data
+		}
+		if mix.query != nil {
+			v.query = mix.query
+		}
+		if mix.txNext != nil {
+			v.txNext = mix.txNext
+		}
+	}
+
 	c.Set(MixComplete, v)
 	return v
 }
@@ -187,19 +198,18 @@ func (x *Crud) Add(c *gin.Context) interface{} {
 	v := x.mixed(c)
 	data := v.data
 	if data == nil {
-		v.Body = reflect.New(reflect.TypeOf(x.Model)).Interface()
-		if err := c.ShouldBindJSON(v.Body); err != nil {
+		v.Body = reflect.New(reflect.TypeOf(x.Model))
+		if err := c.ShouldBindJSON(v.Body.(reflect.Value).Interface()); err != nil {
 			return err
 		}
-		data = v.Body
+		data = v.Body.(reflect.Value).Elem().Interface()
 	}
 	if err := x.Db.WithContext(c).Transaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Create(data).Error; err != nil {
 			return
 		}
 		if v.txNext != nil {
-			ID := reflect.ValueOf(data).Elem().FieldByName("ID").Interface()
-			if err = v.txNext(tx, ID); err != nil {
+			if err = v.txNext(tx, data); err != nil {
 				return
 			}
 		}

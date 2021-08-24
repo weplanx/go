@@ -44,6 +44,8 @@ func SetData(data interface{}) Operator {
 }
 
 // Query custom query
+//  description:
+// 	 OriginLists,Lists,Get: Basic condition
 func Query(fn func(tx *gorm.DB) *gorm.DB) Operator {
 	return func(c *mixed) {
 		c.query = fn
@@ -51,6 +53,8 @@ func Query(fn func(tx *gorm.DB) *gorm.DB) Operator {
 }
 
 // TxNext set the data operations included in the transaction
+//  description:
+// 	 Add,Edit,Delete
 func TxNext(fn func(tx *gorm.DB, args ...interface{}) error) Operator {
 	return func(c *mixed) {
 		c.txNext = fn
