@@ -11,10 +11,8 @@ type Crud struct {
 	Model interface{}
 }
 
-// New 创建控制器通用资源操作
-//	参数:
-//	 tx: gorm
-//	 model: 模型名称
+// New create controller general resource operation
+//	 model: GORM Models
 func New(tx *gorm.DB, model interface{}) *Crud {
 	return &Crud{
 		Db:    tx,
@@ -22,20 +20,21 @@ func New(tx *gorm.DB, model interface{}) *Crud {
 	}
 }
 
-// Conditions 条件数组
+// Conditions conditions array
 type Conditions [][3]interface{}
 
 func (c Conditions) GetConditions() Conditions {
 	return c
 }
 
-// Orders 排序对象
+// Orders sort fields
 type Orders map[string]string
 
 func (c Orders) GetOrders() Orders {
 	return c
 }
 
+// where generate request query conditions
 func (x *Crud) where(tx *gorm.DB, conds Conditions) *gorm.DB {
 	for _, v := range conds {
 		tx = tx.Where(gorm.Expr(v[0].(string)+" "+v[1].(string)+" ?", v[2]))
@@ -43,6 +42,7 @@ func (x *Crud) where(tx *gorm.DB, conds Conditions) *gorm.DB {
 	return tx
 }
 
+// orderBy generate request ordering rules
 func (x *Crud) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
 	for k, v := range orders {
 		tx = tx.Order(k + " " + v)
@@ -50,13 +50,13 @@ func (x *Crud) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
 	return tx
 }
 
-// Set 设置混合操作
-func (x *Crud) setMix(c *gin.Context, operator ...Operator) *mix {
-	var v *mix
+// Set default initial mix
+func (x *Crud) mixed(c *gin.Context, operator ...Operator) *mixed {
+	var v *mixed
 	if value, exists := c.Get(MixStart); exists {
-		v = value.(*mix)
+		v = value.(*mixed)
 	} else {
-		v = &mix{}
+		v = &mixed{}
 	}
 	for _, operator := range operator {
 		operator(v)
@@ -65,21 +65,21 @@ func (x *Crud) setMix(c *gin.Context, operator ...Operator) *mix {
 	return v
 }
 
-// GetMixVar 获取混合变量
-func (x *Crud) GetMixVar(c *gin.Context) *mix {
+// GetMixed get mixed variables
+func (x *Crud) GetMixed(c *gin.Context) *mixed {
 	value, _ := c.Get(MixComplete)
-	return value.(*mix)
+	return value.(*mixed)
 }
 
-// GetBody 获取单条资源请求体
+// GetBody Get a single resource request body
 type GetBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// Get 获取单条资源
+// Get Get a single resource
 func (x *Crud) Get(c *gin.Context) interface{} {
-	v := x.setMix(c,
+	v := x.mixed(c,
 		SetBody(&GetBody{}),
 		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
 	)
@@ -102,15 +102,15 @@ func (x *Crud) Get(c *gin.Context) interface{} {
 	return v.data
 }
 
-// OriginListsBody 获取原始列表资源请求体
+// OriginListsBody Get the original list resource request body
 type OriginListsBody struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// OriginLists 获取原始列表资源
+// OriginLists Get the original list resource
 func (x *Crud) OriginLists(c *gin.Context) interface{} {
-	v := x.setMix(c,
+	v := x.mixed(c,
 		SetBody(&OriginListsBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
 	)
@@ -142,16 +142,16 @@ func (x Pagination) GetPagination() Pagination {
 	return x
 }
 
-// ListsBody 获取分页列表资源请求体
+// ListsBody Get the request body of the paged list resource
 type ListsBody struct {
 	Pagination `json:"page" binding:"required"`
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// Lists 获取分页列表资源
+// Lists Get paging list resources
 func (x *Crud) Lists(c *gin.Context) interface{} {
-	v := x.setMix(c,
+	v := x.mixed(c,
 		SetBody(&ListsBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
 	)
@@ -182,9 +182,9 @@ func (x *Crud) Lists(c *gin.Context) interface{} {
 	}
 }
 
-// Add 创建资源
+// Add Create resources
 func (x *Crud) Add(c *gin.Context) interface{} {
-	v := x.setMix(c)
+	v := x.mixed(c)
 	data := v.data
 	if data == nil {
 		v.Body = reflect.New(reflect.TypeOf(x.Model)).Interface()
@@ -210,14 +210,14 @@ func (x *Crud) Add(c *gin.Context) interface{} {
 	return "ok"
 }
 
-// EditBody 更新资源请求体
+// EditBody Update resource request body
 type EditBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 }
 
-// Edit 更新资源
+// Edit Update resources
 func (x *Crud) Edit(c *gin.Context) interface{} {
-	v := x.setMix(c)
+	v := x.mixed(c)
 	var body interface{}
 	data := v.data
 	if data == nil {
@@ -267,14 +267,14 @@ func (x *Crud) Edit(c *gin.Context) interface{} {
 	return "ok"
 }
 
-// DeleteBody 删除资源请求体
+// DeleteBody Delete resource request body
 type DeleteBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 }
 
-// Delete 删除资源
+// Delete Delete resource
 func (x *Crud) Delete(c *gin.Context) interface{} {
-	v := x.setMix(c,
+	v := x.mixed(c,
 		SetBody(&DeleteBody{}),
 		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
 	)
