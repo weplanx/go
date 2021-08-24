@@ -5,14 +5,12 @@ import (
 	"net/http"
 )
 
-// Bind 统一控制器函数返回
-//	参数:
+// Bind Unified controller function returns
 //	 handlerFn: func(c *gin.Context) interface{}
-//	返回类型:
-//	 (字符串) => 200 {"error":0,"msg":<字符串>}
-//	 (错误) => 200 {"error":1,"msg":<err.Error()>}
-//	 (默认) => 200 {"error":0,"data":<interface{}>}
-//	自定义错误码: c.Set("code", 1000)
+//	return types:
+//	 (string) => 200 {"error":0,"msg":<string>}
+//	 (error) => 200 {"error":1,"msg":<err.Error()>}, custom error code: c.Set("code", 1000)
+//	 (interface) => 200 {"error":0,"data":<interface{}>}
 func Bind(handlerFn interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if fn, ok := handlerFn.(func(c *gin.Context) interface{}); ok {

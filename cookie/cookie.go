@@ -6,11 +6,32 @@ import (
 )
 
 type Option struct {
-	MaxAge   int    `yaml:"max_age"`
-	Path     string `yaml:"path"`
-	Domain   string `yaml:"domain"`
-	Secure   bool   `yaml:"secure"`
-	HttpOnly bool   `yaml:"http_only"`
+
+	// The Expires attribute defines a specific date and time for when the browser should delete the cookie.
+	MaxAge int `yaml:"max_age"`
+
+	// The Path attributes define the scope of the cookie.
+	Path string `yaml:"path"`
+
+	// The Domain attributes define the scope of the cookie.
+	Domain string `yaml:"domain"`
+
+	// A secure cookie can only be transmitted over an encrypted connection (i.e. HTTPS).
+	Secure bool `yaml:"secure"`
+
+	// An http-only cookie cannot be accessed by client-side APIs, such as JavaScript.
+	HttpOnly bool `yaml:"http_only"`
+
+	// The attribute SameSite can have a value of `strict`, `lax` or `none`.
+	//
+	// With attribute SameSite=Strict, the browsers would only send cookies to a target domain that is the same as the origin domain.
+	// This would effectively mitigate cross-site request forgery (CSRF) attacks.
+	//
+	// With SameSite=Lax, browsers would send cookies with requests to a target domain even it is different from the origin domain,
+	// but only for safe requests such as GET (POST is unsafe) and not third-party cookies (inside iframe).
+	//
+	// Attribute SameSite=None would allow third-party (cross-site) cookies,
+	// however, most browsers require secure attribute on SameSite=None cookies.
 	SameSite string `yaml:"same_site"`
 }
 
@@ -19,6 +40,7 @@ type Cookie struct {
 	HttpSameSite http.SameSite
 }
 
+// New create a unified cookie configuration
 func New(option Option) *Cookie {
 	var samesite http.SameSite
 	switch option.SameSite {
@@ -40,15 +62,18 @@ func New(option Option) *Cookie {
 	}
 }
 
+// Get get a cookie
 func (x *Cookie) Get(c *gin.Context, name string) (string, error) {
 	return c.Cookie(name)
 }
 
+// Set create or update a cookie
 func (x *Cookie) Set(c *gin.Context, name string, value string) {
 	c.SetCookie(name, value, x.MaxAge, x.Path, x.Domain, x.Secure, x.HttpOnly)
 	c.SetSameSite(x.HttpSameSite)
 }
 
+// Del clear a cookie
 func (x *Cookie) Del(c *gin.Context, name string) {
 	x.Set(c, name, "")
 }
