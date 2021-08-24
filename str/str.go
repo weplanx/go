@@ -7,35 +7,34 @@ import (
 	"time"
 )
 
-// Random 生成随机数
-func Random(length int, letterRunes ...rune) string {
-	b := make([]rune, length)
-	if len(letterRunes) == 0 {
-		letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	}
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+// Random generate random string
+func Random(n int) string {
+	b := make([]byte, n)
 	rand.Seed(time.Now().UnixNano())
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 	}
 	return string(b)
 }
 
-// Uuid 生成 UUID
+// Uuid UUID
 func Uuid() uuid.UUID {
 	return uuid.New()
 }
 
-// Camel 字符串风格 CamelCase
+// Camel CamelCase
 func Camel(str string) string {
 	return xstrings.ToCamelCase(str)
 }
 
-// Snake 字符串风格 snake_case
+// Snake snake_case
 func Snake(str string) string {
 	return xstrings.ToSnakeCase(str)
 }
 
-// Kebab 字符串风格 kebab-case
+// Kebab kebab-case
 func Kebab(str string) string {
 	return xstrings.ToKebabCase(str)
 }

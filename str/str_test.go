@@ -2,51 +2,41 @@ package str
 
 import (
 	"github.com/go-playground/validator/v10"
-	. "gopkg.in/check.v1"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func Test(t *testing.T) { TestingT(t) }
-
-type MySuite struct{}
-
-var _ = Suite(&MySuite{})
-
-func (s *MySuite) TestRandom(c *C) {
-	result := Random(8)
-	if err := validator.New().Var(result, "alpha,len=8"); err != nil {
-		c.Error(err)
-	}
-	c.Log(result)
+func TestRandom(t *testing.T) {
+	s := Random(8)
+	t.Log(s)
+	assert.Nil(t, validator.New().Var(s, "alpha,len=8"))
 }
 
-func (s *MySuite) TestUuid(c *C) {
-	result := Uuid().String()
-	if err := validator.New().Var(result, "uuid"); err != nil {
-		c.Error(err)
-	}
-	c.Log(result)
+func TestUuid(t *testing.T) {
+	assert.Nil(t, validator.New().Var(Uuid().String(), "uuid"))
 }
 
-func (s *MySuite) TestCamel(c *C) {
-	c.Assert(Camel("my_lab"), Equals, "MyLab")
-	c.Assert(Camel("my-lab"), Equals, "MyLab")
-	c.Assert(Camel("my lab"), Equals, "MyLab")
+func TestCamel(t *testing.T) {
+	assert.Equal(t, Camel("my_lab"), "MyLab")
+	assert.Equal(t, Camel("my-lab"), "MyLab")
+	assert.Equal(t, Camel("my lab"), "MyLab")
 }
 
-func (s *MySuite) TestSnake(c *C) {
-	c.Assert(Snake("MyLab"), Equals, "my_lab")
-	c.Assert(Snake("my-lab"), Equals, "my_lab")
-	c.Assert(Snake("my lab"), Equals, "my_lab")
+func TestSnake(t *testing.T) {
+	assert.Equal(t, Snake("MyLab"), "my_lab")
+	assert.Equal(t, Snake("my-lab"), "my_lab")
+	assert.Equal(t, Snake("my lab"), "my_lab")
 }
 
-func (s *MySuite) TestKebab(c *C) {
-	c.Assert(Kebab("MyLab"), Equals, "my-lab")
-	c.Assert(Kebab("my_lab"), Equals, "my-lab")
-	c.Assert(Kebab("my lab"), Equals, "my-lab")
+func TestKebab(t *testing.T) {
+	assert.Equal(t, Kebab("MyLab"), "my-lab")
+	assert.Equal(t, Kebab("my_lab"), "my-lab")
+	assert.Equal(t, Kebab("my lab"), "my-lab")
 }
 
-func (s *MySuite) TestLimit(c *C) {
-	result := Limit("The quick brown fox jumps over the lazy dog", 20)
-	c.Assert(result, Equals, "The quick brown fox...")
+func TestLimit(t *testing.T) {
+	assert.Equal(t,
+		Limit("The quick brown fox jumps over the lazy dog", 20),
+		"The quick brown fox...",
+	)
 }
