@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 )
 
@@ -160,9 +161,9 @@ func TestCrud_Add(t *testing.T) {
 	res3 := httptest.NewRecorder()
 	req3, _ := http.NewRequest("POST", "/user/add", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Equal(t,
+	assert.Regexp(t,
+		regexp.MustCompile(`^{"error":1,"msg":"Error 1062: Duplicate entry 'Kain@VX.com' for key '(users\.email|email)'"}$`),
 		res3.Body.String(),
-		`{"error":1,"msg":"Error 1062: Duplicate entry 'Kain@VX.com' for key 'email'"}`,
 	)
 }
 
@@ -202,9 +203,9 @@ func TestCrud_Edit(t *testing.T) {
 	})
 	req3, _ := http.NewRequest("POST", "/user/edit", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Equal(t,
+	assert.Regexp(t,
+		regexp.MustCompile(`^{"error":1,"msg":"Error 1062: Duplicate entry 'Vandal@VX.com' for key '(users\.email|email)'"}$`),
 		res3.Body.String(),
-		`{"error":1,"msg":"Error 1062: Duplicate entry 'Vandal@VX.com' for key 'email'"}`,
 	)
 }
 
