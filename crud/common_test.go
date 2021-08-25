@@ -6,6 +6,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"log"
 	"os"
 	"testing"
@@ -28,7 +29,9 @@ func TestMain(m *testing.M) {
 	dsn := os.Getenv("DSN")
 	switch os.Getenv("DRIVE") {
 	case "mysql":
-		if db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{}); err != nil {
+		if db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		}); err != nil {
 			log.Fatalln(err)
 		}
 		break
