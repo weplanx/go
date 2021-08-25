@@ -19,7 +19,6 @@ go get github.com/kainonly/go-bit
 
 ## Documentation
 
-- GitBook: https://kain.gitbook.io/go-bit
 - 语雀: https://www.yuque.com/kainonly/go-bit
 
 ## License
