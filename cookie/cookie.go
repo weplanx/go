@@ -21,6 +21,10 @@ type Option struct {
 
 	// An http-only cookie cannot be accessed by client-side APIs, such as JavaScript.
 	HttpOnly bool `yaml:"http_only"`
+}
+
+type Cookie struct {
+	Option
 
 	// The attribute SameSite can have a value of `strict`, `lax` or `none`.
 	//
@@ -32,30 +36,11 @@ type Option struct {
 	//
 	// Attribute SameSite=None would allow third-party (cross-site) cookies,
 	// however, most browsers require secure attribute on SameSite=None cookies.
-	SameSite string `yaml:"same_site"`
-}
-
-type Cookie struct {
-	Option
-	HttpSameSite http.SameSite
+	SameSite http.SameSite
 }
 
 // New create a unified cookie configuration
-func New(option Option) *Cookie {
-	var samesite http.SameSite
-	switch option.SameSite {
-	case "lax":
-		samesite = http.SameSiteLaxMode
-		break
-	case "strict":
-		samesite = http.SameSiteStrictMode
-		break
-	case "none":
-		samesite = http.SameSiteNoneMode
-		break
-	default:
-		samesite = http.SameSiteDefaultMode
-	}
+func New(option Option, samesite http.SameSite) *Cookie {
 	return &Cookie{
 		option,
 		samesite,
@@ -70,7 +55,7 @@ func (x *Cookie) Get(c *gin.Context, name string) (string, error) {
 // Set create or update a cookie
 func (x *Cookie) Set(c *gin.Context, name string, value string) {
 	c.SetCookie(name, value, x.MaxAge, x.Path, x.Domain, x.Secure, x.HttpOnly)
-	c.SetSameSite(x.HttpSameSite)
+	c.SetSameSite(x.SameSite)
 }
 
 // Del clear a cookie

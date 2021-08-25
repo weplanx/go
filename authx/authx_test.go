@@ -1,6 +1,7 @@
 package authx
 
 import (
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -60,4 +61,18 @@ func TestAuth_Verify(t *testing.T) {
 	assert.Equal(t, claims["data"], map[string]interface{}{
 		"uid": "xs1fp",
 	})
+
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.StandardClaims{})
+
+	pkey, err := jwt.ParseECPrivateKeyFromPEM([]byte(`-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIAh5qA3rmqQQuu0vbKV/+zouz/y/Iy2pLpIcWUSyImSwoAoGCCqGSM49
+AwEHoUQDQgAEYD54V/vp+54P9DXarYqx4MPcm+HKRIQzNasYSoRQHQ/6S6Ps8tpM
+cT+KvIIC8W/e9k0W7Cm72M1P9jU7SLf/vg==
+-----END EC PRIVATE KEY-----`))
+
+	assert.Nil(t, err)
+	other, err := token.SignedString(pkey)
+	assert.Nil(t, err)
+	_, err = auth.Verify(other)
+	assert.Error(t, err)
 }

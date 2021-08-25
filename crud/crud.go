@@ -3,6 +3,7 @@ package crud
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"log"
 	"reflect"
 )
 
@@ -56,7 +57,7 @@ func (x *Crud) mixed(c *gin.Context, operator ...Operator) *mixed {
 	for _, operator := range operator {
 		operator(v)
 	}
-	if value, exists := c.Get(MixStart); exists {
+	if value, exists := c.Get(variables); exists {
 		mix := value.(*mixed)
 		if mix.Body != nil {
 			v.Body = mix.Body
@@ -71,15 +72,7 @@ func (x *Crud) mixed(c *gin.Context, operator ...Operator) *mixed {
 			v.txNext = mix.txNext
 		}
 	}
-
-	c.Set(MixComplete, v)
 	return v
-}
-
-// GetMixed get mixed variables
-func (x *Crud) GetMixed(c *gin.Context) *mixed {
-	value, _ := c.Get(MixComplete)
-	return value.(*mixed)
 }
 
 // GetBody Get a single resource request body
@@ -206,6 +199,7 @@ func (x *Crud) Add(c *gin.Context) interface{} {
 	}
 	if err := x.Db.WithContext(c).Transaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Create(data).Error; err != nil {
+			log.Println(err)
 			return
 		}
 		if v.txNext != nil {

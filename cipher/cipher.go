@@ -21,9 +21,7 @@ func New(key string) (x *Cipher, err error) {
 	}
 	hd := hashids.NewData()
 	hd.Salt = key
-	if x.hashId, err = hashids.NewWithData(hd); err != nil {
-		return
-	}
+	x.hashId, _ = hashids.NewWithData(hd)
 	return
 }
 
@@ -40,9 +38,7 @@ func (x *Cipher) DecodeId(value string) ([]int, error) {
 // Encode data encryption
 func (x *Cipher) Encode(data []byte) (string, error) {
 	nonce := make([]byte, x.aead.NonceSize(), x.aead.NonceSize()+len(data)+x.aead.Overhead())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
+	rand.Read(nonce)
 	encrypted := x.aead.Seal(nonce, nonce, data, nil)
 	return base64.StdEncoding.EncodeToString(encrypted), nil
 }

@@ -22,8 +22,7 @@ func TestNew(t *testing.T) {
 		MaxAge:   3600,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: "none",
-	})
+	}, http.SameSiteLaxMode)
 	r = gin.Default()
 	r.GET("/", func(c *gin.Context) {
 		value, _ := x.Get(c, "name")

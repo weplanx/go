@@ -75,9 +75,9 @@ func TestMain(m *testing.M) {
 	r = gin.Default()
 	s1 := r.Group("user")
 	{
+		s1.POST("get", mvc.Bind(c1.Get))
 		s1.POST("originLists", mvc.Bind(c1.OriginLists))
 		s1.POST("lists", mvc.Bind(c1.Lists))
-		s1.POST("get", mvc.Bind(c1.Get))
 		s1.POST("add", mvc.Bind(c1.Add))
 		s1.POST("edit", mvc.Bind(c1.Edit))
 		s1.POST("delete", mvc.Bind(c1.Delete))
@@ -86,8 +86,12 @@ func TestMain(m *testing.M) {
 	c2.Crud = New(db, &User{})
 	s2 := r.Group("user-mix")
 	{
+		s2.POST("get", mvc.Bind(c2.Get))
 		s2.POST("originLists", mvc.Bind(c2.OriginLists))
+		s2.POST("lists", mvc.Bind(c2.Lists))
 		s2.POST("add", mvc.Bind(c2.Add))
+		s2.POST("edit", mvc.Bind(c2.Edit))
+		s2.POST("delete", mvc.Bind(c2.Delete))
 
 	}
 	os.Exit(m.Run())

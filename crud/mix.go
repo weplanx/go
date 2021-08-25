@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	MixStart    = "mix.start"
-	MixComplete = "mix.complete"
+	variables = "mix.vars"
 )
 
 type mixed struct {
@@ -67,5 +66,5 @@ func Mix(c *gin.Context, operator ...Operator) {
 	for _, operator := range operator {
 		operator(x)
 	}
-	c.Set(MixStart, x)
+	c.Set(variables, x)
 }

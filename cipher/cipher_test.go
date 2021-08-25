@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"encoding/base64"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
@@ -18,6 +19,11 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestNew(t *testing.T) {
+	_, err := New("JeNl0biq")
+	assert.Error(t, err)
+}
+
 func TestDexId(t *testing.T) {
 	hash, err := x.EncodeId([]int{651})
 	assert.Nil(t, err)
@@ -33,4 +39,6 @@ func TestDexData(t *testing.T) {
 	result, err := x.Decode(ciphertext)
 	assert.Nil(t, err)
 	assert.Equal(t, data, result)
+	_, err = x.Decode(base64.StdEncoding.EncodeToString(data))
+	assert.Error(t, err)
 }

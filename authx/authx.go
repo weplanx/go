@@ -1,14 +1,9 @@
 package authx
 
 import (
-	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"time"
-)
-
-var (
-	Expired = errors.New("authentication has expired")
 )
 
 type Authx struct {
@@ -73,9 +68,6 @@ func (x *Auth) Create(jti string, data map[string]interface{}) (tokenString stri
 // Verify Authentication
 // 	- tokenString The token string
 func (x *Auth) Verify(tokenString string) (claims jwt.MapClaims, err error) {
-	if tokenString == "" {
-		return nil, Expired
-	}
 	var token *jwt.Token
 	if token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
