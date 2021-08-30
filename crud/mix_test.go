@@ -150,6 +150,7 @@ func (x *UserMixController) Delete(c *gin.Context) interface{} {
 			return tx
 		}),
 		TxNext(func(tx *gorm.DB, args ...interface{}) error {
+			log.Println(args[0])
 			return errors.New("an abnormal rollback occurred")
 		}),
 	)

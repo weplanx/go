@@ -298,7 +298,7 @@ func (x *Crud) Delete(c *gin.Context) interface{} {
 			return
 		}
 		if v.txNext != nil {
-			if err = v.txNext(txx); err != nil {
+			if err = v.txNext(txx, body.GetConditions()); err != nil {
 				return
 			}
 		}

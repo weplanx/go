@@ -19,7 +19,7 @@ go get github.com/kainonly/go-bit
 
 ## Documentation
 
-- 语雀: https://www.yuque.com/kainonly/go-bit
+**语雀：** https://www.yuque.com/kainonly/go-bit
 
 ## License
 
