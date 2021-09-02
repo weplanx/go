@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
-	if err := cmd.Init().Execute(); err != nil {
+	cmd.Root.AddCommand(cmd.Setup)
+	if err := cmd.Root.Execute(); err != nil {
 		log.Fatalln(err)
 	}
 }

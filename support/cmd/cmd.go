@@ -16,19 +16,19 @@ var Root = &cobra.Command{
 	- 项目 https://github.com/kainonly/go-bit
 	- 文档 https://www.yuque.com/kainonly/go-bit`,
 }
-
+var Drive string
+var DSN string
 var Setup = &cobra.Command{
-	Use:              "setup [type] [dsn]",
-	Short:            "初始化系统数据与模型，*已存在的数据同时会被清空",
-	TraverseChildren: true,
+	Use:   "setup",
+	Short: "初始化系统数据与模型，*已存在的数据同时会被清空",
 	Run: func(cmd *cobra.Command, args []string) {
 		var dialector gorm.Dialector
-		switch args[0] {
+		switch Drive {
 		case "mysql":
-			dialector = mysql.Open(args[1])
+			dialector = mysql.Open(DSN)
 			break
 		case "postgres":
-			dialector = postgres.Open(args[1])
+			dialector = postgres.Open(DSN)
 			break
 		}
 		db, err := gorm.Open(dialector, &gorm.Config{
@@ -113,7 +113,9 @@ var Setup = &cobra.Command{
 	},
 }
 
-func Init() *cobra.Command {
-	Root.AddCommand(Setup)
-	return Root
+func init() {
+	Setup.Flags().StringVarP(&Drive, "drive", "d", "mysql", "数据库驱动可以是 mysql 或 postgres")
+	Setup.MarkFlagRequired("drive")
+	Setup.Flags().StringVarP(&DSN, "dsn", "", "", "数据库连接 （必须）")
+	Setup.MarkFlagRequired("dsn")
 }
