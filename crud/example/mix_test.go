@@ -1,10 +1,11 @@
-package crud
+package example
 
 import (
 	"bytes"
 	"errors"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/kainonly/go-bit/crud"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	"log"
@@ -14,17 +15,17 @@ import (
 )
 
 type UserMixController struct {
-	*Crud
+	*crud.Crud
 }
 
 func (x *UserMixController) Get(c *gin.Context) interface{} {
 	var body struct {
-		GetBody
+		crud.GetBody
 		Name string `json:"name"`
 	}
-	Mix(c,
-		SetBody(&body),
-		Query(func(tx *gorm.DB) *gorm.DB {
+	crud.Mix(c,
+		crud.SetBody(&body),
+		crud.Query(func(tx *gorm.DB) *gorm.DB {
 			tx = tx.Where("name = ?", body.Name)
 			return tx
 		}),
@@ -46,8 +47,8 @@ func TestMixGet(t *testing.T) {
 }
 
 func (x *UserMixController) OriginLists(c *gin.Context) interface{} {
-	Mix(c,
-		Query(func(tx *gorm.DB) *gorm.DB {
+	crud.Mix(c,
+		crud.Query(func(tx *gorm.DB) *gorm.DB {
 			tx.Where("id in ?", []uint64{5, 6})
 			return tx
 		}),
@@ -58,7 +59,7 @@ func (x *UserMixController) OriginLists(c *gin.Context) interface{} {
 func TestMixOriginLists(t *testing.T) {
 	res := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
-		"order": Orders{
+		"order": crud.Orders{
 			"id": "desc",
 		},
 	})
@@ -71,8 +72,8 @@ func TestMixOriginLists(t *testing.T) {
 }
 
 func (x *UserMixController) Add(c *gin.Context) interface{} {
-	Mix(c,
-		TxNext(func(tx *gorm.DB, args ...interface{}) error {
+	crud.Mix(c,
+		crud.TxNext(func(tx *gorm.DB, args ...interface{}) error {
 			log.Println(args[0].(*User))
 			return errors.New("an abnormal rollback occurred")
 		}),
@@ -103,16 +104,16 @@ func TestMixAdd(t *testing.T) {
 
 func (x *UserMixController) Edit(c *gin.Context) interface{} {
 	var body struct {
-		EditBody
+		crud.EditBody
 		Name string `json:"name"`
 	}
-	Mix(c,
-		SetBody(&body),
-		Query(func(tx *gorm.DB) *gorm.DB {
+	crud.Mix(c,
+		crud.SetBody(&body),
+		crud.Query(func(tx *gorm.DB) *gorm.DB {
 			tx = tx.Where("name = ?", body.Name)
 			return tx
 		}),
-		TxNext(func(tx *gorm.DB, args ...interface{}) error {
+		crud.TxNext(func(tx *gorm.DB, args ...interface{}) error {
 			log.Println(args[0].(*User))
 			return errors.New("an abnormal rollback occurred")
 		}),
@@ -140,16 +141,16 @@ func TestMixEdit(t *testing.T) {
 
 func (x *UserMixController) Delete(c *gin.Context) interface{} {
 	var body struct {
-		DeleteBody
+		crud.DeleteBody
 		Name string `json:"name"`
 	}
-	Mix(c,
-		SetBody(&body),
-		Query(func(tx *gorm.DB) *gorm.DB {
+	crud.Mix(c,
+		crud.SetBody(&body),
+		crud.Query(func(tx *gorm.DB) *gorm.DB {
 			tx = tx.Where("name = ?", body.Name)
 			return tx
 		}),
-		TxNext(func(tx *gorm.DB, args ...interface{}) error {
+		crud.TxNext(func(tx *gorm.DB, args ...interface{}) error {
 			log.Println(args[0])
 			return errors.New("an abnormal rollback occurred")
 		}),

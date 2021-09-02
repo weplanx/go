@@ -1,8 +1,9 @@
-package crud
+package example
 
 import (
 	"bytes"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/kainonly/go-bit/crud"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -11,13 +12,13 @@ import (
 )
 
 type UserController struct {
-	*Crud
+	*crud.Crud
 }
 
 func TestCrud_Get(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"name", "=", "Stuart"},
 		},
 	})
@@ -38,7 +39,7 @@ func TestCrud_Get(t *testing.T) {
 
 	res3 := httptest.NewRecorder()
 	body, _ = jsoniter.Marshal(&map[string]interface{}{
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"number", "=", 100},
 		},
 	})
@@ -53,10 +54,10 @@ func TestCrud_Get(t *testing.T) {
 func TestCrud_OriginLists(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"id", "in", []int{1, 2, 3}},
 		},
-		"order": Orders{
+		"order": crud.Orders{
 			"id": "desc",
 		},
 	})
@@ -77,7 +78,7 @@ func TestCrud_OriginLists(t *testing.T) {
 
 	res3 := httptest.NewRecorder()
 	body, _ = jsoniter.Marshal(&map[string]interface{}{
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"number", "=", 100},
 		},
 	})
@@ -92,7 +93,7 @@ func TestCrud_OriginLists(t *testing.T) {
 func TestCrud_Lists(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
-		"page": Pagination{
+		"page": crud.Pagination{
 			Index: 2,
 			Limit: 5,
 		},
@@ -114,11 +115,11 @@ func TestCrud_Lists(t *testing.T) {
 
 	res3 := httptest.NewRecorder()
 	body, _ = jsoniter.Marshal(&map[string]interface{}{
-		"page": Pagination{
+		"page": crud.Pagination{
 			Index: 2,
 			Limit: 5,
 		},
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"number", "=", 100},
 		},
 	})
@@ -170,7 +171,7 @@ func TestCrud_Add(t *testing.T) {
 func TestCrud_Edit(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"name", "=", "Questa"},
 		},
 		"updates": User{Age: 25},
@@ -196,7 +197,7 @@ func TestCrud_Edit(t *testing.T) {
 
 	res3 := httptest.NewRecorder()
 	body, _ = jsoniter.Marshal(&map[string]interface{}{
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"name", "=", "Questa"},
 		},
 		"updates": User{Email: "Vandal@VX.com"},
@@ -212,7 +213,7 @@ func TestCrud_Edit(t *testing.T) {
 func TestCrud_Delete(t *testing.T) {
 	res := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
-		"where": Conditions{
+		"where": crud.Conditions{
 			{"name", "=", "Questa"},
 		},
 	})

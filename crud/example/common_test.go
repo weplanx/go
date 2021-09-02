@@ -1,7 +1,8 @@
-package crud
+package example
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/kainonly/go-bit/crud"
 	"github.com/kainonly/go-bit/mvc"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -74,7 +75,7 @@ func TestMain(m *testing.M) {
 	}
 	gin.SetMode(gin.TestMode)
 	c1 := new(UserController)
-	c1.Crud = New(db, &User{})
+	c1.Crud = crud.New(db, &User{})
 	r = gin.Default()
 	s1 := r.Group("user")
 	{
@@ -86,7 +87,7 @@ func TestMain(m *testing.M) {
 		s1.POST("delete", mvc.Bind(c1.Delete))
 	}
 	c2 := new(UserMixController)
-	c2.Crud = New(db, &User{})
+	c2.Crud = crud.New(db, &User{})
 	s2 := r.Group("user-mix")
 	{
 		s2.POST("get", mvc.Bind(c2.Get))

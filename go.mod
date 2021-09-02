@@ -13,6 +13,7 @@ require (
 	github.com/huandu/xstrings v1.3.2
 	github.com/json-iterator/go v1.1.9
 	github.com/speps/go-hashids/v2 v2.0.1
+	github.com/spf13/cobra v0.0.3
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
