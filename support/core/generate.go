@@ -20,11 +20,11 @@ func GenerateModel(tx *gorm.DB) (err error) {
 	var tmpl *template.Template
 
 	log.Println(os.Getwd())
-	if tmpl, err = template.New("model.tpl").Funcs(template.FuncMap{
+	if tmpl, err = template.New("model").Funcs(template.FuncMap{
 		"title": title,
 		"typ":   typ,
 		"tag":   tag,
-	}).ParseFiles("./template/model.tpl"); err != nil {
+	}).Parse(model); err != nil {
 		return
 	}
 	var buf bytes.Buffer
@@ -35,7 +35,7 @@ func GenerateModel(tx *gorm.DB) (err error) {
 		os.Mkdir("./model", os.ModeDir)
 	}
 	b, _ := format.Source(buf.Bytes())
-	if err = ioutil.WriteFile("./model/model_gen.go", b, os.ModeAppend); err != nil {
+	if err = ioutil.WriteFile("./model/model_gen.go", b, os.ModePerm); err != nil {
 		return
 	}
 	return
