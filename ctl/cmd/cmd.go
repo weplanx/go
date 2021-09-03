@@ -5,9 +5,7 @@ import (
 )
 
 func init() {
-	Setup.Flags().StringVarP(&Drive, "drive", "d", "mysql", "数据库驱动可以是 mysql 或 postgres")
-	Setup.MarkFlagRequired("drive")
-	Setup.Flags().StringVarP(&DSN, "dsn", "", "", "数据库连接 （必须）")
+	Setup.Flags().StringVarP(&DSN, "dsn", "", "", "postgres 数据库连接")
 	Setup.MarkFlagRequired("dsn")
 }
 
