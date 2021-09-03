@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 )
 
@@ -44,9 +45,9 @@ func TestCrud_Get(t *testing.T) {
 	})
 	req3, _ := http.NewRequest("POST", "/user/get", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Equal(t,
+	assert.Regexp(t,
+		regexp.MustCompile(`^{"error":1,"msg":"ERROR: column (\\)"number(\\)" does not exist \(SQLSTATE 42703\)"}$`),
 		res3.Body.String(),
-		`{"error":1,"msg":"ERROR: column \"number\" does not exist (SQLSTATE 42703)"}`,
 	)
 }
 
@@ -83,9 +84,9 @@ func TestCrud_OriginLists(t *testing.T) {
 	})
 	req3, _ := http.NewRequest("POST", "/user/originLists", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Equal(t,
+	assert.Regexp(t,
+		regexp.MustCompile(`^{"error":1,"msg":"ERROR: column (\\)"number(\\)" does not exist \(SQLSTATE 42703\)"}$`),
 		res3.Body.String(),
-		`{"error":1,"msg":"ERROR: column \"number\" does not exist (SQLSTATE 42703)"}`,
 	)
 }
 
@@ -124,9 +125,9 @@ func TestCrud_Lists(t *testing.T) {
 	})
 	req3, _ := http.NewRequest("POST", "/user/lists", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Equal(t,
+	assert.Regexp(t,
+		regexp.MustCompile(`^{"error":1,"msg":"ERROR: column (\\)"number(\\)" does not exist \(SQLSTATE 42703\)"}$`),
 		res3.Body.String(),
-		`{"error":1,"msg":"ERROR: column \"number\" does not exist (SQLSTATE 42703)"}`,
 	)
 }
 
@@ -161,14 +162,10 @@ func TestCrud_Add(t *testing.T) {
 	res3 := httptest.NewRecorder()
 	req3, _ := http.NewRequest("POST", "/user/add", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Equal(t,
+	assert.Regexp(t,
+		regexp.MustCompile(`^{"error":1,"msg":"ERROR: duplicate key value violates unique constraint (\\)"users_email_key(\\)" \(SQLSTATE 23505\)"}$`),
 		res3.Body.String(),
-		`{"error":1,"msg":"ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)"}`,
 	)
-	//assert.Regexp(t,
-	//	regexp.MustCompile(`^{"error":1,"msg":"Error 1062: Duplicate entry 'Kain@VX.com' for key '(users\.email|email)'"}$`),
-	//	res3.Body.String(),
-	//)
 }
 
 func TestCrud_Edit(t *testing.T) {
@@ -207,14 +204,10 @@ func TestCrud_Edit(t *testing.T) {
 	})
 	req3, _ := http.NewRequest("POST", "/user/edit", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Equal(t,
+	assert.Regexp(t,
+		regexp.MustCompile(`^{"error":1,"msg":"ERROR: duplicate key value violates unique constraint (\\)"users_email_key(\\)" \(SQLSTATE 23505\)"}$`),
 		res3.Body.String(),
-		`{"error":1,"msg":"ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)"}`,
 	)
-	//assert.Regexp(t,
-	//	regexp.MustCompile(`^{"error":1,"msg":"Error 1062: Duplicate entry 'Vandal@VX.com' for key '(users\.email|email)'"}$`),
-	//	res3.Body.String(),
-	//)
 }
 
 func TestCrud_Delete(t *testing.T) {
