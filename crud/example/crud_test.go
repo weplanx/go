@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 )
 
@@ -204,9 +203,9 @@ func TestCrud_Edit(t *testing.T) {
 	})
 	req3, _ := http.NewRequest("POST", "/user/edit", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Regexp(t,
-		regexp.MustCompile(`^{"error":1,"msg":"ERROR: duplicate key value violates unique constraint (\\)"users_email_key(\\)" \(SQLSTATE 23505\)"}$`),
+	assert.Equal(t,
 		res3.Body.String(),
+		`{"error":1,"msg":"ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)"}`,
 	)
 }
 

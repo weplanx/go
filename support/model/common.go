@@ -22,7 +22,7 @@ func False() *bool {
 
 // GenerateResource 生成默认资源
 func GenerateResource(tx *gorm.DB) (err error) {
-	if err := tx.AutoMigrate(&Resource{}); err != nil {
+	if err = tx.AutoMigrate(&Resource{}); err != nil {
 		return
 	}
 	data := []Resource{
@@ -48,7 +48,7 @@ func GenerateResource(tx *gorm.DB) (err error) {
 			Router: True(),
 		},
 	}
-	if err := tx.Create(&data).Error; err != nil {
+	if err = tx.Create(&data).Error; err != nil {
 		return
 	}
 	return
