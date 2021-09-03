@@ -45,9 +45,9 @@ func TestCrud_Get(t *testing.T) {
 	})
 	req3, _ := http.NewRequest("POST", "/user/get", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
-	assert.Regexp(t,
-		regexp.MustCompile(`^{"error":1,"msg":"ERROR: column (\\)"number(\\)" does not exist \(SQLSTATE 42703\)"}$`),
+	assert.Equal(t,
 		res3.Body.String(),
+		`{"error":1,"msg":"ERROR: column \"number\" does not exist (SQLSTATE 42703)"}`,
 	)
 }
 

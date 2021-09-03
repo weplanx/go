@@ -6,6 +6,7 @@ import (
 	"github.com/kainonly/go-bit/mvc"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"log"
 	"os"
 	"testing"
@@ -25,7 +26,9 @@ var err error
 var r *gin.Engine
 
 func TestMain(m *testing.M) {
-	if db, err = gorm.Open(postgres.Open(os.Getenv("DB_DSN")), &gorm.Config{}); err != nil {
+	if db, err = gorm.Open(postgres.Open(os.Getenv("DB_DSN")), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	}); err != nil {
 		log.Fatalln(err)
 	}
 	if err = db.Migrator().DropTable(&User{}); err != nil {
