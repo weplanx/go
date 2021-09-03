@@ -4,10 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kainonly/go-bit/crud"
 	"github.com/kainonly/go-bit/mvc"
-	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
 	"os"
 	"testing"
@@ -27,20 +25,8 @@ var err error
 var r *gin.Engine
 
 func TestMain(m *testing.M) {
-	dsn := os.Getenv("DSN")
-	switch os.Getenv("DRIVE") {
-	case "mysql":
-		if db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent),
-		}); err != nil {
-			log.Fatalln(err)
-		}
-		break
-	case "postgres":
-		if db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{}); err != nil {
-			log.Fatalln(err)
-		}
-		break
+	if db, err = gorm.Open(postgres.Open(os.Getenv("DB_DSN")), &gorm.Config{}); err != nil {
+		log.Fatalln(err)
 	}
 	if err = db.Migrator().DropTable(&User{}); err != nil {
 		log.Fatalln(err)

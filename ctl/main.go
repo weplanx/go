@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kainonly/go-bit/support/cmd"
+	"github.com/kainonly/go-bit/ctl/cmd"
 	"log"
 )
 
