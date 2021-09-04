@@ -54,14 +54,9 @@ type Column struct {
 }
 
 type Associate struct {
-	Mode           string   `json:"mode"`
-	Namespace      string   `json:"namespace,omitempty"`
-	Target         string   `json:"target"`
-	ForeignKey     string   `json:"foreign_key"`
-	References     string   `json:"references"`
-	JoinForeignKey string   `json:"join_foreign_key"`
-	JoinReferences string   `json:"join_references"`
-	Columns        []Column `json:"columns"`
+	Mode       string `json:"mode"`
+	Target     string `json:"target"`
+	References string `json:"references,omitempty"`
 }
 
 func True() *bool {
@@ -125,21 +120,9 @@ func GenerateResources(tx *gorm.DB) (err error) {
 				},
 				Associates: []Associate{
 					{
-						Mode:           "many2many",
-						Namespace:      "core",
-						Target:         "Resource",
-						ForeignKey:     "Key",
-						JoinForeignKey: "Key",
-						Columns: []Column{
-							{
-								Key:     "permission",
-								Label:   "读写权限",
-								Type:    "char",
-								Default: "r",
-								Require: True(),
-								Length:  1,
-							},
-						},
+						Mode:       "many",
+						Target:     "Resource",
+						References: "Key",
 					},
 				},
 				Lock: True(),
@@ -257,4 +240,22 @@ func tag(column Column) string {
 		b.WriteString(` json:"-"`)
 	}
 	return b.String()
+}
+
+func rel(assoc Associate) string {
+	var builder strings.Builder
+	switch assoc.Mode {
+	case "belongs-to":
+		builder.WriteString(assoc.Target)
+		break
+	case "has-one":
+		break
+	case "has-many":
+		break
+	case "many2many":
+		break
+	}
+	builder.WriteString(" `gorm:\"")
+	builder.WriteString("\"`")
+	return builder.String()
 }
