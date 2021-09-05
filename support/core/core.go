@@ -244,15 +244,11 @@ func tag(column Column) string {
 
 func rel(assoc Associate) string {
 	var builder strings.Builder
+	builder.WriteString(assoc.Target)
 	switch assoc.Mode {
-	case "belongs-to":
-		builder.WriteString(assoc.Target)
+	case "one":
 		break
-	case "has-one":
-		break
-	case "has-many":
-		break
-	case "many2many":
+	case "many":
 		break
 	}
 	builder.WriteString(" `gorm:\"")
