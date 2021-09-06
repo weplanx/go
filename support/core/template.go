@@ -41,18 +41,15 @@ func False() *bool {
 	return new(bool)
 }
 
-{{$x := range .}}
-    type {{title $x.Key}} struct {
+{{range .}}
+    type {{title .Key}} struct {
 ` +
 	"ID     uint   `json:\"id\"`\n" +
 	"Status     *bool      `gorm:\"default:true\" json:\"status\"`\n" +
 	"CreateTime time.Time  `gorm:\"autoCreateTime\" json:\"create_time\"`\n" +
 	"UpdateTime time.Time  `gorm:\"autoUpdateTime\" json:\"update_time\"`\n" +
-	`{{range $x.Schema.Columns}}` +
+	`{{range .Schema.Columns}}` +
 	"{{title .Key}} {{typ .Type}} `{{tag .}}`\n" +
-	`{{end}}` +
-	`{{range .Schema.Associates}}` +
-	"{{title $x.Key}}{{.Target}}Rel {{assoc .}}\n" +
 	`{{end}}` +
 	`}
 {{end}}
