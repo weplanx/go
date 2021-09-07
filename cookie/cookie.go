@@ -8,19 +8,19 @@ import (
 type Option struct {
 
 	// The Expires attribute defines a specific date and time for when the browser should delete the cookie.
-	MaxAge int `yaml:"max_age" env:"COOKIE_MAX_AGE"`
+	MaxAge int `yaml:"max_age"`
 
 	// The Path attributes define the scope of the cookie.
-	Path string `yaml:"path" env:"COOKIE_PATH"`
+	Path string `yaml:"path"`
 
 	// The Domain attributes define the scope of the cookie.
-	Domain string `yaml:"domain" env:"COOKIE_DOMAIN"`
+	Domain string `yaml:"domain"`
 
 	// A secure cookie can only be transmitted over an encrypted connection (i.e. HTTPS).
-	Secure bool `yaml:"secure" env:"COOKIE_SECURE"`
+	Secure bool `yaml:"secure"`
 
 	// An http-only cookie cannot be accessed by client-side APIs, such as JavaScript.
-	HttpOnly bool `yaml:"http_only" env:"COOKIE_HTTP_ONLY"`
+	HttpOnly bool `yaml:"http_only"`
 }
 
 type Cookie struct {
