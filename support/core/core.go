@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -29,7 +28,7 @@ type Schema struct {
 	Type       string      `json:"type"`
 	Columns    []Column    `json:"columns"`
 	Associates []Associate `json:"associates,omitempty"`
-	Lock       *bool       `json:"lock,omitempty"`
+	System     *bool       `json:"system,omitempty"`
 }
 
 func (x *Schema) Scan(input interface{}) error {
@@ -45,12 +44,10 @@ type Column struct {
 	Label   string `json:"label"`
 	Type    string `json:"type"`
 	Default string `json:"default,omitempty"`
-	Require *bool  `json:"require,omitempty"`
 	Unique  *bool  `json:"unique,omitempty"`
-	Length  uint   `json:"length,omitempty"`
+	Require *bool  `json:"require,omitempty"`
 	Hide    *bool  `json:"hide,omitempty"`
-	Lock    *bool  `json:"lock,omitempty"`
-	Comment string `json:"comment,omitempty"`
+	System  *bool  `json:"system,omitempty"`
 }
 
 type Associate struct {
@@ -100,32 +97,24 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						Type:    "varchar",
 						Require: True(),
 						Unique:  True(),
-						Length:  20,
-						Lock:    True(),
+						System:  True(),
 					},
 					{
 						Key:     "name",
 						Label:   "权限名称",
 						Type:    "varchar",
 						Require: True(),
-						Length:  20,
-						Lock:    True(),
+						System:  True(),
 					},
 					{
-						Key:   "description",
-						Label: "描述",
-						Type:  "text",
-						Lock:  True(),
+						Key:    "description",
+						Label:  "描述",
+						Type:   "text",
+						System: True(),
 					},
 				},
-				Associates: []Associate{
-					{
-						Mode:       "many",
-						Target:     "Resource",
-						References: "Key",
-					},
-				},
-				Lock: True(),
+				Associates: []Associate{},
+				System:     True(),
 			},
 		},
 		{
@@ -158,9 +147,8 @@ func GenerateModels(tx *gorm.DB) (err error) {
 	}
 	var tmpl *template.Template
 	if tmpl, err = template.New("model").Funcs(template.FuncMap{
-		"title": title,
-		"typ":   typ,
-		"tag":   tag,
+		"title":     title,
+		"addColumn": addColumn,
 	}).Parse(modelTpl); err != nil {
 		return
 	}
@@ -182,76 +170,54 @@ func title(s string) string {
 	return strings.Title(s)
 }
 
-func typ(datatype string) string {
-	switch datatype {
-	case "bigint":
-		return "int64"
-	case "integer":
+func dataType(val string) string {
+	switch val {
+	case "int":
 		return "int32"
-	case "smallint":
-		return "int16"
-	case "numeric":
+	case "int8":
+		return "int64"
+	case "decimal":
 		return "float64"
-	case "double":
+	case "float8":
 		return "float64"
-	case "real":
-		return "float32"
-	case "boolean":
-		return "*bool"
-	case "char":
-		return "string"
 	case "varchar":
 		return "string"
 	case "text":
 		return "string"
+	case "bool":
+		return "*bool"
 	case "timestamptz":
 		return "time.Time"
-	case "uuid":
-		return "string"
 	case "jsonb":
 		return "Object"
-	case "json":
-		return "Object"
+	case "uuid":
+		return "uuid.UUID"
 	}
-	return datatype
+	return val
 }
 
-func tag(column Column) string {
+func addColumn(val Column) string {
 	var b strings.Builder
+	b.WriteString(title(val.Key))
+	b.WriteString(" ")
+	b.WriteString(dataType(val.Type))
+	b.WriteString(" `")
 	b.WriteString(`gorm:"type:`)
-	b.WriteString(column.Type)
-	if column.Length != 0 {
-		b.WriteString(`(`)
-		b.WriteString(strconv.Itoa(int(column.Length)))
-		b.WriteString(`)`)
-	}
-	if column.Require == True() {
+	b.WriteString(val.Type)
+	if val.Require == True() {
 		b.WriteString(`;not null`)
 	}
-	if column.Unique == True() {
+	if val.Unique == True() {
 		b.WriteString(`;unique`)
 	}
-	if column.Default != "" {
+	if val.Default != "" {
 		b.WriteString(`;default:`)
-		b.WriteString(column.Default)
+		b.WriteString(val.Default)
 	}
 	b.WriteString(`"`)
-	if column.Hide == True() {
+	if val.Hide == True() {
 		b.WriteString(` json:"-"`)
 	}
+	b.WriteString("`\n")
 	return b.String()
-}
-
-func rel(assoc Associate) string {
-	var builder strings.Builder
-	builder.WriteString(assoc.Target)
-	switch assoc.Mode {
-	case "one":
-		break
-	case "many":
-		break
-	}
-	builder.WriteString(" `gorm:\"")
-	builder.WriteString("\"`")
-	return builder.String()
 }

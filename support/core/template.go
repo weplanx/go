@@ -42,16 +42,13 @@ func False() *bool {
 }
 
 {{range .}}
-    type {{title .Key}} struct {
-` +
-	"ID     uint   `json:\"id\"`\n" +
-	"Status     *bool      `gorm:\"default:true\" json:\"status\"`\n" +
-	"CreateTime time.Time  `gorm:\"autoCreateTime\" json:\"create_time\"`\n" +
-	"UpdateTime time.Time  `gorm:\"autoUpdateTime\" json:\"update_time\"`\n" +
-	`{{range .Schema.Columns}}` +
-	"{{title .Key}} {{typ .Type}} `{{tag .}}`\n" +
-	`{{end}}` +
-	`}
+type {{title .Key}} struct {` +
+	"ID     	int64\n" +
+	"Status     *bool      `gorm:\"default:true\"`\n" +
+	"CreateTime time.Time  `gorm:\"autoCreateTime\"`\n" +
+	"UpdateTime time.Time  `gorm:\"autoUpdateTime\"`" + `
+	{{range .Schema.Columns}} {{addColumn .}} {{end}}
+}
 {{end}}
 
 func AutoMigrate(tx *gorm.DB, models ...string) {
