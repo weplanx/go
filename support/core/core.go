@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"database/sql/driver"
 	jsoniter "github.com/json-iterator/go"
-	"go/format"
 	"gorm.io/gorm"
-	"io/ioutil"
-	"os"
 	"strings"
 	"text/template"
 )
@@ -138,7 +135,7 @@ func GenerateResources(tx *gorm.DB) (err error) {
 	return
 }
 
-func GenerateModels(tx *gorm.DB) (err error) {
+func GenerateModels(tx *gorm.DB) (buf bytes.Buffer, err error) {
 	var resources []Resource
 	if err = tx.
 		Where("schema <> ?", "{}").
@@ -147,20 +144,12 @@ func GenerateModels(tx *gorm.DB) (err error) {
 	}
 	var tmpl *template.Template
 	if tmpl, err = template.New("model").Funcs(template.FuncMap{
-		"title":     title,
-		"addColumn": addColumn,
+		"title":  title,
+		"column": column,
 	}).Parse(modelTpl); err != nil {
 		return
 	}
-	var buf bytes.Buffer
 	if err = tmpl.Execute(&buf, resources); err != nil {
-		return
-	}
-	if _, err = os.Stat("./model"); os.IsNotExist(err) {
-		os.Mkdir("./model", os.ModeDir)
-	}
-	b, _ := format.Source(buf.Bytes())
-	if err = ioutil.WriteFile("./model/model_gen.go", b, os.ModePerm); err != nil {
 		return
 	}
 	return
@@ -196,7 +185,7 @@ func dataType(val string) string {
 	return val
 }
 
-func addColumn(val Column) string {
+func column(val Column) string {
 	var b strings.Builder
 	b.WriteString(title(val.Key))
 	b.WriteString(" ")

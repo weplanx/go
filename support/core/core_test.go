@@ -28,7 +28,9 @@ func TestGenerateResources(t *testing.T) {
 }
 
 func TestGenerateModels(t *testing.T) {
-	if err := GenerateModels(db); err != nil {
+	buf, err := GenerateModels(db)
+	if err != nil {
 		t.Error(err)
 	}
+	t.Log(buf.String())
 }

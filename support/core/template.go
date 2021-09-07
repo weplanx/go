@@ -47,7 +47,7 @@ type {{title .Key}} struct {` +
 	"Status     *bool      `gorm:\"default:true\"`\n" +
 	"CreateTime time.Time  `gorm:\"autoCreateTime\"`\n" +
 	"UpdateTime time.Time  `gorm:\"autoUpdateTime\"`" + `
-	{{range .Schema.Columns}} {{addColumn .}} {{end}}
+	{{range .Schema.Columns}} {{column .}} {{end}}
 }
 {{end}}
 
