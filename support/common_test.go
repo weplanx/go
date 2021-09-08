@@ -34,3 +34,9 @@ func TestGenerateModels(t *testing.T) {
 	}
 	t.Log(buf.String())
 }
+
+func TestInitSeeder(t *testing.T) {
+	if err := InitSeeder(db); err != nil {
+		t.Error(err)
+	}
+}

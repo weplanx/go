@@ -99,7 +99,7 @@ func GenerateResources(tx *gorm.DB) (err error) {
 					},
 					{
 						Key:   "permissions",
-						Label: "权限",
+						Label: "策略",
 						Type:  "rel",
 						Relation: Relation{
 							Mode:   "customize",
@@ -117,6 +117,84 @@ func GenerateResources(tx *gorm.DB) (err error) {
 			Name:   "成员管理",
 			Nav:    True(),
 			Router: True(),
+			Schema: Schema{
+				Type: "collection",
+				Columns: []Column{
+					{
+						Key:     "uuid",
+						Label:   "唯一标识",
+						Type:    "uuid",
+						Default: "uuid_generate_v4()",
+						Require: true,
+						Unique:  true,
+						Hide:    true,
+						System:  true,
+					},
+					{
+						Key:     "username",
+						Label:   "用户名",
+						Type:    "varchar",
+						Require: true,
+						Unique:  true,
+						System:  true,
+					},
+					{
+						Key:     "password",
+						Label:   "密码",
+						Type:    "varchar",
+						Require: true,
+						System:  true,
+					},
+					{
+						Key:     "roles",
+						Label:   "权限",
+						Type:    "rel",
+						Require: true,
+						Relation: Relation{
+							Mode:       "many",
+							Target:     "role",
+							References: "key",
+						},
+						System: true,
+					},
+					{
+						Key:   "permissions",
+						Label: "附加策略",
+						Type:  "rel",
+						Relation: Relation{
+							Mode:   "customize",
+							Target: "resource",
+						},
+						System: true,
+					},
+					{
+						Key:    "name",
+						Label:  "姓名",
+						Type:   "varchar",
+						System: true,
+					},
+					{
+						Key:    "email",
+						Label:  "邮件",
+						Type:   "varchar",
+						System: true,
+					},
+					{
+						Key:    "phone",
+						Label:  "联系方式",
+						Type:   "varchar",
+						System: true,
+					},
+					{
+						Key:     "avatar",
+						Label:   "头像",
+						Type:    "jsonb",
+						Default: "'[]'",
+						System:  true,
+					},
+				},
+				System: true,
+			},
 		},
 		{
 			Key:    "resource",
@@ -124,6 +202,11 @@ func GenerateResources(tx *gorm.DB) (err error) {
 			Name:   "资源管理",
 			Nav:    True(),
 			Router: True(),
+			Schema: Schema{
+				Type:    "customize",
+				Columns: []Column{},
+				System:  true,
+			},
 		},
 	}
 	if err = tx.Create(&data).Error; err != nil {
