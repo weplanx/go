@@ -19,10 +19,9 @@ type Resource struct {
 }
 
 type Schema struct {
-	Type       string      `json:"type"`
-	Columns    []Column    `json:"columns"`
-	Associates []Associate `json:"associates,omitempty"`
-	System     bool        `json:"system,omitempty"`
+	Type    string   `json:"type"`
+	Columns []Column `json:"columns"`
+	System  bool     `json:"system,omitempty"`
 }
 
 func (x *Schema) Scan(input interface{}) error {
@@ -34,19 +33,20 @@ func (x Schema) Value() (driver.Value, error) {
 }
 
 type Column struct {
-	Key     string `json:"key"`
-	Label   string `json:"label"`
-	Type    string `json:"type"`
-	Default string `json:"default,omitempty"`
-	Unique  bool   `json:"unique,omitempty"`
-	Require bool   `json:"require,omitempty"`
-	Hide    bool   `json:"hide,omitempty"`
-	System  bool   `json:"system,omitempty"`
+	Key      string   `json:"key"`
+	Label    string   `json:"label"`
+	Type     string   `json:"type"`
+	Default  string   `json:"default,omitempty"`
+	Unique   bool     `json:"unique,omitempty"`
+	Require  bool     `json:"require,omitempty"`
+	Hide     bool     `json:"hide,omitempty"`
+	Relation Relation `json:"relation,omitempty"`
+	System   bool     `json:"system,omitempty"`
 }
 
-type Associate struct {
-	Mode       string `json:"mode"`
-	Target     string `json:"target"`
+type Relation struct {
+	Mode       string `json:"mode,omitempty"`
+	Target     string `json:"target,omitempty"`
 	References string `json:"references,omitempty"`
 }
 
@@ -97,9 +97,18 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						Type:   "text",
 						System: true,
 					},
+					{
+						Key:   "permissions",
+						Label: "权限",
+						Type:  "rel",
+						Relation: Relation{
+							Mode:   "customize",
+							Target: "resources",
+						},
+						System: true,
+					},
 				},
-				Associates: []Associate{},
-				System:     true,
+				System: true,
 			},
 		},
 		{

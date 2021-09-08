@@ -117,6 +117,8 @@ func dataType(val string) string {
 		return "Object"
 	case "uuid":
 		return "uuid.UUID"
+	case "rel":
+		return "Array"
 	}
 	return val
 }
@@ -128,7 +130,12 @@ func column(val Column) string {
 	b.WriteString(dataType(val.Type))
 	b.WriteString(" `")
 	b.WriteString(`gorm:"type:`)
-	b.WriteString(val.Type)
+	if val.Type != "rel" {
+		b.WriteString(val.Type)
+	} else {
+		b.WriteString("jsonb")
+		val.Default = `'[]'`
+	}
 	if val.Require {
 		b.WriteString(`;not null`)
 	}
