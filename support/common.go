@@ -73,10 +73,10 @@ func False() *bool {
 
 {{range .}}
 type {{title .Key}} struct {` +
-	"ID     	int64\n" +
-	"Status     *bool      `gorm:\"default:true\"`\n" +
-	"CreateTime time.Time  `gorm:\"autoCreateTime;default:current_timestamp\"`\n" +
-	"UpdateTime time.Time  `gorm:\"autoUpdateTime;default:current_timestamp\"`" + `
+	"ID     	int64	   `json:\"id\"`\n" +
+	"Status     *bool      `gorm:\"default:true\" json:\"status\"`\n" +
+	"CreateTime time.Time  `gorm:\"autoCreateTime;default:current_timestamp\" json:\"create_time\"`\n" +
+	"UpdateTime time.Time  `gorm:\"autoUpdateTime;default:current_timestamp\" json:\"update_time\"`" + `
 	{{range .Schema.Columns}} {{column .}} {{end}}
 }
 {{end}}
@@ -136,10 +136,12 @@ func dataType(val string) string {
 		return "*bool"
 	case "timestamptz":
 		return "time.Time"
-	case "jsonb":
-		return "Object"
 	case "uuid":
 		return "uuid.UUID"
+	case "object":
+		return "Object"
+	case "array":
+		return "Array"
 	case "rel":
 		return "Array"
 	}
@@ -153,11 +155,10 @@ func column(val Column) string {
 	b.WriteString(dataType(val.Type))
 	b.WriteString(" `")
 	b.WriteString(`gorm:"type:`)
-	if val.Type != "rel" {
-		b.WriteString(val.Type)
-	} else {
+	if val.Type == "object" || val.Type == "array" || val.Type == "rel" {
 		b.WriteString("jsonb")
-		val.Default = `'[]'`
+	} else {
+		b.WriteString(val.Type)
 	}
 	if val.Require {
 		b.WriteString(`;not null`)
@@ -169,10 +170,13 @@ func column(val Column) string {
 		b.WriteString(`;default:`)
 		b.WriteString(val.Default)
 	}
-	b.WriteString(`"`)
+	b.WriteString(`" json:"`)
 	if val.Hide {
-		b.WriteString(` json:"-"`)
+		b.WriteString(`-`)
+	} else {
+		b.WriteString(val.Key)
 	}
+	b.WriteString(`"`)
 	b.WriteString("`\n")
 	return b.String()
 }
@@ -202,7 +206,7 @@ func InitSeeder(tx *gorm.DB) (err error) {
 	password, _ := hash.Make("pass@VAN1234")
 	admins := []map[string]interface{}{
 		{
-			"username": "kain",
+			"username": "admin",
 			"password": password,
 			"roles":    Array{"*"},
 		},

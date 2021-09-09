@@ -98,9 +98,10 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						System: true,
 					},
 					{
-						Key:   "permissions",
-						Label: "策略",
-						Type:  "rel",
+						Key:     "permissions",
+						Label:   "策略",
+						Type:    "rel",
+						Default: "'[]'",
 						Relation: Relation{
 							Mode:   "customize",
 							Target: "resources",
@@ -150,6 +151,7 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						Label:   "权限",
 						Type:    "rel",
 						Require: true,
+						Default: "'[]'",
 						Relation: Relation{
 							Mode:       "many",
 							Target:     "role",
@@ -158,9 +160,10 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						System: true,
 					},
 					{
-						Key:   "permissions",
-						Label: "附加策略",
-						Type:  "rel",
+						Key:     "permissions",
+						Label:   "附加策略",
+						Type:    "rel",
+						Default: "'[]'",
 						Relation: Relation{
 							Mode:   "customize",
 							Target: "resource",
@@ -188,7 +191,7 @@ func GenerateResources(tx *gorm.DB) (err error) {
 					{
 						Key:     "avatar",
 						Label:   "头像",
-						Type:    "jsonb",
+						Type:    "array",
 						Default: "'[]'",
 						System:  true,
 					},
