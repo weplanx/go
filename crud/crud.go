@@ -75,16 +75,16 @@ func (x *Crud) mixed(c *gin.Context, operator ...Operator) *mixed {
 	return v
 }
 
-// GetBody Get a single resource request body
-type GetBody struct {
+// FindOneBody Get a single resource request body
+type FindOneBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// Get Get a single resource
-func (x *Crud) Get(c *gin.Context) interface{} {
+// FindOne Get a single resource
+func (x *Crud) FindOne(c *gin.Context) interface{} {
 	v := x.mixed(c,
-		SetBody(&GetBody{}),
+		SetBody(&FindOneBody{}),
 		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
 	)
 	if err := c.ShouldBindJSON(v.Body); err != nil {
@@ -106,16 +106,16 @@ func (x *Crud) Get(c *gin.Context) interface{} {
 	return v.data
 }
 
-// OriginListsBody Get the original list resource request body
-type OriginListsBody struct {
+// FindManyBody Get the original list resource request body
+type FindManyBody struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// OriginLists Get the original list resource
-func (x *Crud) OriginLists(c *gin.Context) interface{} {
+// FindMany Get the original list resource
+func (x *Crud) FindMany(c *gin.Context) interface{} {
 	v := x.mixed(c,
-		SetBody(&OriginListsBody{}),
+		SetBody(&FindManyBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
 	)
 	if err := c.ShouldBindJSON(v.Body); err != nil {
@@ -146,17 +146,17 @@ func (x Pagination) GetPagination() Pagination {
 	return x
 }
 
-// ListsBody Get the request body of the paged list resource
-type ListsBody struct {
+// FindPageBody Get the request body of the paged list resource
+type FindPageBody struct {
 	Pagination `json:"page" binding:"required"`
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// Lists Get paging list resources
-func (x *Crud) Lists(c *gin.Context) interface{} {
+// FindPage Get paging list resources
+func (x *Crud) FindPage(c *gin.Context) interface{} {
 	v := x.mixed(c,
-		SetBody(&ListsBody{}),
+		SetBody(&FindPageBody{}),
 		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
 	)
 	if err := c.ShouldBindJSON(v.Body); err != nil {
@@ -186,8 +186,8 @@ func (x *Crud) Lists(c *gin.Context) interface{} {
 	}
 }
 
-// Add Create resources
-func (x *Crud) Add(c *gin.Context) interface{} {
+// Create resources
+func (x *Crud) Create(c *gin.Context) interface{} {
 	v := x.mixed(c)
 	data := v.data
 	if data == nil {
@@ -214,13 +214,13 @@ func (x *Crud) Add(c *gin.Context) interface{} {
 	return "ok"
 }
 
-// EditBody Update resource request body
-type EditBody struct {
+// UpdateBody Update resource request body
+type UpdateBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 }
 
-// Edit Update resources
-func (x *Crud) Edit(c *gin.Context) interface{} {
+// Update resources
+func (x *Crud) Update(c *gin.Context) interface{} {
 	v := x.mixed(c)
 	var body interface{}
 	data := v.data
@@ -228,7 +228,7 @@ func (x *Crud) Edit(c *gin.Context) interface{} {
 		v.Body = reflect.New(reflect.StructOf([]reflect.StructField{
 			{
 				Name:      "EditBody",
-				Type:      reflect.TypeOf(EditBody{}),
+				Type:      reflect.TypeOf(UpdateBody{}),
 				Anonymous: true,
 			},
 			{
@@ -250,7 +250,7 @@ func (x *Crud) Edit(c *gin.Context) interface{} {
 	}
 	var conds Conditions
 	if body != nil {
-		conds = body.(EditBody).GetConditions()
+		conds = body.(UpdateBody).GetConditions()
 	} else {
 		conds = body.(interface{ GetConditions() Conditions }).GetConditions()
 	}
@@ -276,7 +276,7 @@ type DeleteBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 }
 
-// Delete Delete resource
+// Delete resource
 func (x *Crud) Delete(c *gin.Context) interface{} {
 	v := x.mixed(c,
 		SetBody(&DeleteBody{}),

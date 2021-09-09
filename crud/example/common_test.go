@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-type User struct {
+type Example struct {
 	ID         uint64 `json:"id"`
 	Email      string `gorm:"type:varchar(20);not null;unique" json:"path"`
 	Name       string `gorm:"type:varchar(20);not null" json:"name"`
@@ -31,13 +31,13 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		log.Fatalln(err)
 	}
-	if err = db.Migrator().DropTable(&User{}); err != nil {
+	if err = db.Migrator().DropTable(&Example{}); err != nil {
 		log.Fatalln(err)
 	}
-	if err = db.AutoMigrate(&User{}); err != nil {
+	if err = db.AutoMigrate(&Example{}); err != nil {
 		log.Fatalln(err)
 	}
-	data := []User{
+	data := []Example{
 		{Email: "Vandal@VX.com", Name: "Vandal", Age: 25, Gender: "Male", Department: "IT"},
 		{Email: "Questa@VX.com", Name: "Questa", Age: 21, Gender: "Female", Department: "IT"},
 		{Email: "Simone@VX.com", Name: "Simone", Age: 23, Gender: "Male", Department: "IT"},
@@ -64,27 +64,27 @@ func TestMain(m *testing.M) {
 	}
 	gin.SetMode(gin.TestMode)
 	c1 := new(UserController)
-	c1.Crud = crud.New(db, &User{})
+	c1.Crud = crud.New(db, &Example{})
 	r = gin.Default()
 	s1 := r.Group("user")
 	{
-		s1.POST("get", mvc.Bind(c1.Get))
-		s1.POST("originLists", mvc.Bind(c1.OriginLists))
-		s1.POST("lists", mvc.Bind(c1.Lists))
-		s1.POST("add", mvc.Bind(c1.Add))
-		s1.POST("edit", mvc.Bind(c1.Edit))
-		s1.POST("delete", mvc.Bind(c1.Delete))
+		s1.POST("r/find/one", mvc.Bind(c1.FindOne))
+		s1.POST("r/find/many", mvc.Bind(c1.FindMany))
+		s1.POST("r/find/page", mvc.Bind(c1.FindPage))
+		s1.POST("w/create", mvc.Bind(c1.Create))
+		s1.POST("w/update", mvc.Bind(c1.Update))
+		s1.POST("w/delete", mvc.Bind(c1.Delete))
 	}
 	c2 := new(UserMixController)
-	c2.Crud = crud.New(db, &User{})
+	c2.Crud = crud.New(db, &Example{})
 	s2 := r.Group("user-mix")
 	{
-		s2.POST("get", mvc.Bind(c2.Get))
-		s2.POST("originLists", mvc.Bind(c2.OriginLists))
-		s2.POST("lists", mvc.Bind(c2.Lists))
-		s2.POST("add", mvc.Bind(c2.Add))
-		s2.POST("edit", mvc.Bind(c2.Edit))
-		s2.POST("delete", mvc.Bind(c2.Delete))
+		s2.POST("r/find/one", mvc.Bind(c2.FindOne))
+		s2.POST("r/find/many", mvc.Bind(c2.FindMany))
+		s2.POST("r/find/page", mvc.Bind(c2.FindPage))
+		s2.POST("w/create", mvc.Bind(c2.Create))
+		s2.POST("w/update", mvc.Bind(c2.Update))
+		s2.POST("w/delete", mvc.Bind(c2.Delete))
 
 	}
 	os.Exit(m.Run())

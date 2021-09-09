@@ -14,14 +14,14 @@ type UserController struct {
 	*crud.Crud
 }
 
-func TestCrud_Get(t *testing.T) {
+func TestCrud_FindOne(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
 		"where": crud.Conditions{
 			{"name", "=", "Stuart"},
 		},
 	})
-	req1, _ := http.NewRequest("POST", "/user/get", bytes.NewBuffer(body))
+	req1, _ := http.NewRequest("POST", "/user/r/find/one", bytes.NewBuffer(body))
 	r.ServeHTTP(res1, req1)
 	assert.Equal(t,
 		res1.Body.String(),
@@ -29,7 +29,7 @@ func TestCrud_Get(t *testing.T) {
 	)
 
 	res2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest("POST", "/user/get", bytes.NewBuffer([]byte("text/plain")))
+	req2, _ := http.NewRequest("POST", "/user/r/find/one", bytes.NewBuffer([]byte("text/plain")))
 	r.ServeHTTP(res2, req2)
 	assert.Equal(t,
 		res2.Body.String(),
@@ -42,7 +42,7 @@ func TestCrud_Get(t *testing.T) {
 			{"number", "=", 100},
 		},
 	})
-	req3, _ := http.NewRequest("POST", "/user/get", bytes.NewBuffer(body))
+	req3, _ := http.NewRequest("POST", "/user/r/find/one", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
 	assert.Equal(t,
 		res3.Body.String(),
@@ -50,7 +50,7 @@ func TestCrud_Get(t *testing.T) {
 	)
 }
 
-func TestCrud_OriginLists(t *testing.T) {
+func TestCrud_FindMany(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
 		"where": crud.Conditions{
@@ -60,7 +60,7 @@ func TestCrud_OriginLists(t *testing.T) {
 			"id": "desc",
 		},
 	})
-	req1, _ := http.NewRequest("POST", "/user/originLists", bytes.NewBuffer(body))
+	req1, _ := http.NewRequest("POST", "/user/r/find/many", bytes.NewBuffer(body))
 	r.ServeHTTP(res1, req1)
 	assert.Equal(t,
 		res1.Body.String(),
@@ -68,7 +68,7 @@ func TestCrud_OriginLists(t *testing.T) {
 	)
 
 	res2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest("POST", "/user/originLists", bytes.NewBuffer([]byte("text/plain")))
+	req2, _ := http.NewRequest("POST", "/user/r/find/many", bytes.NewBuffer([]byte("text/plain")))
 	r.ServeHTTP(res2, req2)
 	assert.Equal(t,
 		res2.Body.String(),
@@ -81,7 +81,7 @@ func TestCrud_OriginLists(t *testing.T) {
 			{"number", "=", 100},
 		},
 	})
-	req3, _ := http.NewRequest("POST", "/user/originLists", bytes.NewBuffer(body))
+	req3, _ := http.NewRequest("POST", "/user/r/find/many", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
 	assert.Equal(t,
 		res3.Body.String(),
@@ -89,7 +89,7 @@ func TestCrud_OriginLists(t *testing.T) {
 	)
 }
 
-func TestCrud_Lists(t *testing.T) {
+func TestCrud_FindPage(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
 		"page": crud.Pagination{
@@ -97,7 +97,7 @@ func TestCrud_Lists(t *testing.T) {
 			Limit: 5,
 		},
 	})
-	req1, _ := http.NewRequest("POST", "/user/lists", bytes.NewBuffer(body))
+	req1, _ := http.NewRequest("POST", "/user/r/find/page", bytes.NewBuffer(body))
 	r.ServeHTTP(res1, req1)
 	assert.Equal(t,
 		res1.Body.String(),
@@ -105,7 +105,7 @@ func TestCrud_Lists(t *testing.T) {
 	)
 
 	res2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest("POST", "/user/lists", bytes.NewBuffer([]byte("text/plain")))
+	req2, _ := http.NewRequest("POST", "/user/r/find/page", bytes.NewBuffer([]byte("text/plain")))
 	r.ServeHTTP(res2, req2)
 	assert.Equal(t,
 		res2.Body.String(),
@@ -122,7 +122,7 @@ func TestCrud_Lists(t *testing.T) {
 			{"number", "=", 100},
 		},
 	})
-	req3, _ := http.NewRequest("POST", "/user/lists", bytes.NewBuffer(body))
+	req3, _ := http.NewRequest("POST", "/user/r/find/page", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
 	assert.Equal(t,
 		res3.Body.String(),
@@ -130,28 +130,28 @@ func TestCrud_Lists(t *testing.T) {
 	)
 }
 
-func TestCrud_Add(t *testing.T) {
+func TestCrud_Create(t *testing.T) {
 	res1 := httptest.NewRecorder()
-	body, _ := jsoniter.Marshal(&User{
+	body, _ := jsoniter.Marshal(&Example{
 		Email:      "Kain@VX.com",
 		Name:       "Kain",
 		Age:        27,
 		Gender:     "Male",
 		Department: "IT",
 	})
-	req1, _ := http.NewRequest("POST", "/user/add", bytes.NewBuffer(body))
+	req1, _ := http.NewRequest("POST", "/user/w/create", bytes.NewBuffer(body))
 	r.ServeHTTP(res1, req1)
 	assert.Equal(t,
 		res1.Body.String(),
 		`{"error":0,"msg":"ok"}`,
 	)
 	var count int64
-	err = db.Model(&User{}).Where("name = ?", "Kain").Count(&count).Error
+	err = db.Model(&Example{}).Where("name = ?", "Kain").Count(&count).Error
 	assert.Nil(t, err)
 	assert.Equal(t, count, int64(1))
 
 	res2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest("POST", "/user/add", bytes.NewBuffer([]byte("text/plain")))
+	req2, _ := http.NewRequest("POST", "/user/w/create", bytes.NewBuffer([]byte("text/plain")))
 	r.ServeHTTP(res2, req2)
 	assert.Equal(t,
 		res2.Body.String(),
@@ -159,35 +159,35 @@ func TestCrud_Add(t *testing.T) {
 	)
 
 	res3 := httptest.NewRecorder()
-	req3, _ := http.NewRequest("POST", "/user/add", bytes.NewBuffer(body))
+	req3, _ := http.NewRequest("POST", "/user/w/create", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
 	assert.Equal(t,
 		res3.Body.String(),
-		`{"error":1,"msg":"ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)"}`,
+		`{"error":1,"msg":"ERROR: duplicate key value violates unique constraint \"examples_email_key\" (SQLSTATE 23505)"}`,
 	)
 }
 
-func TestCrud_Edit(t *testing.T) {
+func TestCrud_Update(t *testing.T) {
 	res1 := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
 		"where": crud.Conditions{
 			{"name", "=", "Questa"},
 		},
-		"updates": User{Age: 25},
+		"updates": Example{Age: 25},
 	})
-	req1, _ := http.NewRequest("POST", "/user/edit", bytes.NewBuffer(body))
+	req1, _ := http.NewRequest("POST", "/user/w/update", bytes.NewBuffer(body))
 	r.ServeHTTP(res1, req1)
 	assert.Equal(t,
 		res1.Body.String(),
 		`{"error":0,"msg":"ok"}`,
 	)
-	var user User
+	var user Example
 	err = db.Where("name = ?", "Questa").First(&user).Error
 	assert.Nil(t, err)
 	assert.Equal(t, user.Age, 25)
 
 	res2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest("POST", "/user/edit", bytes.NewBuffer([]byte("text/plain")))
+	req2, _ := http.NewRequest("POST", "/user/w/update", bytes.NewBuffer([]byte("text/plain")))
 	r.ServeHTTP(res2, req2)
 	assert.Equal(t,
 		res2.Body.String(),
@@ -199,13 +199,13 @@ func TestCrud_Edit(t *testing.T) {
 		"where": crud.Conditions{
 			{"name", "=", "Questa"},
 		},
-		"updates": User{Email: "Vandal@VX.com"},
+		"updates": Example{Email: "Vandal@VX.com"},
 	})
-	req3, _ := http.NewRequest("POST", "/user/edit", bytes.NewBuffer(body))
+	req3, _ := http.NewRequest("POST", "/user/w/update", bytes.NewBuffer(body))
 	r.ServeHTTP(res3, req3)
 	assert.Equal(t,
 		res3.Body.String(),
-		`{"error":1,"msg":"ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)"}`,
+		`{"error":1,"msg":"ERROR: duplicate key value violates unique constraint \"examples_email_key\" (SQLSTATE 23505)"}`,
 	)
 }
 
@@ -216,14 +216,14 @@ func TestCrud_Delete(t *testing.T) {
 			{"name", "=", "Questa"},
 		},
 	})
-	req, _ := http.NewRequest("POST", "/user/delete", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/user/w/delete", bytes.NewBuffer(body))
 	r.ServeHTTP(res, req)
 	assert.Equal(t,
 		res.Body.String(),
 		`{"error":0,"msg":"ok"}`,
 	)
 	var count int64
-	err = db.Model(&User{}).Where("name = ?", "Questa").Count(&count).Error
+	err = db.Model(&Example{}).Where("name = ?", "Questa").Count(&count).Error
 	assert.Nil(t, err)
 	assert.Equal(t, count, int64(0))
 }

@@ -47,11 +47,11 @@ func Bind(handlerFn interface{}) gin.HandlerFunc {
 }
 
 func Crud(r *gin.RouterGroup, i *crud.Crud) *gin.RouterGroup {
-	r.POST("r/originLists", Bind(i.OriginLists))
-	r.POST("r/lists", Bind(i.Lists))
-	r.POST("r/get", Bind(i.Get))
-	r.POST("w/add", Bind(i.Add))
-	r.POST("w/edit", Bind(i.Edit))
+	r.POST("r/find/one", Bind(i.FindOne))
+	r.POST("r/find/many", Bind(i.FindMany))
+	r.POST("r/find/page", Bind(i.FindPage))
+	r.POST("w/create", Bind(i.Create))
+	r.POST("w/update", Bind(i.Update))
 	r.POST("w/delete", Bind(i.Delete))
 	return r
 }

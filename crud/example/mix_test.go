@@ -18,9 +18,9 @@ type UserMixController struct {
 	*crud.Crud
 }
 
-func (x *UserMixController) Get(c *gin.Context) interface{} {
+func (x *UserMixController) FindOne(c *gin.Context) interface{} {
 	var body struct {
-		crud.GetBody
+		crud.FindOneBody
 		Name string `json:"name"`
 	}
 	crud.Mix(c,
@@ -30,15 +30,15 @@ func (x *UserMixController) Get(c *gin.Context) interface{} {
 			return tx
 		}),
 	)
-	return x.Crud.Get(c)
+	return x.Crud.FindOne(c)
 }
 
-func TestMixGet(t *testing.T) {
+func TestMixFindOne(t *testing.T) {
 	res := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
 		"name": "Marcia",
 	})
-	req, _ := http.NewRequest("POST", "/user-mix/get", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/user-mix/r/find/one", bytes.NewBuffer(body))
 	r.ServeHTTP(res, req)
 	assert.Equal(t,
 		res.Body.String(),
@@ -46,24 +46,24 @@ func TestMixGet(t *testing.T) {
 	)
 }
 
-func (x *UserMixController) OriginLists(c *gin.Context) interface{} {
+func (x *UserMixController) FindMany(c *gin.Context) interface{} {
 	crud.Mix(c,
 		crud.Query(func(tx *gorm.DB) *gorm.DB {
 			tx.Where("id in ?", []uint64{5, 6})
 			return tx
 		}),
 	)
-	return x.Crud.OriginLists(c)
+	return x.Crud.FindMany(c)
 }
 
-func TestMixOriginLists(t *testing.T) {
+func TestMixFindMany(t *testing.T) {
 	res := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(&map[string]interface{}{
 		"order": crud.Orders{
 			"id": "desc",
 		},
 	})
-	req, _ := http.NewRequest("POST", "/user-mix/originLists", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/user-mix/r/find/many", bytes.NewBuffer(body))
 	r.ServeHTTP(res, req)
 	assert.Equal(t,
 		res.Body.String(),
@@ -71,40 +71,40 @@ func TestMixOriginLists(t *testing.T) {
 	)
 }
 
-func (x *UserMixController) Add(c *gin.Context) interface{} {
+func (x *UserMixController) Create(c *gin.Context) interface{} {
 	crud.Mix(c,
 		crud.TxNext(func(tx *gorm.DB, args ...interface{}) error {
-			log.Println(args[0].(*User))
+			log.Println(args[0].(*Example))
 			return errors.New("an abnormal rollback occurred")
 		}),
 	)
-	return x.Crud.Add(c)
+	return x.Crud.Create(c)
 }
 
-func TestMixAdd(t *testing.T) {
+func TestMixCreate(t *testing.T) {
 	res := httptest.NewRecorder()
-	body, _ := jsoniter.Marshal(&User{
+	body, _ := jsoniter.Marshal(&Example{
 		Email:      "Zhang@VX.com",
 		Name:       "Zhang",
 		Age:        27,
 		Gender:     "Male",
 		Department: "IT",
 	})
-	req, _ := http.NewRequest("POST", "/user-mix/add", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/user-mix/w/create", bytes.NewBuffer(body))
 	r.ServeHTTP(res, req)
 	assert.Equal(t,
 		res.Body.String(),
 		`{"error":1,"msg":"an abnormal rollback occurred"}`,
 	)
 	var count int64
-	err = db.Model(&User{}).Where("name = ?", "Zhang").Count(&count).Error
+	err = db.Model(&Example{}).Where("name = ?", "Zhang").Count(&count).Error
 	assert.Nil(t, err)
 	assert.Equal(t, count, int64(0))
 }
 
-func (x *UserMixController) Edit(c *gin.Context) interface{} {
+func (x *UserMixController) Update(c *gin.Context) interface{} {
 	var body struct {
-		crud.EditBody
+		crud.UpdateBody
 		Name string `json:"name"`
 	}
 	crud.Mix(c,
@@ -114,26 +114,26 @@ func (x *UserMixController) Edit(c *gin.Context) interface{} {
 			return tx
 		}),
 		crud.TxNext(func(tx *gorm.DB, args ...interface{}) error {
-			log.Println(args[0].(*User))
+			log.Println(args[0].(*Example))
 			return errors.New("an abnormal rollback occurred")
 		}),
 	)
-	return x.Crud.Edit(c)
+	return x.Crud.Update(c)
 }
 
-func TestMixEdit(t *testing.T) {
+func TestMixUpdate(t *testing.T) {
 	res := httptest.NewRecorder()
 	body, _ := jsoniter.Marshal(map[string]interface{}{
 		"name":    "Stuart",
-		"updates": User{Age: 25},
+		"updates": Example{Age: 25},
 	})
-	req, _ := http.NewRequest("POST", "/user-mix/edit", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/user-mix/w/update", bytes.NewBuffer(body))
 	r.ServeHTTP(res, req)
 	assert.Equal(t,
 		res.Body.String(),
 		`{"error":1,"msg":"an abnormal rollback occurred"}`,
 	)
-	var data User
+	var data Example
 	err = db.Where("name = ?", "Stuart").First(&data).Error
 	assert.Nil(t, err)
 	assert.Equal(t, data.Age, 27)
@@ -163,14 +163,14 @@ func TestMixDelete(t *testing.T) {
 	body, _ := jsoniter.Marshal(map[string]interface{}{
 		"name": "Joanna",
 	})
-	req, _ := http.NewRequest("POST", "/user-mix/delete", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/user-mix/w/delete", bytes.NewBuffer(body))
 	r.ServeHTTP(res, req)
 	assert.Equal(t,
 		res.Body.String(),
 		`{"error":1,"msg":"an abnormal rollback occurred"}`,
 	)
 	var count int64
-	err = db.Model(&User{}).Where("name = ?", "Joanna").Count(&count).Error
+	err = db.Model(&Example{}).Where("name = ?", "Joanna").Count(&count).Error
 	assert.Nil(t, err)
 	assert.Equal(t, count, int64(1))
 }
