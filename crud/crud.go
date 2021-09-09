@@ -10,6 +10,16 @@ import (
 type Crud struct {
 	Db    *gorm.DB
 	Model interface{}
+	API
+}
+
+type API interface {
+	FindOne(c *gin.Context) interface{}
+	FindMany(c *gin.Context) interface{}
+	FindPage(c *gin.Context) interface{}
+	Create(c *gin.Context) interface{}
+	Update(c *gin.Context) interface{}
+	Delete(c *gin.Context) interface{}
 }
 
 // New create controller general resource operation

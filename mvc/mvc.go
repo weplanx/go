@@ -46,7 +46,7 @@ func Bind(handlerFn interface{}) gin.HandlerFunc {
 	}
 }
 
-func Crud(r *gin.RouterGroup, i *crud.Crud) *gin.RouterGroup {
+func Crud(r *gin.RouterGroup, i crud.API) *gin.RouterGroup {
 	r.POST("r/find/one", Bind(i.FindOne))
 	r.POST("r/find/many", Bind(i.FindMany))
 	r.POST("r/find/page", Bind(i.FindPage))

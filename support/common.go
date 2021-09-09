@@ -3,8 +3,8 @@ package support
 import (
 	"bytes"
 	"database/sql/driver"
+	"github.com/alexedwards/argon2id"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/kainonly/go-bit/hash"
 	"gorm.io/gorm"
 	"strings"
 	"text/template"
@@ -203,7 +203,13 @@ func InitSeeder(tx *gorm.DB) (err error) {
 	if err = tx.Table("role").Create(&roles).Error; err != nil {
 		return
 	}
-	password, _ := hash.Make("pass@VAN1234")
+	var password string
+	if password, err = argon2id.CreateHash(
+		"pass@VAN1234",
+		argon2id.DefaultParams,
+	); err != nil {
+		return
+	}
 	admins := []map[string]interface{}{
 		{
 			"username": "admin",
