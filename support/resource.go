@@ -14,7 +14,7 @@ type Resource struct {
 	Router   *bool  `gorm:"default:false" json:"router"`
 	Nav      *bool  `gorm:"default:false" json:"nav"`
 	Icon     string `gorm:"type:varchar" json:"icon"`
-	Schema   Schema `gorm:"type:jsonb;default:'{}'" json:"schema"`
+	Schema   Schema `gorm:"type:jsonb;default:'{}'" json:"schema,omitempty"`
 	Sort     int8   `gorm:"default:0" json:"sort"`
 }
 
