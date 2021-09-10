@@ -3,7 +3,6 @@ package crud
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"log"
 	"reflect"
 )
 
@@ -209,7 +208,6 @@ func (x *Crud) Create(c *gin.Context) interface{} {
 	}
 	if err := x.Db.WithContext(c).Transaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Create(data).Error; err != nil {
-			log.Println(err)
 			return
 		}
 		if v.txNext != nil {
@@ -237,7 +235,7 @@ func (x *Crud) Update(c *gin.Context) interface{} {
 	if data == nil {
 		v.Body = reflect.New(reflect.StructOf([]reflect.StructField{
 			{
-				Name:      "EditBody",
+				Name:      "UpdateBody",
 				Type:      reflect.TypeOf(UpdateBody{}),
 				Anonymous: true,
 			},

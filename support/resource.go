@@ -7,18 +7,19 @@ import (
 )
 
 type Resource struct {
-	ID     int64  `json:"id"`
-	Name   string `gorm:"type:varchar;not null" json:"name"`
-	Key    string `gorm:"type:varchar;unique;not null" json:"key"`
-	Parent string `gorm:"type:varchar;default:'root'" json:"parent"`
-	Router *bool  `gorm:"default:false" json:"router"`
-	Nav    *bool  `gorm:"default:false" json:"nav"`
-	Icon   string `gorm:"type:varchar" json:"icon"`
-	Schema Schema `gorm:"type:jsonb;default:'{}'" json:"schema"`
-	Sort   int8   `gorm:"default:0" json:"sort"`
+	ID       int64  `json:"id"`
+	Parent   int64  `gorm:"default:0" json:"parent"`
+	Name     string `gorm:"type:varchar;not null" json:"name"`
+	Fragment string `gorm:"type:varchar;not null" json:"fragment"`
+	Router   *bool  `gorm:"default:false" json:"router"`
+	Nav      *bool  `gorm:"default:false" json:"nav"`
+	Icon     string `gorm:"type:varchar" json:"icon"`
+	Schema   Schema `gorm:"type:jsonb;default:'{}'" json:"schema"`
+	Sort     int8   `gorm:"default:0" json:"sort"`
 }
 
 type Schema struct {
+	Key     string   `json:"key"`
 	Type    string   `json:"type"`
 	Columns []Column `json:"columns"`
 	System  bool     `json:"system,omitempty"`
@@ -59,21 +60,76 @@ func GenerateResources(tx *gorm.DB) (err error) {
 	if err = tx.AutoMigrate(&Resource{}); err != nil {
 		return
 	}
-	data := []Resource{
-		{
-			Key:    "settings",
-			Name:   "设置",
-			Nav:    True(),
-			Router: False(),
-			Icon:   "setting",
-		},
-		{
-			Key:    "role",
-			Parent: "settings",
-			Name:   "权限管理",
-			Nav:    True(),
-			Router: True(),
+	tx.Exec("create index schema_gin on resource using gin(schema)")
+	return tx.Transaction(func(tx *gorm.DB) (err error) {
+		dashboard := Resource{
+			Fragment: "dashboard",
+			Name:     "仪表盘",
+			Nav:      True(),
+			Router:   True(),
+			Icon:     "dashboard",
+		}
+		if err = tx.Create(&dashboard).Error; err != nil {
+			return
+		}
+		center := Resource{
+			Fragment: "center",
+			Name:     "个人中心",
+		}
+		if err = tx.Create(&center).Error; err != nil {
+			return
+		}
+		centerChildren := []Resource{
+			{
+				Parent:   center.ID,
+				Fragment: "profile",
+				Name:     "我的信息",
+				Router:   True(),
+			},
+			{
+				Parent:   center.ID,
+				Fragment: "notification",
+				Name:     "消息通知",
+				Router:   True(),
+			},
+		}
+		if err = tx.Create(&centerChildren).Error; err != nil {
+			return
+		}
+		settings := Resource{
+			Fragment: "settings",
+			Name:     "设置",
+			Nav:      True(),
+			Router:   False(),
+			Icon:     "setting",
+		}
+		if err = tx.Create(&settings).Error; err != nil {
+			return
+		}
+		resource := Resource{
+			Parent:   settings.ID,
+			Fragment: "resource",
+			Name:     "资源管理",
+			Nav:      True(),
+			Router:   True(),
 			Schema: Schema{
+				Key:     "resource",
+				Type:    "customize",
+				Columns: []Column{},
+				System:  true,
+			},
+		}
+		if err = tx.Create(&resource).Error; err != nil {
+			return
+		}
+		role := Resource{
+			Parent:   settings.ID,
+			Fragment: "role",
+			Name:     "权限管理",
+			Nav:      True(),
+			Router:   True(),
+			Schema: Schema{
+				Key:  "role",
 				Type: "collection",
 				Columns: []Column{
 					{
@@ -98,27 +154,59 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						System: true,
 					},
 					{
+						Key:     "routers",
+						Label:   "路由",
+						Type:    "rel",
+						Default: "'[]'",
+						Relation: Relation{
+							Mode:   "customize",
+							Target: "resource",
+						},
+						System: true,
+					},
+					{
 						Key:     "permissions",
 						Label:   "策略",
 						Type:    "rel",
 						Default: "'[]'",
 						Relation: Relation{
 							Mode:   "customize",
-							Target: "resources",
+							Target: "resource",
 						},
 						System: true,
 					},
 				},
 				System: true,
 			},
-		},
-		{
-			Key:    "admin",
-			Parent: "settings",
-			Name:   "成员管理",
-			Nav:    True(),
-			Router: True(),
+		}
+		if err = tx.Create(&role).Error; err != nil {
+			return
+		}
+		roleChildren := []Resource{
+			{
+				Parent:   role.ID,
+				Fragment: "create",
+				Name:     "创建资源",
+				Router:   True(),
+			},
+			{
+				Parent:   role.ID,
+				Fragment: "update",
+				Name:     "更新资源",
+				Router:   True(),
+			},
+		}
+		if err = tx.Create(&roleChildren).Error; err != nil {
+			return
+		}
+		admin := Resource{
+			Parent:   settings.ID,
+			Fragment: "admin",
+			Name:     "成员管理",
+			Nav:      True(),
+			Router:   True(),
 			Schema: Schema{
+				Key:  "admin",
 				Type: "collection",
 				Columns: []Column{
 					{
@@ -160,17 +248,6 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						System: true,
 					},
 					{
-						Key:     "permissions",
-						Label:   "附加策略",
-						Type:    "rel",
-						Default: "'[]'",
-						Relation: Relation{
-							Mode:   "customize",
-							Target: "resource",
-						},
-						System: true,
-					},
-					{
 						Key:    "name",
 						Label:  "姓名",
 						Type:   "varchar",
@@ -195,25 +272,52 @@ func GenerateResources(tx *gorm.DB) (err error) {
 						Default: "'[]'",
 						System:  true,
 					},
+					{
+						Key:     "routers",
+						Label:   "路由",
+						Type:    "rel",
+						Default: "'[]'",
+						Relation: Relation{
+							Mode:   "customize",
+							Target: "resource",
+						},
+						System: true,
+					},
+					{
+						Key:     "permissions",
+						Label:   "策略",
+						Type:    "rel",
+						Default: "'[]'",
+						Relation: Relation{
+							Mode:   "customize",
+							Target: "resource",
+						},
+						System: true,
+					},
 				},
 				System: true,
 			},
-		},
-		{
-			Key:    "resource",
-			Parent: "settings",
-			Name:   "资源管理",
-			Nav:    True(),
-			Router: True(),
-			Schema: Schema{
-				Type:    "customize",
-				Columns: []Column{},
-				System:  true,
+		}
+		if err = tx.Create(&admin).Error; err != nil {
+			return
+		}
+		adminChildren := []Resource{
+			{
+				Parent:   admin.ID,
+				Fragment: "create",
+				Name:     "创建资源",
+				Router:   True(),
 			},
-		},
-	}
-	if err = tx.Create(&data).Error; err != nil {
+			{
+				Parent:   admin.ID,
+				Fragment: "update",
+				Name:     "更新资源",
+				Router:   True(),
+			},
+		}
+		if err = tx.Create(&adminChildren).Error; err != nil {
+			return
+		}
 		return
-	}
-	return
+	})
 }

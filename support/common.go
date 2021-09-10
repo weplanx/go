@@ -72,7 +72,7 @@ func False() *bool {
 }
 
 {{range .}}
-type {{title .Key}} struct {` +
+type {{title .Schema.Key}} struct {` +
 	"ID     	int64	   `json:\"id\"`\n" +
 	"Status     *bool      `gorm:\"default:true\" json:\"status\"`\n" +
 	"CreateTime time.Time  `gorm:\"autoCreateTime;default:current_timestamp\" json:\"create_time\"`\n" +
@@ -83,7 +83,7 @@ type {{title .Key}} struct {` +
 
 func AutoMigrate(tx *gorm.DB, models ...string) {
 	mapper := map[string]interface{}{
-		{{range .}}"{{ .Key}}": &{{title .Key}}{},{{end}}
+		{{range .}}"{{ .Schema.Key}}": &{{title .Schema.Key}}{},{{end}}
 	}
 
 	for _, model := range models {
@@ -182,17 +182,23 @@ func column(val Column) string {
 }
 
 func InitSeeder(tx *gorm.DB) (err error) {
+	var routers Array
+	if err = tx.Model(&Resource{}).Pluck("id", &routers).Error; err != nil {
+		return
+	}
 	roles := []map[string]interface{}{
 		{
 			"key":         "*",
 			"name":        "超级管理员",
 			"description": "超级管理员拥有完整权限不能编辑，若不使用可以禁用该权限",
+			"routers":     Array{},
 			"permissions": Array{},
 		},
 		{
 			"key":         "admin",
 			"name":        "管理员",
 			"description": "分配管理用户",
+			"routers":     routers,
 			"permissions": Array{
 				"resource:*",
 				"role:*",
