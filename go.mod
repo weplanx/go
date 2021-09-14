@@ -13,6 +13,7 @@ require (
 	github.com/json-iterator/go v1.1.11
 	github.com/speps/go-hashids/v2 v2.0.1
 	github.com/stretchr/testify v1.7.0
+	github.com/thoas/go-funk v0.9.1
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect
 	golang.org/x/text v0.3.6 // indirect
