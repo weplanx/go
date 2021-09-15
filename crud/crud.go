@@ -3,31 +3,34 @@ package crud
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"reflect"
 )
 
 type Crud struct {
-	Db    *gorm.DB
-	Model interface{}
-	API
+	Db *gorm.DB
 }
 
-type API interface {
+func New(db *gorm.DB) *Crud {
+	return &Crud{Db: db}
+}
+
+// API create resource operation
+func (x *Crud) API(model string) *API {
+	return &API{
+		Tx: x.Db.Table(model),
+	}
+}
+
+type API struct {
+	Tx *gorm.DB
+}
+
+type Operations interface {
 	FindOne(c *gin.Context) interface{}
 	FindMany(c *gin.Context) interface{}
 	FindPage(c *gin.Context) interface{}
 	Create(c *gin.Context) interface{}
 	Update(c *gin.Context) interface{}
 	Delete(c *gin.Context) interface{}
-}
-
-// New create controller general resource operation
-//	 model: GORM Models
-func New(tx *gorm.DB, model interface{}) *Crud {
-	return &Crud{
-		Db:    tx,
-		Model: model,
-	}
 }
 
 // Conditions conditions array
@@ -45,7 +48,7 @@ func (c Orders) GetOrders() Orders {
 }
 
 // where generate request query conditions
-func (x *Crud) where(tx *gorm.DB, conds Conditions) *gorm.DB {
+func (x *API) where(tx *gorm.DB, conds Conditions) *gorm.DB {
 	for _, v := range conds {
 		tx = tx.Where(gorm.Expr(v[0].(string)+" "+v[1].(string)+" ?", v[2]))
 	}
@@ -53,35 +56,11 @@ func (x *Crud) where(tx *gorm.DB, conds Conditions) *gorm.DB {
 }
 
 // orderBy generate request ordering rules
-func (x *Crud) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
+func (x *API) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
 	for k, v := range orders {
 		tx = tx.Order(k + " " + v)
 	}
 	return tx
-}
-
-// Set default initial mix
-func (x *Crud) mixed(c *gin.Context, operator ...Operator) *mixed {
-	v := new(mixed)
-	for _, operator := range operator {
-		operator(v)
-	}
-	if value, exists := c.Get(variables); exists {
-		mix := value.(*mixed)
-		if mix.Body != nil {
-			v.Body = mix.Body
-		}
-		if mix.data != nil {
-			v.data = mix.data
-		}
-		if mix.query != nil {
-			v.query = mix.query
-		}
-		if mix.txNext != nil {
-			v.txNext = mix.txNext
-		}
-	}
-	return v
 }
 
 // FindOneBody Get a single resource request body
@@ -91,25 +70,19 @@ type FindOneBody struct {
 }
 
 // FindOne Get a single resource
-func (x *Crud) FindOne(c *gin.Context) interface{} {
-	v := x.mixed(c,
-		SetBody(&FindOneBody{}),
-		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
-	)
-	if err := c.ShouldBindJSON(v.Body); err != nil {
+func (x *API) FindOne(c *gin.Context) interface{} {
+	var body FindOneBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	body := v.Body.(interface {
-		GetConditions() Conditions
-		GetOrders() Orders
-	})
-	tx := x.Db.WithContext(c).Model(x.Model)
+	v := x.mixed(c, SetData(make(map[string]interface{})))
+	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
 	tx = x.where(tx, body.GetConditions())
 	tx = x.orderBy(tx, body.GetOrders())
-	if err := tx.First(v.data).Error; err != nil {
+	if err := tx.Take(v.data).Error; err != nil {
 		return err
 	}
 	return v.data
@@ -122,19 +95,13 @@ type FindManyBody struct {
 }
 
 // FindMany Get the original list resource
-func (x *Crud) FindMany(c *gin.Context) interface{} {
-	v := x.mixed(c,
-		SetBody(&FindManyBody{}),
-		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
-	)
-	if err := c.ShouldBindJSON(v.Body); err != nil {
+func (x *API) FindMany(c *gin.Context) interface{} {
+	var body FindManyBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	body := v.Body.(interface {
-		GetConditions() Conditions
-		GetOrders() Orders
-	})
-	tx := x.Db.WithContext(c).Model(x.Model)
+	v := x.mixed(c, SetData(make([]map[string]interface{}, 0)))
+	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
@@ -163,20 +130,13 @@ type FindPageBody struct {
 }
 
 // FindPage Get paging list resources
-func (x *Crud) FindPage(c *gin.Context) interface{} {
-	v := x.mixed(c,
-		SetBody(&FindPageBody{}),
-		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
-	)
-	if err := c.ShouldBindJSON(v.Body); err != nil {
+func (x *API) FindPage(c *gin.Context) interface{} {
+	var body FindPageBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	body := v.Body.(interface {
-		GetPagination() Pagination
-		GetConditions() Conditions
-		GetOrders() Orders
-	})
-	tx := x.Db.WithContext(c).Model(x.Model)
+	v := x.mixed(c, SetData(make([]map[string]interface{}, 0)))
+	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
@@ -196,22 +156,17 @@ func (x *Crud) FindPage(c *gin.Context) interface{} {
 }
 
 // Create resources
-func (x *Crud) Create(c *gin.Context) interface{} {
-	v := x.mixed(c)
-	data := v.data
-	if data == nil {
-		v.Body = reflect.New(reflect.TypeOf(x.Model))
-		if err := c.ShouldBindJSON(v.Body.(reflect.Value).Interface()); err != nil {
-			return err
-		}
-		data = v.Body.(reflect.Value).Elem().Interface()
+func (x *API) Create(c *gin.Context) interface{} {
+	v := x.mixed(c, SetBody(make(map[string]interface{})))
+	if err := c.ShouldBindJSON(&v.Body); err != nil {
+		return err
 	}
-	if err := x.Db.WithContext(c).Transaction(func(tx *gorm.DB) (err error) {
-		if err = tx.Create(data).Error; err != nil {
+	if err := x.Tx.WithContext(c).Transaction(func(tx *gorm.DB) (err error) {
+		if err = tx.Create(v.Body).Error; err != nil {
 			return
 		}
 		if v.txNext != nil {
-			if err = v.txNext(tx, data); err != nil {
+			if err = v.txNext(tx, v.Body); err != nil {
 				return
 			}
 		}
@@ -225,50 +180,24 @@ func (x *Crud) Create(c *gin.Context) interface{} {
 // UpdateBody Update resource request body
 type UpdateBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
+	Updates    interface{} `json:"updates" binding:"required"`
 }
 
 // Update resources
-func (x *Crud) Update(c *gin.Context) interface{} {
+func (x *API) Update(c *gin.Context) interface{} {
 	v := x.mixed(c)
-	var body interface{}
-	data := v.data
-	if data == nil {
-		v.Body = reflect.New(reflect.StructOf([]reflect.StructField{
-			{
-				Name:      "UpdateBody",
-				Type:      reflect.TypeOf(UpdateBody{}),
-				Anonymous: true,
-			},
-			{
-				Name: "Updates",
-				Type: reflect.TypeOf(x.Model),
-				Tag:  `json:"updates"`,
-			},
-		})).Interface()
-		if err := c.ShouldBindJSON(v.Body); err != nil {
-			return err
-		}
-		elem := reflect.ValueOf(v.Body).Elem()
-		body = elem.FieldByName("EditBody").Interface()
-		data = elem.FieldByName("Updates").Interface()
-	}
-	tx := x.Db.WithContext(c).Model(x.Model)
+	var body UpdateBody
+	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
-	var conds Conditions
-	if body != nil {
-		conds = body.(UpdateBody).GetConditions()
-	} else {
-		conds = body.(interface{ GetConditions() Conditions }).GetConditions()
-	}
-	tx = x.where(tx, conds)
+	tx = x.where(tx, body.GetConditions())
 	if err := tx.Transaction(func(txx *gorm.DB) (err error) {
-		if err = txx.Updates(data).Error; err != nil {
+		if err = txx.Updates(body.Updates).Error; err != nil {
 			return
 		}
 		if v.txNext != nil {
-			if err = v.txNext(txx, data); err != nil {
+			if err = v.txNext(txx, body.Updates); err != nil {
 				return
 			}
 		}
@@ -285,18 +214,13 @@ type DeleteBody struct {
 }
 
 // Delete resource
-func (x *Crud) Delete(c *gin.Context) interface{} {
-	v := x.mixed(c,
-		SetBody(&DeleteBody{}),
-		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
-	)
-	if err := c.ShouldBindJSON(v.Body); err != nil {
+func (x *API) Delete(c *gin.Context) interface{} {
+	var body DeleteBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	body := v.Body.(interface {
-		GetConditions() Conditions
-	})
-	tx := x.Db.WithContext(c).Model(x.Model)
+	v := x.mixed(c)
+	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}

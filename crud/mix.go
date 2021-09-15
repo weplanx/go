@@ -16,6 +16,30 @@ type mixed struct {
 	txNext func(tx *gorm.DB, args ...interface{}) error
 }
 
+// Set default initial mix
+func (x *API) mixed(c *gin.Context, operator ...Operator) *mixed {
+	v := new(mixed)
+	for _, operator := range operator {
+		operator(v)
+	}
+	if value, exists := c.Get(variables); exists {
+		mix := value.(*mixed)
+		if mix.Body != nil {
+			v.Body = mix.Body
+		}
+		if mix.data != nil {
+			v.data = mix.data
+		}
+		if mix.query != nil {
+			v.query = mix.query
+		}
+		if mix.txNext != nil {
+			v.txNext = mix.txNext
+		}
+	}
+	return v
+}
+
 type Operator func(*mixed)
 
 // SetBody custom request body
