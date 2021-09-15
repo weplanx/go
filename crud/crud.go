@@ -3,6 +3,7 @@ package crud
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"reflect"
 )
 
 type Crud struct {
@@ -14,14 +15,16 @@ func New(db *gorm.DB) *Crud {
 }
 
 // API create resource operation
-func (x *Crud) API(model string) *API {
+func (x *Crud) API(model interface{}) *API {
 	return &API{
-		Tx: x.Db.Table(model),
+		Model: model,
+		Tx:    x.Db.Model(model),
 	}
 }
 
 type API struct {
-	Tx *gorm.DB
+	Model interface{}
+	Tx    *gorm.DB
 }
 
 type Operations interface {
@@ -75,13 +78,15 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	v := x.mixed(c, SetData(make(map[string]interface{})))
+	v := x.mixed(c,
+		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
+	)
 	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
-	tx = x.where(tx, body.GetConditions())
-	tx = x.orderBy(tx, body.GetOrders())
+	tx = x.where(tx, body.Conditions)
+	tx = x.orderBy(tx, body.Orders)
 	if err := tx.Take(v.data).Error; err != nil {
 		return err
 	}
@@ -100,13 +105,15 @@ func (x *API) FindMany(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	v := x.mixed(c, SetData(make([]map[string]interface{}, 0)))
+	v := x.mixed(c,
+		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
+	)
 	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
-	tx = x.where(tx, body.GetConditions())
-	tx = x.orderBy(tx, body.GetOrders())
+	tx = x.where(tx, body.Conditions)
+	tx = x.orderBy(tx, body.Orders)
 	if err := tx.Find(v.data).Error; err != nil {
 		return err
 	}
@@ -135,17 +142,19 @@ func (x *API) FindPage(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	v := x.mixed(c, SetData(make([]map[string]interface{}, 0)))
+	v := x.mixed(c,
+		SetData(reflect.New(reflect.SliceOf(reflect.TypeOf(x.Model))).Interface()),
+	)
 	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
-	tx = x.where(tx, body.GetConditions())
-	tx = x.orderBy(tx, body.GetOrders())
+	tx = x.where(tx, body.Conditions)
+	tx = x.orderBy(tx, body.Orders)
 	var total int64
 	tx.Count(&total)
-	page := body.GetPagination()
-	tx = tx.Limit(page.Limit).Offset((page.Index - 1) * page.Limit)
+	p := body.Pagination
+	tx = tx.Limit(p.Limit).Offset((p.Index - 1) * p.Limit)
 	if err := tx.Find(v.data).Error; err != nil {
 		return err
 	}
@@ -157,7 +166,9 @@ func (x *API) FindPage(c *gin.Context) interface{} {
 
 // Create resources
 func (x *API) Create(c *gin.Context) interface{} {
-	v := x.mixed(c, SetBody(make(map[string]interface{})))
+	v := x.mixed(c,
+		SetBody(reflect.New(reflect.TypeOf(x.Model))),
+	)
 	if err := c.ShouldBindJSON(&v.Body); err != nil {
 		return err
 	}
@@ -185,13 +196,16 @@ type UpdateBody struct {
 
 // Update resources
 func (x *API) Update(c *gin.Context) interface{} {
-	v := x.mixed(c)
 	var body UpdateBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		return err
+	}
+	v := x.mixed(c)
 	tx := x.Tx.WithContext(c)
 	if v.query != nil {
 		tx = v.query(tx)
 	}
-	tx = x.where(tx, body.GetConditions())
+	tx = x.where(tx, body.Conditions)
 	if err := tx.Transaction(func(txx *gorm.DB) (err error) {
 		if err = txx.Updates(body.Updates).Error; err != nil {
 			return
