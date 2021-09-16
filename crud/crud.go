@@ -67,33 +67,6 @@ func (x *API) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
 	return tx
 }
 
-// FirstBody Get a single resource request body
-type FirstBody struct {
-	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
-	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
-}
-
-// First Get a single resource
-func (x *API) First(c *gin.Context) interface{} {
-	var body FirstBody
-	if err := c.ShouldBind(&body); err != nil {
-		return err
-	}
-	v := x.mixed(c,
-		SetData(reflect.New(reflect.TypeOf(x.Model)).Interface()),
-	)
-	tx := x.Tx.WithContext(c)
-	if v.query != nil {
-		tx = v.query(tx)
-	}
-	tx = x.where(tx, body.Conditions)
-	tx = x.orderBy(tx, body.Orders)
-	if err := tx.First(v.data).Error; err != nil {
-		return err
-	}
-	return v.data
-}
-
 // FindBody Get the original list resource request body
 type FindBody struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
