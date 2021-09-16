@@ -6,13 +6,13 @@ import (
 	"net/http"
 )
 
-// Bind Unified controller function returns
+// Returns Unified controller function
 //	 handlerFn: func(c *gin.Context) interface{}
 //	return types:
 //	 (string) => 200 {"error":0,"msg":<string>}
 //	 (error) => 200 {"error":1,"msg":<err.Error()>}, custom error code: c.Set("code", 1000)
 //	 (interface) => 200 {"error":0,"data":<interface{}>}
-func Bind(handlerFn interface{}) gin.HandlerFunc {
+func Returns(handlerFn interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if fn, ok := handlerFn.(func(c *gin.Context) interface{}); ok {
 			switch result := fn(c).(type) {
@@ -47,11 +47,11 @@ func Bind(handlerFn interface{}) gin.HandlerFunc {
 }
 
 func Crud(r *gin.RouterGroup, i crud.Operations) *gin.RouterGroup {
-	r.POST("r/find/one", Bind(i.FindOne))
-	r.POST("r/find/many", Bind(i.FindMany))
-	r.POST("r/find/page", Bind(i.FindPage))
-	r.POST("w/create", Bind(i.Create))
-	r.POST("w/update", Bind(i.Update))
-	r.POST("w/delete", Bind(i.Delete))
+	r.POST("r/first", Returns(i.First))
+	r.POST("r/find", Returns(i.Find))
+	r.POST("r/page", Returns(i.Page))
+	r.POST("w/create", Returns(i.Create))
+	r.POST("w/update", Returns(i.Update))
+	r.POST("w/delete", Returns(i.Delete))
 	return r
 }

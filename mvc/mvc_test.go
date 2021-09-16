@@ -45,44 +45,44 @@ func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	r = gin.Default()
 	example := new(Example)
-	r.GET("/string", Bind(example.String))
-	r.GET("/error", Bind(example.Error))
-	r.GET("/error-custom", Bind(example.ErrorCustomCode))
-	r.GET("/default", Bind(example.Default))
-	r.GET("/default-bool", Bind(example.DefaultBool))
-	r.GET("/empty", Bind(example.Empty))
+	r.GET("/string", Returns(example.String))
+	r.GET("/error", Returns(example.Error))
+	r.GET("/error-custom", Returns(example.ErrorCustomCode))
+	r.GET("/default", Returns(example.Default))
+	r.GET("/default-bool", Returns(example.DefaultBool))
+	r.GET("/empty", Returns(example.Empty))
 	os.Exit(m.Run())
 }
 
-func TestBindString(t *testing.T) {
+func TestReturnsString(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/string", nil)
 	r.ServeHTTP(res, req)
 	assert.Equal(t, res.Body.String(), `{"error":0,"msg":"Hi there"}`)
 }
 
-func TestBindError(t *testing.T) {
+func TestReturnsError(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/error", nil)
 	r.ServeHTTP(res, req)
 	assert.Equal(t, res.Body.String(), `{"error":1,"msg":"this is a test"}`)
 }
 
-func TestBindCustomCode(t *testing.T) {
+func TestReturnsCustomCode(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/error-custom", nil)
 	r.ServeHTTP(res, req)
 	assert.Equal(t, res.Body.String(), `{"error":100,"msg":"this is a test"}`)
 }
 
-func TestBindDefault(t *testing.T) {
+func TestReturnsDefault(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/default", nil)
 	r.ServeHTTP(res, req)
 	assert.Equal(t, res.Body.String(), `{"data":{"status":"ok"},"error":0}`)
 }
 
-func TestBindDefaultBool(t *testing.T) {
+func TestReturnsDefaultBool(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/default-bool", nil)
 	r.ServeHTTP(res, req)
@@ -90,7 +90,7 @@ func TestBindDefaultBool(t *testing.T) {
 	assert.Equal(t, res.Body.String(), `{"data":true,"error":0}`)
 }
 
-func TestBindEmpty(t *testing.T) {
+func TestReturnsEmpty(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/empty", nil)
 	r.ServeHTTP(res, req)

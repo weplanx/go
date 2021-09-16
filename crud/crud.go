@@ -25,12 +25,13 @@ func (x *Crud) API(model interface{}) *API {
 type API struct {
 	Model interface{}
 	Tx    *gorm.DB
+	Operations
 }
 
 type Operations interface {
-	FindOne(c *gin.Context) interface{}
-	FindMany(c *gin.Context) interface{}
-	FindPage(c *gin.Context) interface{}
+	First(c *gin.Context) interface{}
+	Find(c *gin.Context) interface{}
+	Page(c *gin.Context) interface{}
 	Create(c *gin.Context) interface{}
 	Update(c *gin.Context) interface{}
 	Delete(c *gin.Context) interface{}
@@ -66,16 +67,16 @@ func (x *API) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
 	return tx
 }
 
-// FindOneBody Get a single resource request body
-type FindOneBody struct {
+// FirstBody Get a single resource request body
+type FirstBody struct {
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// FindOne Get a single resource
-func (x *API) FindOne(c *gin.Context) interface{} {
-	var body FindOneBody
-	if err := c.ShouldBindJSON(&body); err != nil {
+// First Get a single resource
+func (x *API) First(c *gin.Context) interface{} {
+	var body FirstBody
+	if err := c.ShouldBind(&body); err != nil {
 		return err
 	}
 	v := x.mixed(c,
@@ -87,21 +88,21 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 	}
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
-	if err := tx.Take(v.data).Error; err != nil {
+	if err := tx.First(v.data).Error; err != nil {
 		return err
 	}
 	return v.data
 }
 
-// FindManyBody Get the original list resource request body
-type FindManyBody struct {
+// FindBody Get the original list resource request body
+type FindBody struct {
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// FindMany Get the original list resource
-func (x *API) FindMany(c *gin.Context) interface{} {
-	var body FindManyBody
+// Find Get the original list resource
+func (x *API) Find(c *gin.Context) interface{} {
+	var body FindBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
@@ -129,16 +130,16 @@ func (x Pagination) GetPagination() Pagination {
 	return x
 }
 
-// FindPageBody Get the request body of the paged list resource
-type FindPageBody struct {
+// PageBody Get the request body of the paged list resource
+type PageBody struct {
 	Pagination `json:"page" binding:"required"`
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
-// FindPage Get paging list resources
-func (x *API) FindPage(c *gin.Context) interface{} {
-	var body FindPageBody
+// Page Get paging list resources
+func (x *API) Page(c *gin.Context) interface{} {
+	var body PageBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
