@@ -2,26 +2,17 @@ package crud
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Crud struct {
-	Db *mongo.Database
-}
-
-func New(db *mongo.Database) *Crud {
-	return &Crud{Db: db}
 }
 
 // API create resource operation
 func (x *Crud) API(name string) *API {
-	return &API{
-		Collection: x.Db.Collection(name),
-	}
+	return &API{}
 }
 
 type API struct {
-	Collection *mongo.Collection
 	Operations
 }
 
