@@ -2,7 +2,6 @@ package mvc
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/kainonly/go-bit/crud"
 	"net/http"
 )
 
@@ -44,14 +43,4 @@ func Returns(handlerFn interface{}) gin.HandlerFunc {
 			}
 		}
 	}
-}
-
-func Crud(r *gin.RouterGroup, i crud.Operations) *gin.RouterGroup {
-	r.POST("r/first", Returns(i.First))
-	r.POST("r/find", Returns(i.Find))
-	r.POST("r/page", Returns(i.Page))
-	r.POST("w/create", Returns(i.Create))
-	r.POST("w/update", Returns(i.Update))
-	r.POST("w/delete", Returns(i.Delete))
-	return r
 }
