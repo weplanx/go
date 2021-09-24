@@ -44,3 +44,7 @@ func Returns(handlerFn interface{}) gin.HandlerFunc {
 		}
 	}
 }
+
+func Bind(i interface{}) {
+
+}
