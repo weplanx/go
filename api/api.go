@@ -24,7 +24,7 @@ type Conditions [][3]interface{}
 // Orders sort fields
 type Orders map[string]string
 
-// where 生成条件
+// where conditional array initial
 func (x *API) where(tx *gorm.DB, conds Conditions) *gorm.DB {
 	for _, v := range conds {
 		tx = tx.Where(gorm.Expr(v[0].(string)+" "+v[1].(string)+" ?", v[2]))
@@ -32,7 +32,7 @@ func (x *API) where(tx *gorm.DB, conds Conditions) *gorm.DB {
 	return tx
 }
 
-// orderBy 生成排序
+// orderBy sort fields initial
 func (x *API) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
 	for k, v := range orders {
 		tx = tx.Order(k + " " + v)
@@ -75,7 +75,7 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 	if err := c.ShouldBind(&body); err != nil {
 		return err
 	}
-	// TODO: 读取 Schema 缓存
+	// TODO: Load schema cache
 	tx := x.Db.WithContext(c).Table(body.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
@@ -110,7 +110,7 @@ func (x *API) Find(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	// TODO: 读取 Schema 缓存
+	// TODO: Load schema cache
 	tx := x.Db.WithContext(c).Table(body.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
@@ -153,7 +153,7 @@ func (x *API) Page(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	// TODO: 读取 Schema 缓存
+	// TODO: Load schema cache
 	tx := x.Db.WithContext(c).Table(body.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
@@ -194,7 +194,7 @@ func (x *API) Create(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	// TODO: 读取 Schema 缓存
+	// TODO: Load schema cache
 	if err := x.Db.WithContext(c).
 		Table(body.Model).
 		Create(body.Data).Error; err != nil {

@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/kainonly/go-bit.svg?style=flat-square)](https://github.com/kainonly/go-bit)
 [![GitHub license](https://img.shields.io/github/license/kainonly/go-bit?style=flat-square)](https://raw.githubusercontent.com/kainonly/go-bit/master/LICENSE)
 
-A tool to improve the efficiency of golang web development
+A tool to improve the efficiency of golang web development(Breaking update!!!)
 
 ## Installation
 
@@ -16,10 +16,6 @@ suggested using `go.mod`:
 ```shell
 go get github.com/kainonly/go-bit
 ```
-
-## Documentation
-
-**语雀：** https://www.yuque.com/kainonly/go-bit
 
 ## License
 
