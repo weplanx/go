@@ -76,7 +76,7 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 		return err
 	}
 	// TODO: 读取 Schema 缓存
-	tx := x.Db.WithContext(c).Debug().Table(body.Model)
+	tx := x.Db.WithContext(c).Table(body.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
 	data := make(map[string]interface{})
