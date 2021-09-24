@@ -1,40 +1,34 @@
-package cookie
+package helper
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
-var x *Cookie
 var r *gin.Engine
+var cookieHelper *CookieHelper
 
-func TestMain(m *testing.M) {
-	gin.SetMode(gin.TestMode)
-	os.Exit(m.Run())
-}
-
-func TestNew(t *testing.T) {
-	x = New(Option{
+func TestNewCookieHelper(t *testing.T) {
+	cookieHelper = NewCookieHelper(CookieOption{
 		MaxAge:   3600,
 		HttpOnly: true,
 		Secure:   true,
 	}, http.SameSiteLaxMode)
 	r = gin.Default()
 	r.GET("/", func(c *gin.Context) {
-		value, _ := x.Get(c, "name")
+		value, _ := cookieHelper.Get(c, "name")
 		c.String(200, value)
 	})
 	r.POST("/", func(c *gin.Context) {
-		x.Set(c, "name", "kain")
+		cookieHelper.Set(c, "name", "kain")
 		c.Status(http.StatusNoContent)
 	})
 	r.DELETE("/", func(c *gin.Context) {
-		x.Del(c, "name")
-		value, _ := x.Get(c, "name")
+		cookieHelper.Del(c, "name")
+		value, _ := cookieHelper.Get(c, "name")
 		c.String(200, value)
 	})
 }

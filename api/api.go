@@ -1,4 +1,4 @@
-package dsapi
+package api
 
 import (
 	"database/sql"

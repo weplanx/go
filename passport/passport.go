@@ -1,4 +1,4 @@
-package authx
+package passport
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type Authx struct {
+type Passport struct {
 
 	// Multi-scene authentication
 	Scenes map[string]*Auth
@@ -14,8 +14,8 @@ type Authx struct {
 
 // New create authentication
 // 	- scenes Multi-scene authentication, the key is equal to subject
-func New(scenes map[string]*Auth) *Authx {
-	return &Authx{scenes}
+func New(scenes map[string]*Auth) *Passport {
+	return &Passport{scenes}
 }
 
 type Auth struct {
@@ -41,7 +41,7 @@ type Auth struct {
 
 // Make obtain scene authorization
 // 	- name Scene name
-func (x *Authx) Make(name string) *Auth {
+func (x *Passport) Make(name string) *Auth {
 	auth := x.Scenes[name]
 	auth.Sub = name
 	return auth

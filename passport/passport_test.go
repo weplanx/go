@@ -1,4 +1,4 @@
-package authx
+package passport
 
 import (
 	"github.com/golang-jwt/jwt"

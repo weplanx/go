@@ -1,11 +1,11 @@
-package cookie
+package helper
 
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-type Option struct {
+type CookieOption struct {
 
 	// The Expires attribute defines a specific date and time for when the browser should delete the cookie.
 	MaxAge int `yaml:"max_age"`
@@ -23,8 +23,8 @@ type Option struct {
 	HttpOnly bool `yaml:"http_only"`
 }
 
-type Cookie struct {
-	Option
+type CookieHelper struct {
+	CookieOption
 
 	// The attribute SameSite can have a value of `strict`, `lax` or `none`.
 	//
@@ -39,26 +39,22 @@ type Cookie struct {
 	SameSite http.SameSite
 }
 
-// New create a unified cookie configuration
-func New(option Option, samesite http.SameSite) *Cookie {
-	return &Cookie{
-		option,
-		samesite,
-	}
+func NewCookieHelper(option CookieOption, samesite http.SameSite) *CookieHelper {
+	return &CookieHelper{option, samesite}
 }
 
 // Get get a cookie
-func (x *Cookie) Get(c *gin.Context, name string) (string, error) {
+func (x *CookieHelper) Get(c *gin.Context, name string) (string, error) {
 	return c.Cookie(name)
 }
 
 // Set create or update a cookie
-func (x *Cookie) Set(c *gin.Context, name string, value string) {
+func (x *CookieHelper) Set(c *gin.Context, name string, value string) {
 	c.SetCookie(name, value, x.MaxAge, x.Path, x.Domain, x.Secure, x.HttpOnly)
 	c.SetSameSite(x.SameSite)
 }
 
 // Del clear a cookie
-func (x *Cookie) Del(c *gin.Context, name string) {
+func (x *CookieHelper) Del(c *gin.Context, name string) {
 	x.Set(c, name, "")
 }

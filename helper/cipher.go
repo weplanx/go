@@ -1,4 +1,4 @@
-package cipher
+package helper
 
 import (
 	"crypto/cipher"
@@ -8,35 +8,36 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-type Cipher struct {
+type CipherHelper struct {
 	aead   cipher.AEAD
 	hashId *hashids.HashID
 }
 
-// New initialize data encryption
-func New(key string) (x *Cipher, err error) {
-	x = new(Cipher)
+func NewCipherHelper(key string) (x *CipherHelper, err error) {
+	x = new(CipherHelper)
 	if x.aead, err = chacha20poly1305.NewX([]byte(key)); err != nil {
 		return
 	}
 	hd := hashids.NewData()
 	hd.Salt = key
-	x.hashId, _ = hashids.NewWithData(hd)
+	if x.hashId, err = hashids.NewWithData(hd); err != nil {
+		return
+	}
 	return
 }
 
 // EncodeId ID encryption
-func (x *Cipher) EncodeId(value []int) (string, error) {
+func (x *CipherHelper) EncodeId(value []int) (string, error) {
 	return x.hashId.Encode(value)
 }
 
 // DecodeId ID decryption
-func (x *Cipher) DecodeId(value string) ([]int, error) {
+func (x *CipherHelper) DecodeId(value string) ([]int, error) {
 	return x.hashId.DecodeWithError(value)
 }
 
 // Encode data encryption
-func (x *Cipher) Encode(data []byte) (string, error) {
+func (x *CipherHelper) Encode(data []byte) (string, error) {
 	nonce := make([]byte, x.aead.NonceSize(), x.aead.NonceSize()+len(data)+x.aead.Overhead())
 	rand.Read(nonce)
 	encrypted := x.aead.Seal(nonce, nonce, data, nil)
@@ -44,7 +45,7 @@ func (x *Cipher) Encode(data []byte) (string, error) {
 }
 
 // Decode data decryption
-func (x *Cipher) Decode(text string) ([]byte, error) {
+func (x *CipherHelper) Decode(text string) ([]byte, error) {
 	encrypted, err := base64.StdEncoding.DecodeString(text)
 	if err != nil {
 		return nil, err
