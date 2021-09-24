@@ -1,4 +1,4 @@
-package crud
+package dsapi
 
 import (
 	"database/sql"
@@ -76,19 +76,22 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 		return err
 	}
 	// TODO: 读取 Schema 缓存
-	tx := x.Db.WithContext(c).Table(body.Model)
+	tx := x.Db.WithContext(c).Debug().Table(body.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
 	data := make(map[string]interface{})
-	if err := tx.Take(&data).Error; err != nil {
-		return err
-	}
 	rows, err := tx.Rows()
 	if err != nil {
 		return err
 	}
-	if err := x.toJSON(rows, &data); err != nil {
-		return err
+	defer rows.Close()
+	for rows.Next() {
+		if err := tx.ScanRows(rows, &data); err != nil {
+			return err
+		}
+		if err := x.toJSON(rows, &data); err != nil {
+			return err
+		}
 	}
 	return data
 }
