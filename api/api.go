@@ -61,22 +61,28 @@ func (x *API) toJSON(rows *sql.Rows, value *map[string]interface{}) (err error) 
 	return
 }
 
+type CommonUri struct {
+	Model string `uri:"model" binding:"required"`
+}
+
 // FindOneBody Get a single resource request body
 type FindOneBody struct {
-	Model string `json:"model" binding:"required"`
-
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
 // FindOne Get a single resource
 func (x *API) FindOne(c *gin.Context) interface{} {
+	var uri CommonUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		return err
+	}
 	var body FindOneBody
-	if err := c.ShouldBind(&body); err != nil {
+	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
 	// TODO: Load schema cache
-	tx := x.Db.WithContext(c).Table(body.Model)
+	tx := x.Db.WithContext(c).Table(uri.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
 	data := make(map[string]interface{})
@@ -98,20 +104,22 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 
 // FindBody Get the original list resource request body
 type FindBody struct {
-	Model string `json:"model" binding:"required"`
-
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 }
 
 // Find Get the original list resource
 func (x *API) Find(c *gin.Context) interface{} {
+	var uri CommonUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		return err
+	}
 	var body FindBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
 	// TODO: Load schema cache
-	tx := x.Db.WithContext(c).Table(body.Model)
+	tx := x.Db.WithContext(c).Table(uri.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
 	var data []map[string]interface{}
@@ -140,8 +148,6 @@ type Pagination struct {
 
 // FindPageBody Get the request body of the paged list resource
 type FindPageBody struct {
-	Model string `json:"model" binding:"required"`
-
 	Pagination `json:"page" binding:"required"`
 	Conditions `json:"where" binding:"omitempty,gte=0,dive,len=3,dive,required"`
 	Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
@@ -149,12 +155,16 @@ type FindPageBody struct {
 
 // Page Get paging list resources
 func (x *API) Page(c *gin.Context) interface{} {
+	var uri CommonUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		return err
+	}
 	var body FindPageBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
 	// TODO: Load schema cache
-	tx := x.Db.WithContext(c).Table(body.Model)
+	tx := x.Db.WithContext(c).Table(uri.Model)
 	tx = x.where(tx, body.Conditions)
 	tx = x.orderBy(tx, body.Orders)
 	var total int64
@@ -184,19 +194,22 @@ func (x *API) Page(c *gin.Context) interface{} {
 }
 
 type CreateBody struct {
-	Model string                 `json:"model" binding:"required"`
-	Data  map[string]interface{} `json:"data" binding:"required"`
+	Data map[string]interface{} `json:"data" binding:"required"`
 }
 
 // Create resources
 func (x *API) Create(c *gin.Context) interface{} {
+	var uri CommonUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		return err
+	}
 	var body CreateBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
 	// TODO: Load schema cache
 	if err := x.Db.WithContext(c).
-		Table(body.Model).
+		Table(uri.Model).
 		Create(body.Data).Error; err != nil {
 		return err
 	}
@@ -205,19 +218,22 @@ func (x *API) Create(c *gin.Context) interface{} {
 
 // UpdateBody Update resource request body
 type UpdateBody struct {
-	Model string                 `json:"model" binding:"required"`
-	Data  map[string]interface{} `json:"data" binding:"required"`
+	Data map[string]interface{} `json:"data" binding:"required"`
 
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 }
 
 // Update resources
 func (x *API) Update(c *gin.Context) interface{} {
+	var uri CommonUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		return err
+	}
 	var body UpdateBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	tx := x.Db.WithContext(c).Table(body.Model)
+	tx := x.Db.WithContext(c).Table(uri.Model)
 	tx = x.where(tx, body.Conditions)
 	if err := tx.Updates(body.Data).Error; err != nil {
 		return err
@@ -227,18 +243,20 @@ func (x *API) Update(c *gin.Context) interface{} {
 
 // DeleteBody Delete resource request body
 type DeleteBody struct {
-	Model string `json:"model" binding:"required"`
-
 	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
 }
 
 // Delete resource
 func (x *API) Delete(c *gin.Context) interface{} {
+	var uri CommonUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		return err
+	}
 	var body DeleteBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	tx := x.Db.WithContext(c).Table(body.Model)
+	tx := x.Db.WithContext(c).Table(uri.Model)
 	tx = x.where(tx, body.Conditions)
 	if err := tx.Delete(nil).Error; err != nil {
 		return err
