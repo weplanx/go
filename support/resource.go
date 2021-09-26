@@ -23,6 +23,14 @@ type Router struct {
 	Option   RouterOption `json:"options,omitempty"`
 }
 
+func (x *Router) Scan(input interface{}) error {
+	return jsoniter.Unmarshal(input.([]byte), x)
+}
+
+func (x Router) Value() (driver.Value, error) {
+	return jsoniter.Marshal(x)
+}
+
 type RouterOption struct {
 	Fetch   bool         `json:"fetch,omitempty"`
 	Columns []ViewColumn `json:"columns,omitempty"`
@@ -30,14 +38,6 @@ type RouterOption struct {
 
 type ViewColumn struct {
 	Name string `json:"name"`
-}
-
-func (x *Router) Scan(input interface{}) error {
-	return jsoniter.Unmarshal(input.([]byte), x)
-}
-
-func (x Router) Value() (driver.Value, error) {
-	return jsoniter.Marshal(x)
 }
 
 func GenerateResources(tx *gorm.DB) (err error) {
@@ -87,6 +87,15 @@ func GenerateResources(tx *gorm.DB) (err error) {
 			Path:   "setting",
 			Parent: "root",
 			Icon:   "setting",
+		},
+		{
+			Name:   "模型管理",
+			Path:   "setting/schema",
+			Parent: "setting",
+			Router: Router{
+				Template: "manual",
+			},
+			Nav: True(),
 		},
 		{
 			Name:   "资源管理",
