@@ -8,7 +8,7 @@ import (
 
 type Schema struct {
 	ID      int64   `json:"id"`
-	Key     string  `gorm:"type:varchar;not null;unique" json:"key"`
+	Model   string  `gorm:"type:varchar;not null;unique" json:"model"`
 	Kind    string  `gorm:"type:varchar;not null" json:"kind"`
 	Columns Columns `gorm:"type:jsonb;default:'{}'" json:"columns"`
 	System  *bool   `gorm:"default:false" json:"system"`
@@ -25,20 +25,20 @@ func (x Columns) Value() (driver.Value, error) {
 }
 
 type Column struct {
-	Label    string   `json:"label"`
-	Type     string   `json:"type"`
-	Default  string   `json:"default,omitempty"`
-	Unique   bool     `json:"unique,omitempty"`
-	Require  bool     `json:"require,omitempty"`
-	Relation Relation `json:"relation,omitempty"`
-	Private  bool     `json:"private,omitempty"`
-	System   bool     `json:"system,omitempty"`
+	Label     string    `json:"label"`
+	Type      string    `json:"type"`
+	Default   string    `json:"default,omitempty"`
+	Unique    bool      `json:"unique,omitempty"`
+	Require   bool      `json:"require,omitempty"`
+	Reference Reference `json:"reference,omitempty"`
+	Private   bool      `json:"private,omitempty"`
+	System    bool      `json:"system,omitempty"`
 }
 
-type Relation struct {
-	Mode       string `json:"mode,omitempty"`
-	Target     string `json:"target,omitempty"`
-	References string `json:"references,omitempty"`
+type Reference struct {
+	Mode   string `json:"mode,omitempty"`
+	Target string `json:"target,omitempty"`
+	To     string `json:"to,omitempty"`
 }
 
 func GenerateSchema(tx *gorm.DB) (err error) {
@@ -53,13 +53,13 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 	tx.Exec("create index columns_gin on schema using gin(columns)")
 	data := []Schema{
 		{
-			Key:    "resource",
+			Model:  "resource",
 			Kind:   "manual",
 			System: True(),
 		},
 		{
-			Key:  "role",
-			Kind: "collection",
+			Model: "role",
+			Kind:  "collection",
 			Columns: map[string]Column{
 				"key": {
 					Label:   "权限代码",
@@ -81,9 +81,9 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 				},
 				"routers": {
 					Label:   "路由",
-					Type:    "rel",
+					Type:    "ref",
 					Default: "'[]'",
-					Relation: Relation{
+					Reference: Reference{
 						Mode:   "manual",
 						Target: "resource",
 					},
@@ -91,9 +91,9 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 				},
 				"permissions": {
 					Label:   "策略",
-					Type:    "rel",
+					Type:    "ref",
 					Default: "'[]'",
-					Relation: Relation{
+					Reference: Reference{
 						Mode:   "manual",
 						Target: "resource",
 					},
@@ -103,8 +103,8 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 			System: True(),
 		},
 		{
-			Key:  "admin",
-			Kind: "collection",
+			Model: "admin",
+			Kind:  "collection",
 			Columns: map[string]Column{
 				"uuid": {
 					Label:   "唯一标识",
@@ -131,13 +131,13 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 				},
 				"roles": {
 					Label:   "权限",
-					Type:    "rel",
+					Type:    "ref",
 					Require: true,
 					Default: "'[]'",
-					Relation: Relation{
-						Mode:       "many",
-						Target:     "role",
-						References: "key",
+					Reference: Reference{
+						Mode:   "many",
+						Target: "role",
+						To:     "key",
 					},
 					System: true,
 				},
@@ -164,9 +164,9 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 				},
 				"routers": {
 					Label:   "路由",
-					Type:    "rel",
+					Type:    "ref",
 					Default: "'[]'",
-					Relation: Relation{
+					Reference: Reference{
 						Mode:   "manual",
 						Target: "resource",
 					},
@@ -174,9 +174,9 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 				},
 				"permissions": {
 					Label:   "策略",
-					Type:    "rel",
+					Type:    "ref",
 					Default: "'[]'",
-					Relation: Relation{
+					Reference: Reference{
 						Mode:   "manual",
 						Target: "resource",
 					},
