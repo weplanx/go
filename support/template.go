@@ -49,7 +49,7 @@ func False() *bool {
 }
 
 {{range .}}
-type {{title .Key}} struct {` +
+type {{title .Model}} struct {` +
 	"ID     	int64	  \n" +
 	"Status     *bool     \n" +
 	"CreateTime time.Time \n" +
