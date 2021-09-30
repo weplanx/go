@@ -1,4 +1,4 @@
-package mvc
+package route
 
 import (
 	"github.com/gin-gonic/gin"
@@ -34,7 +34,7 @@ func SetMiddleware(middleware gin.HandlerFunc, effect ...string) OptionFunc {
 	}
 }
 
-func New(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterGroup {
+func Auto(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterGroup {
 	typ := reflect.TypeOf(i)
 	val := reflect.ValueOf(i)
 	opt := new(Option)

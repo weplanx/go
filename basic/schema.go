@@ -1,4 +1,4 @@
-package support
+package basic
 
 import (
 	"database/sql/driver"

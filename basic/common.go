@@ -1,4 +1,4 @@
-package support
+package basic
 
 func True() *bool {
 	value := true
