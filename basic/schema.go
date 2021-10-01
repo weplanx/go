@@ -53,7 +53,7 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 	tx.Exec("create index columns_gin on schema using gin(columns)")
 	data := []Schema{
 		{
-			Model:  "resource",
+			Model:  "page",
 			Kind:   "manual",
 			System: True(),
 		},

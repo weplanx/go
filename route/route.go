@@ -34,6 +34,7 @@ func SetMiddleware(middleware gin.HandlerFunc, effect ...string) OptionFunc {
 	}
 }
 
+// Auto 生成路由
 func Auto(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterGroup {
 	typ := reflect.TypeOf(i)
 	val := reflect.ValueOf(i)
@@ -63,20 +64,15 @@ func Auto(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterG
 	return s
 }
 
-// Returns Unified controller function
-//	 handlerFn: func(c *gin.Context) interface{}
-//	return types:
-//	 (string) => 200 {"error":0,"msg":<string>}
-//	 (error) => 200 {"error":1,"msg":<err.Error()>}, custom error code: c.Set("code", 1000)
-//	 (interface) => 200 {"error":0,"data":<interface{}>}
+// Returns 返回统一结果
 func Returns(handlerFn interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if fn, ok := handlerFn.(func(c *gin.Context) interface{}); ok {
 			switch result := fn(c).(type) {
 			case string:
 				c.JSON(http.StatusOK, gin.H{
-					"error": 0,
-					"msg":   result,
+					"code":    0,
+					"message": result,
 				})
 				break
 			case error:
@@ -85,15 +81,16 @@ func Returns(handlerFn interface{}) gin.HandlerFunc {
 					code = 1
 				}
 				c.JSON(http.StatusOK, gin.H{
-					"error": code,
-					"msg":   result.Error(),
+					"code":    code,
+					"message": result.Error(),
 				})
 				break
 			default:
 				if result != nil {
 					c.JSON(http.StatusOK, gin.H{
-						"error": 0,
-						"data":  result,
+						"code":    0,
+						"data":    result,
+						"message": "ok",
 					})
 				} else {
 					c.Status(http.StatusNotFound)
