@@ -11,8 +11,8 @@ type UpdateBody struct {
 
 // Update resources
 func (x *API) Update(c *gin.Context) interface{} {
-	var uri Uri
-	if err := c.ShouldBindUri(&uri); err != nil {
+	uri, err := x.getUri(c)
+	if err != nil {
 		return err
 	}
 	var body UpdateBody

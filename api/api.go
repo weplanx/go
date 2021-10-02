@@ -3,18 +3,31 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	"gorm.io/gorm"
 )
 
 type API struct {
-	Db *gorm.DB
+	Db    *gorm.DB
+	Model string
 }
 
-func InitializeAPI(tx *gorm.DB) *API {
-	return &API{
-		Db: tx,
+type OptionFunc func(*API)
+
+func SetModel(name string) OptionFunc {
+	return func(api *API) {
+		api.Model = name
 	}
+}
+
+func New(db *gorm.DB, options ...OptionFunc) *API {
+	api := new(API)
+	api.Db = db
+	for _, option := range options {
+		option(api)
+	}
+	return api
 }
 
 // Conditions 条件数组
@@ -61,4 +74,15 @@ func (x *API) toJSON(rows *sql.Rows, value *map[string]interface{}) (err error) 
 
 type Uri struct {
 	Model string `uri:"model" binding:"required"`
+}
+
+func (x *API) getUri(c *gin.Context) (uri Uri, err error) {
+	if x.Model != "" {
+		uri.Model = x.Model
+		return
+	}
+	if err = c.ShouldBindUri(&uri); err != nil {
+		return
+	}
+	return
 }

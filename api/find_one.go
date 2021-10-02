@@ -10,8 +10,8 @@ type FindOneBody struct {
 
 // FindOne Get a single resource
 func (x *API) FindOne(c *gin.Context) interface{} {
-	var uri Uri
-	if err := c.ShouldBindUri(&uri); err != nil {
+	uri, err := x.getUri(c)
+	if err != nil {
 		return err
 	}
 	var body FindOneBody

@@ -10,8 +10,8 @@ type FindBody struct {
 
 // Find Get the original list resource
 func (x *API) Find(c *gin.Context) interface{} {
-	var uri Uri
-	if err := c.ShouldBindUri(&uri); err != nil {
+	uri, err := x.getUri(c)
+	if err != nil {
 		return err
 	}
 	var body FindBody

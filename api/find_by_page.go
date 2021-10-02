@@ -16,8 +16,8 @@ type FindByPageBody struct {
 
 // FindByPage Get paging list resources
 func (x *API) FindByPage(c *gin.Context) interface{} {
-	var uri Uri
-	if err := c.ShouldBindUri(&uri); err != nil {
+	uri, err := x.getUri(c)
+	if err != nil {
 		return err
 	}
 	var body FindByPageBody

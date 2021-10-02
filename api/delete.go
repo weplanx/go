@@ -9,8 +9,8 @@ type DeleteBody struct {
 
 // Delete resource
 func (x *API) Delete(c *gin.Context) interface{} {
-	var uri Uri
-	if err := c.ShouldBindUri(&uri); err != nil {
+	uri, err := x.getUri(c)
+	if err != nil {
 		return err
 	}
 	var body DeleteBody
