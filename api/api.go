@@ -5,24 +5,27 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
 
 type API struct {
-	Db    *gorm.DB
-	Model string
+	Mongo      *mongo.Client
+	Db         *mongo.Database
+	Collection string
 }
 
 type OptionFunc func(*API)
 
-func SetModel(name string) OptionFunc {
+func SetCollection(name string) OptionFunc {
 	return func(api *API) {
-		api.Model = name
+		api.Collection = name
 	}
 }
 
-func New(db *gorm.DB, options ...OptionFunc) *API {
+func New(client *mongo.Client, db *mongo.Database, options ...OptionFunc) *API {
 	api := new(API)
+	api.Mongo = client
 	api.Db = db
 	for _, option := range options {
 		option(api)
@@ -73,12 +76,12 @@ func (x *API) toJSON(rows *sql.Rows, value *map[string]interface{}) (err error) 
 }
 
 type Uri struct {
-	Model string `uri:"model" binding:"required"`
+	Collection string `uri:"collection" binding:"required"`
 }
 
 func (x *API) getUri(c *gin.Context) (uri Uri, err error) {
-	if x.Model != "" {
-		uri.Model = x.Model
+	if x.Collection != "" {
+		uri.Collection = x.Collection
 		return
 	}
 	if err = c.ShouldBindUri(&uri); err != nil {

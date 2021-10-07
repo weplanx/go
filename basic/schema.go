@@ -1,28 +1,19 @@
 package basic
 
 import (
-	"database/sql/driver"
-	jsoniter "github.com/json-iterator/go"
-	"gorm.io/gorm"
+	"context"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Schema struct {
-	ID      int64   `json:"id"`
-	Model   string  `gorm:"type:varchar;not null;unique" json:"model"`
-	Kind    string  `gorm:"type:varchar;not null" json:"kind"`
-	Columns Columns `gorm:"type:jsonb;default:'{}'" json:"columns"`
-	System  *bool   `gorm:"default:false" json:"system"`
+	Name    string  `bson:"name" json:"name"`
+	Key     string  `bson:"key" json:"key"`
+	Kind    string  `bson:"kind" json:"kind"`
+	System  *bool   `bson:"system" json:"system"`
+	Columns Columns `bson:"columns" json:"columns"`
 }
 
 type Columns map[string]Column
-
-func (x *Columns) Scan(input interface{}) error {
-	return jsoniter.Unmarshal(input.([]byte), x)
-}
-
-func (x Columns) Value() (driver.Value, error) {
-	return jsoniter.Marshal(x)
-}
 
 type Column struct {
 	Label     string    `json:"label"`
@@ -41,25 +32,18 @@ type Reference struct {
 	To     string `json:"to,omitempty"`
 }
 
-func GenerateSchema(tx *gorm.DB) (err error) {
-	if tx.Migrator().HasTable(&Schema{}) {
-		if err = tx.Migrator().DropTable(&Schema{}); err != nil {
-			return
-		}
-	}
-	if err = tx.AutoMigrate(&Schema{}); err != nil {
-		return
-	}
-	tx.Exec("create index columns_gin on schema using gin(columns)")
-	data := []Schema{
-		{
-			Model:  "page",
+func GenerateSchema(db *mongo.Database) (err error) {
+	if _, err = db.Collection("schema").InsertMany(context.TODO(), []interface{}{
+		Schema{
+			Name:   "页面集合",
+			Key:    "page",
 			Kind:   "manual",
 			System: True(),
 		},
-		{
-			Model: "role",
-			Kind:  "collection",
+		Schema{
+			Name: "权限集合",
+			Key:  "role",
+			Kind: "collection",
 			Columns: map[string]Column{
 				"key": {
 					Label:   "权限代码",
@@ -102,9 +86,10 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 			},
 			System: True(),
 		},
-		{
-			Model: "admin",
-			Kind:  "collection",
+		Schema{
+			Name: "成员集合",
+			Key:  "admin",
+			Kind: "collection",
 			Columns: map[string]Column{
 				"uuid": {
 					Label:   "唯一标识",
@@ -185,6 +170,8 @@ func GenerateSchema(tx *gorm.DB) (err error) {
 			},
 			System: True(),
 		},
+	}); err != nil {
+		return
 	}
-	return tx.Create(&data).Error
+	return
 }
