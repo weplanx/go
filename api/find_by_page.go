@@ -13,8 +13,9 @@ type Pagination struct {
 
 // FindByPageBody Get the request body of the paged list resource
 type FindByPageBody struct {
-	Pagination `json:"page" binding:"required"`
 	Where      bson.M `json:"where"`
+	Sort       bson.M `json:"sort"`
+	Pagination `json:"page" binding:"required"`
 }
 
 // FindByPage Get paging list resources
@@ -27,7 +28,7 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err := x.where(&body.Where); err != nil {
+	if err := x.format(&body.Where); err != nil {
 		return err
 	}
 	total, err := x.Db.

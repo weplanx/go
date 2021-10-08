@@ -7,7 +7,7 @@ import (
 
 // UpdateBody Update resource request body
 type UpdateBody struct {
-	Where  bson.M `json:"where"`
+	Where  bson.M `json:"where" binding:"required"`
 	Update bson.M `json:"update" binding:"required"`
 }
 
@@ -21,7 +21,7 @@ func (x *API) Update(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err := x.where(&body.Where); err != nil {
+	if err := x.format(&body.Where); err != nil {
 		return err
 	}
 	result, err := x.Db.

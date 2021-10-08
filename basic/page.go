@@ -1,208 +1,196 @@
 package basic
 
 import (
-	"database/sql/driver"
-	jsoniter "github.com/json-iterator/go"
-	"gorm.io/gorm"
+	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Page struct {
-	ID       uint64       `json:"id"`
-	Parent   uint64       `gorm:"index:idx_parent_fragment,unique;default:0" json:"parent"`
-	Fragment string       `gorm:"type:varchar;not null;index:idx_parent_fragment,unique" json:"fragment"`
-	Name     string       `gorm:"type:varchar;not null" json:"name"`
-	Router   RouterOption `gorm:"type:jsonb;default:'{}'" json:"router"`
-	Nav      *bool        `gorm:"default:false" json:"nav"`
-	Icon     string       `gorm:"type:varchar" json:"icon"`
-	Sort     uint8        `gorm:"default:0" json:"sort"`
+	Parent   string       `bson:"parent" json:"parent"`
+	Fragment string       `bson:"fragment" json:"fragment"`
+	Name     string       `bson:"name" json:"name"`
+	Router   RouterOption `bson:"router" json:"router"`
+	Nav      *bool        `bson:"nav" json:"nav"`
+	Icon     string       `bson:"icon" json:"icon"`
+	Sort     uint8        `bson:"sort" json:"sort"`
 }
 
 type RouterOption struct {
-	Schema   string       `json:"schema,omitempty"`
-	Template string       `json:"template,omitempty"`
-	Fetch    bool         `json:"fetch,omitempty"`
-	Columns  []ViewColumn `json:"columns,omitempty"`
+	Collection string       `json:"collection,omitempty"`
+	Template   string       `json:"template,omitempty"`
+	Fetch      bool         `json:"fetch,omitempty"`
+	Fields     []ViewFields `json:"columns,omitempty"`
 }
 
-func (x *RouterOption) Scan(input interface{}) error {
-	return jsoniter.Unmarshal(input.([]byte), x)
+type ViewFields struct {
+	Field string `json:"field"`
 }
 
-func (x RouterOption) Value() (driver.Value, error) {
-	return jsoniter.Marshal(x)
-}
-
-type ViewColumn struct {
-	Key string `json:"key"`
-}
-
-func GeneratePage(tx *gorm.DB) (err error) {
-	if tx.Migrator().HasTable(&Page{}) {
-		if err = tx.Migrator().DropTable(&Page{}); err != nil {
-			return
-		}
-	}
-	if err = tx.AutoMigrate(&Page{}); err != nil {
+func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
+	collection := db.Collection("page")
+	if _, err = collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{"parent", 1},
+			{"fragment", 1},
+		},
+		Options: options.Index().SetName("parent_fragment_idx").SetUnique(true),
+	}); err != nil {
 		return
 	}
-	if err = tx.Exec("create index router_gin on page using gin(router)").Error; err != nil {
+	if _, err = collection.InsertOne(ctx, Page{
+		Parent:   "root",
+		Fragment: "dashboard",
+		Name:     "仪表盘",
+		Nav:      True(),
+		Router: RouterOption{
+			Template: "manual",
+		},
+		Icon: "dashboard",
+	}); err != nil {
 		return
 	}
-	return tx.Transaction(func(txx *gorm.DB) (err error) {
-		dashboard := Page{
-			Fragment: "dashboard",
-			Name:     "仪表盘",
+	center, err := collection.InsertOne(ctx, Page{
+		Parent:   "root",
+		Fragment: "center",
+		Name:     "个人中心",
+	})
+	if err != nil {
+		return
+	}
+	if _, err = collection.InsertMany(ctx, []interface{}{
+		Page{
+			Parent:   center.InsertedID.(primitive.ObjectID).Hex(),
+			Fragment: "profile",
+			Name:     "我的信息",
+			Router: RouterOption{
+				Template: "manual",
+			},
+		},
+		Page{
+			Parent:   center.InsertedID.(primitive.ObjectID).Hex(),
+			Fragment: "notification",
+			Name:     "消息通知",
+			Router: RouterOption{
+				Template: "manual",
+			},
+		},
+	}); err != nil {
+		return
+	}
+	settings, err := collection.InsertOne(ctx, Page{
+		Parent:   "root",
+		Fragment: "settings",
+		Name:     "设置",
+		Nav:      True(),
+		Icon:     "setting",
+	})
+	if err != nil {
+		return
+	}
+	if _, err = collection.InsertMany(ctx, []interface{}{
+		Page{
+			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
+			Fragment: "schema",
+			Name:     "模型管理",
 			Nav:      True(),
 			Router: RouterOption{
 				Template: "manual",
 			},
-			Icon: "dashboard",
-		}
-		if err = txx.Create(&dashboard).Error; err != nil {
-			return
-		}
-		center := Page{
-			Fragment: "center",
-			Name:     "个人中心",
-		}
-		if err = txx.Create(&center).Error; err != nil {
-			return
-		}
-		centerChildren := []Page{
-			{
-				Parent:   center.ID,
-				Fragment: "profile",
-				Name:     "我的信息",
-				Router: RouterOption{
-					Template: "manual",
-				},
-			},
-			{
-				Parent:   center.ID,
-				Fragment: "notification",
-				Name:     "消息通知",
-				Router: RouterOption{
-					Template: "manual",
-				},
-			},
-		}
-		if err = txx.Create(&centerChildren).Error; err != nil {
-			return
-		}
-		settings := Page{
-			Fragment: "settings",
-			Name:     "设置",
+		},
+		Page{
+			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
+			Fragment: "page",
+			Name:     "页面管理",
 			Nav:      True(),
-			Icon:     "setting",
-		}
-		if err = txx.Create(&settings).Error; err != nil {
-			return
-		}
-		settingsChildren := []Page{
-			{
-				Parent:   settings.ID,
-				Fragment: "schema",
-				Name:     "模型管理",
-				Nav:      True(),
-				Router: RouterOption{
-					Template: "manual",
-				},
+			Router: RouterOption{
+				Template: "manual",
 			},
-			{
-				Parent:   settings.ID,
-				Fragment: "page",
-				Name:     "页面管理",
-				Nav:      True(),
-				Router: RouterOption{
-					Template: "manual",
-				},
+		},
+		Page{
+			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
+			Fragment: "role",
+			Name:     "权限管理",
+			Nav:      True(),
+			Router: RouterOption{
+				Collection: "role",
+				Template:   "list",
 			},
-			{
-				Parent:   settings.ID,
-				Fragment: "role",
-				Name:     "权限管理",
-				Nav:      True(),
-				Router: RouterOption{
-					Schema:   "role",
-					Template: "list",
-				},
+		},
+		Page{
+			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
+			Fragment: "admin",
+			Name:     "成员管理",
+			Nav:      True(),
+			Router: RouterOption{
+				Collection: "admin",
+				Template:   "list",
 			},
-			{
-				Parent:   settings.ID,
-				Fragment: "admin",
-				Name:     "成员管理",
-				Nav:      True(),
-				Router: RouterOption{
-					Schema:   "admin",
-					Template: "list",
-				},
-			},
-		}
-		if err = txx.Create(&settingsChildren).Error; err != nil {
-			return
-		}
-		var role Page
-		if err = txx.
-			Where("parent = ?", settings.ID).
-			Where("fragment = ?", "role").
-			First(&role).Error; err != nil {
-			return
-		}
-		roleChildren := []Page{
-			{
-				Parent:   role.ID,
-				Fragment: "create",
-				Name:     "创建资源",
-				Router: RouterOption{
-					Schema:   "role",
-					Template: "form",
-				},
-			},
-			{
-				Parent:   role.ID,
-				Fragment: "update",
-				Name:     "更新资源",
-				Router: RouterOption{
-					Schema:   "role",
-					Template: "form",
-					Fetch:    true,
-				},
-			},
-		}
-		if err = txx.Create(&roleChildren).Error; err != nil {
-			return
-		}
-		var admin Page
-		if err = txx.
-			Where("parent = ?", settings.ID).
-			Where("fragment = ?", "admin").
-			First(&admin).Error; err != nil {
-			return
-		}
-		adminChildren := []Page{
-			{
-				Parent:   admin.ID,
-				Fragment: "create",
-				Name:     "创建资源",
-				Router: RouterOption{
-					Schema:   "admin",
-					Template: "form",
-				},
-			},
-			{
-				Parent:   admin.ID,
-				Fragment: "update",
-				Name:     "更新资源",
-				Router: RouterOption{
-					Schema:   "admin",
-					Template: "form",
-					Fetch:    true,
-				},
-			},
-		}
-		if err = txx.Create(&adminChildren).Error; err != nil {
-			return
-		}
+		},
+	}); err != nil {
 		return
-	})
+	}
+	var role map[string]interface{}
+	if err = collection.FindOne(ctx, bson.M{
+		"parent":   settings.InsertedID.(primitive.ObjectID).Hex(),
+		"fragment": "role",
+	}).Decode(&role); err != nil {
+		return
+	}
+	if _, err = collection.InsertMany(ctx, []interface{}{
+		Page{
+			Parent:   role["_id"].(primitive.ObjectID).Hex(),
+			Fragment: "create",
+			Name:     "创建资源",
+			Router: RouterOption{
+				Collection: "role",
+				Template:   "form",
+			},
+		},
+		Page{
+			Parent:   role["_id"].(primitive.ObjectID).Hex(),
+			Fragment: "update",
+			Name:     "更新资源",
+			Router: RouterOption{
+				Collection: "role",
+				Template:   "form",
+				Fetch:      true,
+			},
+		},
+	}); err != nil {
+		return
+	}
+	var admin map[string]interface{}
+	if err = collection.FindOne(ctx, bson.M{
+		"parent":   settings.InsertedID.(primitive.ObjectID).Hex(),
+		"fragment": "admin",
+	}).Decode(&admin); err != nil {
+		return
+	}
+	if _, err = collection.InsertMany(ctx, []interface{}{
+		Page{
+			Parent:   admin["_id"].(primitive.ObjectID).Hex(),
+			Fragment: "create",
+			Name:     "创建资源",
+			Router: RouterOption{
+				Collection: "admin",
+				Template:   "form",
+			},
+		},
+		Page{
+			Parent:   admin["_id"].(primitive.ObjectID).Hex(),
+			Fragment: "update",
+			Name:     "更新资源",
+			Router: RouterOption{
+				Collection: "admin",
+				Template:   "form",
+				Fetch:      true,
+			},
+		},
+	}); err != nil {
+		return
+	}
+	return
 }

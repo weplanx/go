@@ -50,39 +50,29 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 			Fields: Fields{
 				"key": {
 					Label:   "权限代码",
-					Type:    "varchar",
+					Type:    "String",
 					Require: true,
 					Unique:  true,
 					System:  true,
 				},
 				"name": {
 					Label:   "权限名称",
-					Type:    "varchar",
+					Type:    "String",
 					Require: true,
 					System:  true,
 				},
 				"description": {
 					Label:  "描述",
-					Type:   "text",
+					Type:   "String",
 					System: true,
 				},
-				"routers": {
-					Label:   "路由",
-					Type:    "ref",
+				"pages": {
+					Label:   "页面",
+					Type:    "Array",
 					Default: "'[]'",
 					Reference: Reference{
 						Mode:   "manual",
-						Target: "resource",
-					},
-					System: true,
-				},
-				"permissions": {
-					Label:   "策略",
-					Type:    "ref",
-					Default: "'[]'",
-					Reference: Reference{
-						Mode:   "manual",
-						Target: "resource",
+						Target: "page",
 					},
 					System: true,
 				},
@@ -94,32 +84,23 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 			Collection: "admin",
 			Kind:       "collection",
 			Fields: Fields{
-				"uuid": {
-					Label:   "唯一标识",
-					Type:    "uuid",
-					Default: "uuid_generate_v4()",
-					Require: true,
-					Unique:  true,
-					Private: true,
-					System:  true,
-				},
 				"username": {
 					Label:   "用户名",
-					Type:    "varchar",
+					Type:    "String",
 					Require: true,
 					Unique:  true,
 					System:  true,
 				},
 				"password": {
 					Label:   "密码",
-					Type:    "varchar",
+					Type:    "String",
 					Require: true,
 					Private: true,
 					System:  true,
 				},
 				"roles": {
 					Label:   "权限",
-					Type:    "ref",
+					Type:    "Array",
 					Require: true,
 					Default: "'[]'",
 					Reference: Reference{
@@ -131,44 +112,24 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 				},
 				"name": {
 					Label:  "姓名",
-					Type:   "varchar",
+					Type:   "String",
 					System: true,
 				},
 				"email": {
 					Label:  "邮件",
-					Type:   "varchar",
+					Type:   "String",
 					System: true,
 				},
 				"phone": {
 					Label:  "联系方式",
-					Type:   "varchar",
+					Type:   "String",
 					System: true,
 				},
 				"avatar": {
 					Label:   "头像",
-					Type:    "array",
+					Type:    "Array",
 					Default: "'[]'",
 					System:  true,
-				},
-				"routers": {
-					Label:   "路由",
-					Type:    "ref",
-					Default: "'[]'",
-					Reference: Reference{
-						Mode:   "manual",
-						Target: "resource",
-					},
-					System: true,
-				},
-				"permissions": {
-					Label:   "策略",
-					Type:    "ref",
-					Default: "'[]'",
-					Reference: Reference{
-						Mode:   "manual",
-						Target: "resource",
-					},
-					System: true,
 				},
 			},
 			System: True(),

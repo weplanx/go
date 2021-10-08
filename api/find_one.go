@@ -22,7 +22,7 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 		return err
 	}
 	data := make(map[string]interface{})
-	if err := x.where(&body.Where); err != nil {
+	if err := x.format(&body.Where); err != nil {
 		return err
 	}
 	opts := options.FindOne()

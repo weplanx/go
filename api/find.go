@@ -9,6 +9,7 @@ import (
 // FindBody Get the original list resource request body
 type FindBody struct {
 	Where bson.M `json:"where"`
+	Sort  bson.M `json:"sort"`
 }
 
 // Find Get the original list resource
@@ -21,10 +22,11 @@ func (x *API) Find(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err := x.where(&body.Where); err != nil {
+	if err := x.format(&body.Where); err != nil {
 		return err
 	}
 	opts := options.Find()
+	opts.Sort = body.Sort
 	cursor, err := x.Db.
 		Collection(uri.Collection).
 		Find(c, body.Where, opts)

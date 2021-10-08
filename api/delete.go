@@ -7,7 +7,7 @@ import (
 
 // DeleteBody Delete resource request body
 type DeleteBody struct {
-	Where bson.M `json:"where"`
+	Where bson.M `json:"where" binding:"required"`
 }
 
 // Delete resource
@@ -20,7 +20,7 @@ func (x *API) Delete(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err := x.where(&body.Where); err != nil {
+	if err := x.format(&body.Where); err != nil {
 		return err
 	}
 	result, err := x.Db.Collection(uri.Collection).DeleteMany(c, body.Where)

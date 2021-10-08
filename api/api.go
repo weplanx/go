@@ -31,7 +31,7 @@ func New(client *mongo.Client, db *mongo.Database, options ...OptionFunc) *API {
 	return api
 }
 
-func (x *API) where(input *bson.M) (err error) {
+func (x *API) format(input *bson.M) (err error) {
 	if (*input)["_id"] != nil {
 		switch value := (*input)["_id"].(type) {
 		case string:
