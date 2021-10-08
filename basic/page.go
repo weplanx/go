@@ -12,7 +12,7 @@ type Page struct {
 	Parent   string       `bson:"parent" json:"parent"`
 	Fragment string       `bson:"fragment" json:"fragment"`
 	Name     string       `bson:"name" json:"name"`
-	Router   RouterOption `bson:"router" json:"router"`
+	Router   RouterOption `bson:"router,omitempty" json:"router"`
 	Nav      *bool        `bson:"nav" json:"nav"`
 	Icon     string       `bson:"icon" json:"icon"`
 	Sort     uint8        `bson:"sort" json:"sort"`
@@ -94,7 +94,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Page{
 			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "schema",
-			Name:     "模型管理",
+			Name:     "模式管理",
 			Nav:      True(),
 			Router: RouterOption{
 				Template: "manual",

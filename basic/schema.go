@@ -8,67 +8,70 @@ import (
 )
 
 type Schema struct {
-	Name       string `bson:"name" json:"name"`
-	Collection string `bson:"collection" json:"collection"`
-	Kind       string `bson:"kind" json:"kind"`
-	System     *bool  `bson:"system" json:"system"`
-	Fields     Fields `bson:"fields" json:"fields"`
+	Name       string  `bson:"name" json:"name"`
+	Collection string  `bson:"collection" json:"collection"`
+	Kind       string  `bson:"kind" json:"kind"`
+	System     *bool   `bson:"system,omitempty" json:"system"`
+	Fields     []Field `bson:"fields,omitempty" json:"fields"`
 }
 
-type Fields map[string]Field
-
 type Field struct {
-	Label     string    `json:"label"`
-	Type      string    `json:"type"`
-	Default   string    `json:"default,omitempty"`
-	Unique    bool      `json:"unique,omitempty"`
-	Require   bool      `json:"require,omitempty"`
-	Reference Reference `json:"reference,omitempty"`
-	Private   bool      `json:"private,omitempty"`
-	System    bool      `json:"system,omitempty"`
+	Name      string    `bson:"name,omitempty" json:"name"`
+	Type      string    `bson:"type,omitempty" json:"type"`
+	Label     string    `bson:"label,omitempty" json:"label"`
+	Default   string    `bson:"default,omitempty" json:"default,omitempty"`
+	Unique    bool      `bson:"unique,omitempty" json:"unique,omitempty"`
+	Require   bool      `bson:"require,omitempty" json:"require,omitempty"`
+	Reference Reference `bson:"reference,omitempty" json:"reference,omitempty"`
+	Private   bool      `bson:"private,omitempty" json:"private,omitempty"`
+	System    bool      `bson:"system,omitempty" json:"system,omitempty"`
 }
 
 type Reference struct {
-	Mode   string `json:"mode,omitempty"`
-	Target string `json:"target,omitempty"`
-	To     string `json:"to,omitempty"`
+	Mode   string `bson:"mode,omitempty" json:"mode,omitempty"`
+	Target string `bson:"target,omitempty" json:"target,omitempty"`
+	To     string `bson:"to,omitempty" json:"to,omitempty"`
 }
 
 func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 	collection := db.Collection("schema")
 	if _, err = collection.InsertMany(ctx, []interface{}{
 		Schema{
-			Name:       "页面集合",
+			Name:       "动态页面",
 			Collection: "page",
 			Kind:       "manual",
 			System:     True(),
 		},
 		Schema{
-			Name:       "权限集合",
+			Name:       "权限组",
 			Collection: "role",
 			Kind:       "collection",
-			Fields: Fields{
-				"key": {
-					Label:   "权限代码",
+			Fields: []Field{
+				{
+					Name:    "key",
 					Type:    "String",
+					Label:   "权限代码",
 					Require: true,
 					Unique:  true,
 					System:  true,
 				},
-				"name": {
-					Label:   "权限名称",
+				{
+					Name:    "name",
 					Type:    "String",
+					Label:   "权限名称",
 					Require: true,
 					System:  true,
 				},
-				"description": {
-					Label:  "描述",
+				{
+					Name:   "description",
 					Type:   "String",
+					Label:  "描述",
 					System: true,
 				},
-				"pages": {
-					Label:   "页面",
+				{
+					Name:    "pages",
 					Type:    "Array",
+					Label:   "页面",
 					Default: "'[]'",
 					Reference: Reference{
 						Mode:   "manual",
@@ -80,27 +83,30 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 			System: True(),
 		},
 		Schema{
-			Name:       "成员集合",
+			Name:       "成员",
 			Collection: "admin",
 			Kind:       "collection",
-			Fields: Fields{
-				"username": {
-					Label:   "用户名",
+			Fields: []Field{
+				{
+					Name:    "username",
 					Type:    "String",
+					Label:   "用户名",
 					Require: true,
 					Unique:  true,
 					System:  true,
 				},
-				"password": {
-					Label:   "密码",
+				{
+					Name:    "password",
 					Type:    "String",
+					Label:   "密码",
 					Require: true,
 					Private: true,
 					System:  true,
 				},
-				"roles": {
-					Label:   "权限",
+				{
+					Name:    "roles",
 					Type:    "Array",
+					Label:   "权限",
 					Require: true,
 					Default: "'[]'",
 					Reference: Reference{
@@ -110,24 +116,28 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 					},
 					System: true,
 				},
-				"name": {
+				{
+					Name:   "name",
+					Type:   "String",
 					Label:  "姓名",
-					Type:   "String",
 					System: true,
 				},
-				"email": {
+				{
+					Name:   "email",
+					Type:   "String",
 					Label:  "邮件",
-					Type:   "String",
 					System: true,
 				},
-				"phone": {
+				{
+					Name:   "phone",
+					Type:   "String",
 					Label:  "联系方式",
-					Type:   "String",
 					System: true,
 				},
-				"avatar": {
-					Label:   "头像",
+				{
+					Name:    "avatar",
 					Type:    "Array",
+					Label:   "头像",
 					Default: "'[]'",
 					System:  true,
 				},
