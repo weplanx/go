@@ -1,26 +1,34 @@
 package api
 
-//// UpdateBody Update resource request body
-//type UpdateBody struct {
-//	Data map[string]interface{} `json:"data" binding:"required"`
-//
-//	Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
-//}
-//
-//// Update resources
-//func (x *API) Update(c *gin.Context) interface{} {
-//	uri, err := x.getUri(c)
-//	if err != nil {
-//		return err
-//	}
-//	var body UpdateBody
-//	if err := c.ShouldBindJSON(&body); err != nil {
-//		return err
-//	}
-//	tx := x.Db.WithContext(c).Table(uri.Model)
-//	tx = x.where(tx, body.Conditions)
-//	if err := tx.Updates(body.Data).Error; err != nil {
-//		return err
-//	}
-//	return "ok"
-//}
+import (
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+)
+
+// UpdateBody Update resource request body
+type UpdateBody struct {
+	Where  bson.M `json:"where"`
+	Update bson.M `json:"update" binding:"required"`
+}
+
+// Update resources
+func (x *API) Update(c *gin.Context) interface{} {
+	uri, err := x.getUri(c)
+	if err != nil {
+		return err
+	}
+	var body UpdateBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		return err
+	}
+	if err := x.where(&body.Where); err != nil {
+		return err
+	}
+	result, err := x.Db.
+		Collection(uri.Collection).
+		UpdateOne(c, body.Where, body.Update)
+	if err != nil {
+		return err
+	}
+	return result
+}

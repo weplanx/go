@@ -3,13 +3,11 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // FindOneBody Get a single resource request body
 type FindOneBody struct {
-	//Conditions `json:"where" binding:"gte=0,dive,len=3,dive,required"`
-	//Orders     `json:"order" binding:"omitempty,gte=0,dive,keys,endkeys,oneof=asc desc,required"`
 	Where bson.M `json:"where"`
 }
 
@@ -24,15 +22,13 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 		return err
 	}
 	data := make(map[string]interface{})
-	if body.Where["_id"] != nil {
-		body.Where["_id"], err = primitive.ObjectIDFromHex(body.Where["_id"].(string))
-		if err != nil {
-			return err
-		}
+	if err := x.where(&body.Where); err != nil {
+		return err
 	}
+	opts := options.FindOne()
 	if err := x.Db.
 		Collection(uri.Collection).
-		FindOne(c, body.Where).
+		FindOne(c, body.Where, opts).
 		Decode(&data); err != nil {
 		return err
 	}

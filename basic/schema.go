@@ -2,20 +2,22 @@ package basic
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Schema struct {
-	Name    string  `bson:"name" json:"name"`
-	Key     string  `bson:"key" json:"key"`
-	Kind    string  `bson:"kind" json:"kind"`
-	System  *bool   `bson:"system" json:"system"`
-	Columns Columns `bson:"columns" json:"columns"`
+	Name       string `bson:"name" json:"name"`
+	Collection string `bson:"collection" json:"collection"`
+	Kind       string `bson:"kind" json:"kind"`
+	System     *bool  `bson:"system" json:"system"`
+	Fields     Fields `bson:"fields" json:"fields"`
 }
 
-type Columns map[string]Column
+type Fields map[string]Field
 
-type Column struct {
+type Field struct {
 	Label     string    `json:"label"`
 	Type      string    `json:"type"`
 	Default   string    `json:"default,omitempty"`
@@ -32,19 +34,20 @@ type Reference struct {
 	To     string `json:"to,omitempty"`
 }
 
-func GenerateSchema(db *mongo.Database) (err error) {
-	if _, err = db.Collection("schema").InsertMany(context.TODO(), []interface{}{
+func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
+	collection := db.Collection("schema")
+	if _, err = collection.InsertMany(ctx, []interface{}{
 		Schema{
-			Name:   "页面集合",
-			Key:    "page",
-			Kind:   "manual",
-			System: True(),
+			Name:       "页面集合",
+			Collection: "page",
+			Kind:       "manual",
+			System:     True(),
 		},
 		Schema{
-			Name: "权限集合",
-			Key:  "role",
-			Kind: "collection",
-			Columns: map[string]Column{
+			Name:       "权限集合",
+			Collection: "role",
+			Kind:       "collection",
+			Fields: Fields{
 				"key": {
 					Label:   "权限代码",
 					Type:    "varchar",
@@ -87,10 +90,10 @@ func GenerateSchema(db *mongo.Database) (err error) {
 			System: True(),
 		},
 		Schema{
-			Name: "成员集合",
-			Key:  "admin",
-			Kind: "collection",
-			Columns: map[string]Column{
+			Name:       "成员集合",
+			Collection: "admin",
+			Kind:       "collection",
+			Fields: Fields{
 				"uuid": {
 					Label:   "唯一标识",
 					Type:    "uuid",
@@ -170,6 +173,14 @@ func GenerateSchema(db *mongo.Database) (err error) {
 			},
 			System: True(),
 		},
+	}); err != nil {
+		return
+	}
+	if _, err = collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.M{
+			"collection": 1,
+		},
+		Options: options.Index().SetUnique(true),
 	}); err != nil {
 		return
 	}

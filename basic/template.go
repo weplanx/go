@@ -113,7 +113,7 @@ func typ(val string) string {
 	return val
 }
 
-func columns(columns Columns) string {
+func columns(columns Fields) string {
 	var b strings.Builder
 	for k, v := range columns {
 		b.WriteString(title(k))

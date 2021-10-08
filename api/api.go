@@ -1,12 +1,10 @@
 package api
 
 import (
-	"database/sql"
-	"encoding/json"
 	"github.com/gin-gonic/gin"
-	jsoniter "github.com/json-iterator/go"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"gorm.io/gorm"
 )
 
 type API struct {
@@ -33,42 +31,25 @@ func New(client *mongo.Client, db *mongo.Database, options ...OptionFunc) *API {
 	return api
 }
 
-// Conditions 条件数组
-type Conditions [][3]interface{}
-
-// Orders 排序字段
-type Orders map[string]string
-
-func (x *API) where(tx *gorm.DB, conds Conditions) *gorm.DB {
-	for _, v := range conds {
-		tx = tx.Where(gorm.Expr(v[0].(string)+" "+v[1].(string)+" ?", v[2]))
-	}
-	return tx
-}
-
-// orderBy sort fields initial
-func (x *API) orderBy(tx *gorm.DB, orders Orders) *gorm.DB {
-	for k, v := range orders {
-		tx = tx.Order(k + " " + v)
-	}
-	return tx
-}
-
-func (x *API) toJSON(rows *sql.Rows, value *map[string]interface{}) (err error) {
-	typs, err := rows.ColumnTypes()
-	if err != nil {
-		return
-	}
-	for _, typ := range typs {
-		switch typ.DatabaseTypeName() {
-		case "ARRAY":
-		case "JSON":
-		case "JSONB":
-			var JSON json.RawMessage
-			if err = jsoniter.Unmarshal([]byte((*value)[typ.Name()].(string)), &JSON); err != nil {
+func (x *API) where(input *bson.M) (err error) {
+	if (*input)["_id"] != nil {
+		switch value := (*input)["_id"].(type) {
+		case string:
+			var id primitive.ObjectID
+			if id, err = primitive.ObjectIDFromHex(value); err != nil {
 				return
 			}
-			(*value)[typ.Name()] = &JSON
+			(*input)["_id"] = id
+			break
+		case map[string]interface{}:
+			values := value["$in"].([]interface{})
+			ids := make([]primitive.ObjectID, len(values))
+			for k, v := range values {
+				if ids[k], err = primitive.ObjectIDFromHex(v.(string)); err != nil {
+					return
+				}
+			}
+			(*input)["_id"].(map[string]interface{})["$in"] = ids
 			break
 		}
 	}
