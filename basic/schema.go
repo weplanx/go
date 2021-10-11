@@ -21,7 +21,7 @@ type Field struct {
 	Label     string    `bson:"label,omitempty" json:"label"`
 	Default   string    `bson:"default,omitempty" json:"default,omitempty"`
 	Unique    bool      `bson:"unique,omitempty" json:"unique,omitempty"`
-	Require   bool      `bson:"require,omitempty" json:"require,omitempty"`
+	Required  bool      `bson:"required,omitempty" json:"required,omitempty"`
 	Reference Reference `bson:"reference,omitempty" json:"reference,omitempty"`
 	Private   bool      `bson:"private,omitempty" json:"private,omitempty"`
 	System    bool      `bson:"system,omitempty" json:"system,omitempty"`
@@ -48,19 +48,19 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 			Kind:       "collection",
 			Fields: []Field{
 				{
-					Name:    "key",
-					Type:    "String",
-					Label:   "权限代码",
-					Require: true,
-					Unique:  true,
-					System:  true,
+					Name:     "key",
+					Type:     "String",
+					Label:    "权限代码",
+					Required: true,
+					Unique:   true,
+					System:   true,
 				},
 				{
-					Name:    "name",
-					Type:    "String",
-					Label:   "权限名称",
-					Require: true,
-					System:  true,
+					Name:     "name",
+					Type:     "String",
+					Label:    "权限名称",
+					Required: true,
+					System:   true,
 				},
 				{
 					Name:   "description",
@@ -88,27 +88,27 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 			Kind:       "collection",
 			Fields: []Field{
 				{
-					Name:    "username",
-					Type:    "String",
-					Label:   "用户名",
-					Require: true,
-					Unique:  true,
-					System:  true,
+					Name:     "username",
+					Type:     "String",
+					Label:    "用户名",
+					Required: true,
+					Unique:   true,
+					System:   true,
 				},
 				{
-					Name:    "password",
-					Type:    "String",
-					Label:   "密码",
-					Require: true,
-					Private: true,
-					System:  true,
+					Name:     "password",
+					Type:     "String",
+					Label:    "密码",
+					Required: true,
+					Private:  true,
+					System:   true,
 				},
 				{
-					Name:    "roles",
-					Type:    "Array",
-					Label:   "权限",
-					Require: true,
-					Default: "'[]'",
+					Name:     "roles",
+					Type:     "Array",
+					Label:    "权限",
+					Required: true,
+					Default:  "'[]'",
 					Reference: Reference{
 						Mode:   "many",
 						Target: "role",
