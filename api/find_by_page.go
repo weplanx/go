@@ -20,8 +20,7 @@ type FindByPageBody struct {
 
 // FindByPage Get paging list resources
 func (x *API) FindByPage(c *gin.Context) interface{} {
-	uri, err := x.getUri(c)
-	if err != nil {
+	if err := x.setCollection(c); err != nil {
 		return err
 	}
 	var body FindByPageBody
@@ -31,9 +30,7 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	if err := x.format(&body.Where); err != nil {
 		return err
 	}
-	total, err := x.Db.
-		Collection(uri.Collection).
-		CountDocuments(c, body.Where)
+	total, err := x.Collection.CountDocuments(c, body.Where)
 	if err != nil {
 		return err
 	}
@@ -41,9 +38,7 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	page := body.Pagination
 	opts.SetLimit(page.Limit)
 	opts.SetSkip((page.Index - 1) * page.Limit)
-	cursor, err := x.Db.
-		Collection(uri.Collection).
-		Find(c, body.Where, opts)
+	cursor, err := x.Collection.Find(c, body.Where, opts)
 	if err != nil {
 		return err
 	}

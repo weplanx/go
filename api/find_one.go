@@ -13,8 +13,7 @@ type FindOneBody struct {
 
 // FindOne Get a single resource
 func (x *API) FindOne(c *gin.Context) interface{} {
-	uri, err := x.getUri(c)
-	if err != nil {
+	if err := x.setCollection(c); err != nil {
 		return err
 	}
 	var body FindOneBody
@@ -26,10 +25,7 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 		return err
 	}
 	opts := options.FindOne()
-	if err := x.Db.
-		Collection(uri.Collection).
-		FindOne(c, body.Where, opts).
-		Decode(&data); err != nil {
+	if err := x.Collection.FindOne(c, body.Where, opts).Decode(&data); err != nil {
 		return err
 	}
 	return data

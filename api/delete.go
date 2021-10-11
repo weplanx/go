@@ -2,28 +2,34 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // DeleteBody Delete resource request body
 type DeleteBody struct {
-	Where bson.M `json:"where" binding:"required"`
+	Where `json:"where" binding:"required"`
 }
 
 // Delete resource
 func (x *API) Delete(c *gin.Context) interface{} {
-	uri, err := x.getUri(c)
-	if err != nil {
+	if err := x.setCollection(c); err != nil {
 		return err
 	}
-	var body DeleteBody
-	if err := c.ShouldBindJSON(&body); err != nil {
+	h := x.getHook(c)
+	if h.body == nil {
+		var deleteBody DeleteBody
+		if err := c.ShouldBindJSON(&deleteBody); err != nil {
+			return err
+		}
+		h.SetBody(deleteBody)
+	}
+	body := h.body.(interface {
+		Filter() *primitive.M
+	})
+	if err := x.format(body.Filter()); err != nil {
 		return err
 	}
-	if err := x.format(&body.Where); err != nil {
-		return err
-	}
-	result, err := x.Db.Collection(uri.Collection).DeleteMany(c, body.Where)
+	result, err := x.Collection.DeleteMany(c, body.Filter())
 	if err != nil {
 		return err
 	}
