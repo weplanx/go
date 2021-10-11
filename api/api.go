@@ -16,15 +16,16 @@ type API struct {
 
 type Where bson.M
 
-func (x Where) Filter() *primitive.M {
+func (x Where) GetWhere() *primitive.M {
 	value := primitive.M(x)
 	return &value
 }
 
 type Update bson.M
 
-func (x Update) Update() bson.M {
-	return bson.M(x)
+func (x Update) GetUpdate() *primitive.M {
+	value := primitive.M(x)
+	return &value
 }
 
 type OptionFunc func(*API)

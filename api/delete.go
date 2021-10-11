@@ -24,12 +24,12 @@ func (x *API) Delete(c *gin.Context) interface{} {
 		h.SetBody(deleteBody)
 	}
 	body := h.body.(interface {
-		Filter() *primitive.M
+		GetWhere() *primitive.M
 	})
-	if err := x.format(body.Filter()); err != nil {
+	if err := x.format(body.GetWhere()); err != nil {
 		return err
 	}
-	result, err := x.Collection.DeleteMany(c, body.Filter())
+	result, err := x.Collection.DeleteMany(c, body.GetWhere())
 	if err != nil {
 		return err
 	}

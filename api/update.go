@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -26,13 +25,13 @@ func (x *API) Update(c *gin.Context) interface{} {
 		h.SetBody(updateBody)
 	}
 	body := h.body.(interface {
-		Filter() *primitive.M
-		Update() bson.M
+		GetWhere() *primitive.M
+		GetUpdate() *primitive.M
 	})
-	if err := x.format(body.Filter()); err != nil {
+	if err := x.format(body.GetWhere()); err != nil {
 		return err
 	}
-	result, err := x.Collection.UpdateOne(c, body.Filter(), body.Update())
+	result, err := x.Collection.UpdateOne(c, body.GetWhere(), body.GetUpdate())
 	if err != nil {
 		return err
 	}
