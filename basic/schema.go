@@ -8,26 +8,32 @@ import (
 )
 
 type Schema struct {
-	Name       string  `bson:"name" json:"name"`
-	Collection string  `bson:"collection" json:"collection"`
-	Kind       string  `bson:"kind" json:"kind"`
-	System     *bool   `bson:"system,omitempty" json:"system"`
-	Fields     []Field `bson:"fields,omitempty" json:"fields"`
+	Key         string  `bson:"key" json:"key"`
+	Label       string  `bson:"label" json:"label"`
+	Kind        string  `bson:"kind" json:"kind"`
+	Description string  `bson:"description,omitempty" json:"description"`
+	System      *bool   `bson:"system,omitempty" json:"system"`
+	Fields      []Field `bson:"fields,omitempty" json:"fields"`
 }
 
 type Field struct {
-	Name      string    `bson:"name,omitempty" json:"name"`
-	Type      string    `bson:"type,omitempty" json:"type"`
-	Label     string    `bson:"label,omitempty" json:"label"`
-	Default   string    `bson:"default,omitempty" json:"default,omitempty"`
-	Unique    bool      `bson:"unique,omitempty" json:"unique,omitempty"`
-	Required  bool      `bson:"required,omitempty" json:"required,omitempty"`
-	Reference Reference `bson:"reference,omitempty" json:"reference,omitempty"`
-	Private   bool      `bson:"private,omitempty" json:"private,omitempty"`
-	System    bool      `bson:"system,omitempty" json:"system,omitempty"`
+	Key         string      `bson:"key" json:"key"`
+	Label       string      `bson:"label" json:"label"`
+	Type        string      `bson:"type" json:"type"`
+	Description string      `bson:"description,omitempty" json:"description"`
+	Default     string      `bson:"default,omitempty" json:"default,omitempty"`
+	Unique      *bool       `bson:"unique,omitempty" json:"unique,omitempty"`
+	Required    *bool       `bson:"required,omitempty" json:"required,omitempty"`
+	Private     *bool       `bson:"private,omitempty" json:"private,omitempty"`
+	System      *bool       `bson:"system,omitempty" json:"system,omitempty"`
+	Option      FieldOption `bson:"option,omitempty" json:"option,omitempty"`
 }
 
-type Reference struct {
+type FieldOption struct {
+	// 数字类型
+	Max interface{} `bson:"max,omitempty" json:"max,omitempty"`
+	Min interface{} `bson:"min,omitempty" json:"min,omitempty"`
+	// 引用类型
 	Mode   string `bson:"mode,omitempty" json:"mode,omitempty"`
 	Target string `bson:"target,omitempty" json:"target,omitempty"`
 	To     string `bson:"to,omitempty" json:"to,omitempty"`
@@ -37,109 +43,109 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 	collection := db.Collection("schema")
 	if _, err = collection.InsertMany(ctx, []interface{}{
 		Schema{
-			Name:       "动态页面",
-			Collection: "page",
-			Kind:       "manual",
-			System:     True(),
+			Key:    "page",
+			Label:  "动态页面",
+			Kind:   "manual",
+			System: True(),
 		},
 		Schema{
-			Name:       "权限组",
-			Collection: "role",
-			Kind:       "collection",
+			Key:   "role",
+			Label: "权限组",
+			Kind:  "collection",
 			Fields: []Field{
 				{
-					Name:     "key",
-					Type:     "String",
+					Key:      "key",
 					Label:    "权限代码",
-					Required: true,
-					Unique:   true,
-					System:   true,
+					Type:     "text",
+					Required: True(),
+					Unique:   True(),
+					System:   True(),
 				},
 				{
-					Name:     "name",
-					Type:     "String",
+					Key:      "name",
 					Label:    "权限名称",
-					Required: true,
-					System:   true,
+					Type:     "text",
+					Required: True(),
+					System:   True(),
 				},
 				{
-					Name:   "description",
-					Type:   "String",
+					Key:    "description",
 					Label:  "描述",
-					System: true,
+					Type:   "text",
+					System: True(),
 				},
 				{
-					Name:    "pages",
-					Type:    "Array",
+					Key:     "pages",
 					Label:   "页面",
+					Type:    "reference",
 					Default: "'[]'",
-					Reference: Reference{
+					System:  True(),
+					Option: FieldOption{
 						Mode:   "manual",
 						Target: "page",
 					},
-					System: true,
 				},
 			},
 			System: True(),
 		},
 		Schema{
-			Name:       "成员",
-			Collection: "admin",
-			Kind:       "collection",
+			Label: "成员",
+			Key:   "admin",
+			Kind:  "collection",
 			Fields: []Field{
 				{
-					Name:     "username",
-					Type:     "String",
+					Key:      "username",
 					Label:    "用户名",
-					Required: true,
-					Unique:   true,
-					System:   true,
+					Type:     "text",
+					Required: True(),
+					Unique:   True(),
+					System:   True(),
 				},
 				{
-					Name:     "password",
-					Type:     "String",
+					Key:      "password",
 					Label:    "密码",
-					Required: true,
-					Private:  true,
-					System:   true,
+					Type:     "password",
+					Required: True(),
+					Private:  True(),
+					System:   True(),
 				},
 				{
-					Name:     "roles",
-					Type:     "Array",
+					Key:      "roles",
 					Label:    "权限",
-					Required: true,
+					Type:     "reference",
+					Required: True(),
 					Default:  "'[]'",
-					Reference: Reference{
+					System:   True(),
+					Option: FieldOption{
 						Mode:   "many",
 						Target: "role",
 						To:     "key",
 					},
-					System: true,
 				},
 				{
-					Name:   "name",
-					Type:   "String",
+					Key:    "name",
 					Label:  "姓名",
-					System: true,
+					Type:   "text",
+					System: True(),
 				},
 				{
-					Name:   "email",
-					Type:   "String",
+					Key:    "email",
 					Label:  "邮件",
-					System: true,
+					Type:   "email",
+					System: True(),
 				},
 				{
-					Name:   "phone",
-					Type:   "String",
+					Key:    "phone",
 					Label:  "联系方式",
-					System: true,
+					Type:   "text",
+					System: True(),
 				},
 				{
-					Name:    "avatar",
-					Type:    "Array",
+					Key:     "avatar",
 					Label:   "头像",
+					Type:    "media",
 					Default: "'[]'",
-					System:  true,
+					System:  True(),
 				},
 			},
 			System: True(),
@@ -149,7 +155,7 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 	}
 	if _, err = collection.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.M{
-			"collection": 1,
+			"key": 1,
 		},
 		Options: options.Index().SetUnique(true),
 	}); err != nil {
