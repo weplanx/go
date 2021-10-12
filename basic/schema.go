@@ -33,6 +33,9 @@ type FieldOption struct {
 	// 数字类型
 	Max interface{} `bson:"max,omitempty" json:"max,omitempty"`
 	Min interface{} `bson:"min,omitempty" json:"min,omitempty"`
+	// 枚举类型
+	Values   bson.D `bson:"values,omitempty" json:"values,omitempty"`
+	Multiple *bool  `bson:"multiple,omitempty" json:"multiple,omitempty"`
 	// 引用类型
 	Mode   string `bson:"mode,omitempty" json:"mode,omitempty"`
 	Target string `bson:"target,omitempty" json:"target,omitempty"`
