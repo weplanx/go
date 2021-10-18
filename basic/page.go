@@ -19,7 +19,7 @@ type Page struct {
 }
 
 type RouterOption struct {
-	Template   string       `bson:"template" json:"template,omitempty"`
+	Template   string       `bson:"template,omitempty" json:"template,omitempty"`
 	Schema     string       `bson:"schema,omitempty" json:"schema,omitempty"`
 	Fetch      *bool        `bson:"fetch,omitempty" json:"fetch,omitempty"`
 	Fields     []ViewFields `bson:"fields,omitempty" json:"columns,omitempty"`
@@ -28,6 +28,7 @@ type RouterOption struct {
 
 type ViewFields struct {
 	Key     string `bson:"key" json:"key"`
+	Label   string `bson:"label" json:"label"`
 	Display *bool  `bson:"display" json:"display"`
 }
 
@@ -58,6 +59,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Parent:   "root",
 		Fragment: "center",
 		Name:     "个人中心",
+		Nav:      False(),
 	})
 	if err != nil {
 		return
@@ -67,6 +69,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   center.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "profile",
 			Name:     "我的信息",
+			Nav:      False(),
 			Router: RouterOption{
 				Template: "manual",
 			},
@@ -75,6 +78,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   center.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "notification",
 			Name:     "消息通知",
+			Nav:      False(),
 			Router: RouterOption{
 				Template: "manual",
 			},
@@ -91,6 +95,65 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 	})
 	if err != nil {
 		return
+	}
+	roleViewFields := []ViewFields{
+		{
+			Key:     "name",
+			Label:   "权限代码",
+			Display: True(),
+		},
+		{
+			Key:     "key",
+			Label:   "权限代码",
+			Display: True(),
+		},
+		{
+			Key:     "description",
+			Label:   "描述",
+			Display: True(),
+		},
+		{
+			Key:     "pages",
+			Label:   "页面",
+			Display: True(),
+		},
+	}
+	adminViewFields := []ViewFields{
+		{
+			Key:     "username",
+			Label:   "用户名",
+			Display: True(),
+		},
+		{
+			Key:     "password",
+			Label:   "密码",
+			Display: True(),
+		},
+		{
+			Key:     "roles",
+			Label:   "权限",
+			Display: True(),
+		},
+		{
+			Key:     "name",
+			Label:   "姓名",
+			Display: True(),
+		},
+		{
+			Key:     "email",
+			Label:   "邮件",
+			Display: True(),
+		},
+		{
+			Key:     "phone",
+			Label:   "联系方式",
+			Display: True(),
+		},
+		{
+			Key:     "avatar",
+			Label:   "头像",
+			Display: True(),
+		},
 	}
 	if _, err = collection.InsertMany(ctx, []interface{}{
 		Page{
@@ -117,8 +180,9 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Name:     "权限管理",
 			Nav:      True(),
 			Router: RouterOption{
-				Template: "list",
+				Template: "table",
 				Schema:   "role",
+				Fields:   roleViewFields,
 			},
 		},
 		Page{
@@ -127,8 +191,9 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Name:     "成员管理",
 			Nav:      True(),
 			Router: RouterOption{
-				Template: "list",
+				Template: "table",
 				Schema:   "admin",
+				Fields:   adminViewFields,
 			},
 		},
 	}); err != nil {
@@ -146,19 +211,24 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   role["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "create",
 			Name:     "创建资源",
+			Nav:      False(),
 			Router: RouterOption{
 				Template: "form",
 				Schema:   "role",
+				Fetch:    False(),
+				Fields:   roleViewFields,
 			},
 		},
 		Page{
 			Parent:   role["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "update",
 			Name:     "更新资源",
+			Nav:      False(),
 			Router: RouterOption{
 				Template: "form",
 				Schema:   "role",
 				Fetch:    True(),
+				Fields:   roleViewFields,
 			},
 		},
 	}); err != nil {
@@ -176,19 +246,23 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   admin["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "create",
 			Name:     "创建资源",
+			Nav:      False(),
 			Router: RouterOption{
 				Template: "form",
 				Schema:   "admin",
+				Fields:   adminViewFields,
 			},
 		},
 		Page{
 			Parent:   admin["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "update",
 			Name:     "更新资源",
+			Nav:      False(),
 			Router: RouterOption{
 				Template: "form",
 				Schema:   "admin",
 				Fetch:    True(),
+				Fields:   adminViewFields,
 			},
 		},
 	}); err != nil {
