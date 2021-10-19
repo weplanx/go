@@ -9,21 +9,21 @@ import (
 )
 
 type Page struct {
-	Parent   string       `bson:"parent" json:"parent"`
-	Fragment string       `bson:"fragment" json:"fragment"`
-	Name     string       `bson:"name" json:"name"`
-	Router   RouterOption `bson:"router,omitempty" json:"router"`
-	Nav      *bool        `bson:"nav" json:"nav"`
-	Icon     string       `bson:"icon" json:"icon"`
-	Sort     uint8        `bson:"sort" json:"sort"`
+	Parent   string     `bson:"parent" json:"parent"`
+	Fragment string     `bson:"fragment" json:"fragment"`
+	Name     string     `bson:"name" json:"name"`
+	Nav      *bool      `bson:"nav" json:"nav"`
+	Icon     string     `bson:"icon" json:"icon"`
+	Sort     uint8      `bson:"sort" json:"sort"`
+	Router   string     `bson:"router" json:"router"`
+	Option   PageOption `bson:"option,omitempty" json:"option,omitempty"`
 }
 
-type RouterOption struct {
-	Template   string       `bson:"template,omitempty" json:"template,omitempty"`
+type PageOption struct {
 	Schema     string       `bson:"schema,omitempty" json:"schema,omitempty"`
 	Fetch      *bool        `bson:"fetch,omitempty" json:"fetch,omitempty"`
-	Fields     []ViewFields `bson:"fields,omitempty" json:"columns,omitempty"`
-	Validation []byte       `bson:"validation,omitempty" json:"validation,omitempty"`
+	Fields     []ViewFields `bson:"fields,omitempty" json:"fields,omitempty"`
+	Validation string       `bson:"validation,omitempty" json:"validation,omitempty"`
 }
 
 type ViewFields struct {
@@ -48,10 +48,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Fragment: "dashboard",
 		Name:     "仪表盘",
 		Nav:      True(),
-		Router: RouterOption{
-			Template: "manual",
-		},
-		Icon: "dashboard",
+		Icon:     "dashboard",
+		Router:   "manual",
 	}); err != nil {
 		return
 	}
@@ -70,18 +68,14 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "profile",
 			Name:     "我的信息",
 			Nav:      False(),
-			Router: RouterOption{
-				Template: "manual",
-			},
+			Router:   "manual",
 		},
 		Page{
 			Parent:   center.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "notification",
 			Name:     "消息通知",
 			Nav:      False(),
-			Router: RouterOption{
-				Template: "manual",
-			},
+			Router:   "manual",
 		},
 	}); err != nil {
 		return
@@ -161,28 +155,24 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "schema",
 			Name:     "模式管理",
 			Nav:      True(),
-			Router: RouterOption{
-				Template: "manual",
-			},
+			Router:   "manual",
 		},
 		Page{
 			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "page",
 			Name:     "页面管理",
 			Nav:      True(),
-			Router: RouterOption{
-				Template: "manual",
-			},
+			Router:   "manual",
 		},
 		Page{
 			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "role",
 			Name:     "权限管理",
 			Nav:      True(),
-			Router: RouterOption{
-				Template: "table",
-				Schema:   "role",
-				Fields:   roleViewFields,
+			Router:   "table",
+			Option: PageOption{
+				Schema: "role",
+				Fields: roleViewFields,
 			},
 		},
 		Page{
@@ -190,10 +180,10 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "admin",
 			Name:     "成员管理",
 			Nav:      True(),
-			Router: RouterOption{
-				Template: "table",
-				Schema:   "admin",
-				Fields:   adminViewFields,
+			Router:   "table",
+			Option: PageOption{
+				Schema: "admin",
+				Fields: adminViewFields,
 			},
 		},
 	}); err != nil {
@@ -212,11 +202,11 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "create",
 			Name:     "创建资源",
 			Nav:      False(),
-			Router: RouterOption{
-				Template: "form",
-				Schema:   "role",
-				Fetch:    False(),
-				Fields:   roleViewFields,
+			Router:   "form",
+			Option: PageOption{
+				Schema: "role",
+				Fetch:  False(),
+				Fields: roleViewFields,
 			},
 		},
 		Page{
@@ -224,11 +214,11 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "update",
 			Name:     "更新资源",
 			Nav:      False(),
-			Router: RouterOption{
-				Template: "form",
-				Schema:   "role",
-				Fetch:    True(),
-				Fields:   roleViewFields,
+			Router:   "form",
+			Option: PageOption{
+				Schema: "role",
+				Fetch:  True(),
+				Fields: roleViewFields,
 			},
 		},
 	}); err != nil {
@@ -247,10 +237,10 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "create",
 			Name:     "创建资源",
 			Nav:      False(),
-			Router: RouterOption{
-				Template: "form",
-				Schema:   "admin",
-				Fields:   adminViewFields,
+			Router:   "form",
+			Option: PageOption{
+				Schema: "admin",
+				Fields: adminViewFields,
 			},
 		},
 		Page{
@@ -258,11 +248,11 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "update",
 			Name:     "更新资源",
 			Nav:      False(),
-			Router: RouterOption{
-				Template: "form",
-				Schema:   "admin",
-				Fetch:    True(),
-				Fields:   adminViewFields,
+			Router:   "form",
+			Option: PageOption{
+				Schema: "admin",
+				Fetch:  True(),
+				Fields: adminViewFields,
 			},
 		},
 	}); err != nil {
