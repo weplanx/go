@@ -10,7 +10,6 @@ import (
 type API struct {
 	Mongo          *mongo.Client
 	Db             *mongo.Database
-	Collection     *mongo.Collection
 	CollectionName string
 }
 
@@ -33,7 +32,6 @@ type OptionFunc func(*API)
 func SetCollection(name string) OptionFunc {
 	return func(api *API) {
 		api.CollectionName = name
-		api.Collection = api.Db.Collection(name)
 	}
 }
 
@@ -75,6 +73,7 @@ func (x *API) format(input *primitive.M) (err error) {
 
 func (x *API) setCollection(c *gin.Context) error {
 	if x.CollectionName != "" {
+		c.Set("collection", x.CollectionName)
 		return nil
 	}
 	var uri struct {
@@ -83,9 +82,13 @@ func (x *API) setCollection(c *gin.Context) error {
 	if err := c.ShouldBindUri(&uri); err != nil {
 		return err
 	}
-	x.CollectionName = uri.Collection
-	x.Collection = x.Db.Collection(uri.Collection)
+	c.Set("collection", uri.Collection)
 	return nil
+}
+
+func (x *API) collection(c *gin.Context) *mongo.Collection {
+	name, _ := c.Get("collection")
+	return x.Db.Collection(name.(string))
 }
 
 func (x *API) getHook(c *gin.Context) *Hook {

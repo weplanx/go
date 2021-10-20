@@ -26,7 +26,7 @@ func (x *API) Find(c *gin.Context) interface{} {
 	}
 	opts := options.Find()
 	opts.Sort = body.Sort
-	cursor, err := x.Collection.Find(c, body.Where, opts)
+	cursor, err := x.collection(c).Find(c, body.Where, opts)
 	if err != nil {
 		return err
 	}

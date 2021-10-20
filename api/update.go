@@ -31,7 +31,7 @@ func (x *API) Update(c *gin.Context) interface{} {
 	if err := x.format(body.GetWhere()); err != nil {
 		return err
 	}
-	result, err := x.Collection.UpdateOne(c, body.GetWhere(), body.GetUpdate())
+	result, err := x.collection(c).UpdateOne(c, body.GetWhere(), body.GetUpdate())
 	if err != nil {
 		return err
 	}

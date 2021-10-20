@@ -25,7 +25,7 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 		return err
 	}
 	opts := options.FindOne()
-	if err := x.Collection.FindOne(c, body.Where, opts).Decode(&data); err != nil {
+	if err := x.collection(c).FindOne(c, body.Where, opts).Decode(&data); err != nil {
 		return err
 	}
 	return data

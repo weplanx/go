@@ -93,7 +93,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 	roleViewFields := []ViewFields{
 		{
 			Key:     "name",
-			Label:   "权限代码",
+			Label:   "权限名称",
 			Display: True(),
 		},
 		{
