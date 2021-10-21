@@ -24,8 +24,14 @@ func (x *API) FindOne(c *gin.Context) interface{} {
 	if err := x.format(&body.Where); err != nil {
 		return err
 	}
+	name := x.getName(c)
 	opts := options.FindOne()
-	if err := x.collection(c).FindOne(c, body.Where, opts).Decode(&data); err != nil {
+	projection, err := x.getProjection(c)
+	if err != nil {
+		return err
+	}
+	opts.SetProjection(projection)
+	if err := x.Db.Collection(name).FindOne(c, body.Where, opts).Decode(&data); err != nil {
 		return err
 	}
 	return data

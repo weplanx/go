@@ -29,7 +29,8 @@ func (x *API) Delete(c *gin.Context) interface{} {
 	if err := x.format(body.GetWhere()); err != nil {
 		return err
 	}
-	result, err := x.collection(c).DeleteMany(c, body.GetWhere())
+	name := x.getName(c)
+	result, err := x.Db.Collection(name).DeleteMany(c, body.GetWhere())
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,8 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	if err := x.format(&body.Where); err != nil {
 		return err
 	}
-	total, err := x.collection(c).CountDocuments(c, body.Where)
+	name := x.getName(c)
+	total, err := x.Db.Collection(name).CountDocuments(c, body.Where)
 	if err != nil {
 		return err
 	}
@@ -38,7 +39,12 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	page := body.Pagination
 	opts.SetLimit(page.Limit)
 	opts.SetSkip((page.Index - 1) * page.Limit)
-	cursor, err := x.collection(c).Find(c, body.Where, opts)
+	projection, err := x.getProjection(c)
+	if err != nil {
+		return err
+	}
+	opts.SetProjection(projection)
+	cursor, err := x.Db.Collection(name).Find(c, body.Where, opts)
 	if err != nil {
 		return err
 	}

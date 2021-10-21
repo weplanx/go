@@ -24,9 +24,15 @@ func (x *API) Find(c *gin.Context) interface{} {
 	if err := x.format(&body.Where); err != nil {
 		return err
 	}
+	name := x.getName(c)
 	opts := options.Find()
 	opts.Sort = body.Sort
-	cursor, err := x.collection(c).Find(c, body.Where, opts)
+	projection, err := x.getProjection(c)
+	if err != nil {
+		return err
+	}
+	opts.SetProjection(projection)
+	cursor, err := x.Db.Collection(name).Find(c, body.Where, opts)
 	if err != nil {
 		return err
 	}

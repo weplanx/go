@@ -24,7 +24,7 @@ type Field struct {
 	Default     string      `bson:"default,omitempty" json:"default,omitempty"`
 	Unique      *bool       `bson:"unique,omitempty" json:"unique,omitempty"`
 	Required    *bool       `bson:"required,omitempty" json:"required,omitempty"`
-	Private     *bool       `bson:"private,omitempty" json:"private,omitempty"`
+	Private     bool        `bson:"private,omitempty" json:"private,omitempty"`
 	System      *bool       `bson:"system,omitempty" json:"system,omitempty"`
 	Option      FieldOption `bson:"option,omitempty" json:"option,omitempty"`
 }
@@ -109,7 +109,14 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 					Label:    "密码",
 					Type:     "password",
 					Required: True(),
-					Private:  True(),
+					Private:  true,
+					System:   True(),
+				},
+				{
+					Key:      "status",
+					Label:    "状态",
+					Type:     "bool",
+					Required: True(),
 					System:   True(),
 				},
 				{

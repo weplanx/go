@@ -124,6 +124,11 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Display: True(),
 		},
 		{
+			Key:     "status",
+			Label:   "状态",
+			Display: True(),
+		},
+		{
 			Key:     "roles",
 			Label:   "权限",
 			Display: True(),

@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/weplanx/support/basic"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -86,9 +87,26 @@ func (x *API) setCollection(c *gin.Context) error {
 	return nil
 }
 
-func (x *API) collection(c *gin.Context) *mongo.Collection {
+func (x *API) getName(c *gin.Context) string {
 	name, _ := c.Get("collection")
-	return x.Db.Collection(name.(string))
+	return name.(string)
+}
+
+func (x *API) getProjection(c *gin.Context) (projection bson.M, err error) {
+	var schema basic.Schema
+	name := x.getName(c)
+	if err = x.Db.Collection("schema").FindOne(c, bson.M{
+		"key": name,
+	}).Decode(&schema); err != nil {
+		return
+	}
+	projection = make(bson.M)
+	for _, x := range schema.Fields {
+		if x.Private == true {
+			projection[x.Key] = 0
+		}
+	}
+	return
 }
 
 func (x *API) getHook(c *gin.Context) *Hook {
