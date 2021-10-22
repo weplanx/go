@@ -6,12 +6,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"log"
 )
 
 type API struct {
 	Mongo          *mongo.Client
 	Db             *mongo.Database
 	CollectionName string
+	ProjectionNone bool
 }
 
 type Where bson.M
@@ -33,6 +35,12 @@ type OptionFunc func(*API)
 func SetCollection(name string) OptionFunc {
 	return func(api *API) {
 		api.CollectionName = name
+	}
+}
+
+func ProjectionNone() OptionFunc {
+	return func(api *API) {
+		api.ProjectionNone = true
 	}
 }
 
@@ -93,6 +101,9 @@ func (x *API) getName(c *gin.Context) string {
 }
 
 func (x *API) getProjection(c *gin.Context) (projection bson.M, err error) {
+	if x.ProjectionNone {
+		return
+	}
 	var schema basic.Schema
 	name := x.getName(c)
 	if err = x.Db.Collection("schema").FindOne(c, bson.M{
@@ -102,9 +113,10 @@ func (x *API) getProjection(c *gin.Context) (projection bson.M, err error) {
 	}
 	projection = make(bson.M)
 	for _, x := range schema.Fields {
-		if x.Private == true {
-			projection[x.Key] = 0
-		}
+		log.Println(x.Key, x.Private)
+		//if x.Private == true {
+		//	projection[x.Key] = 0
+		//}
 	}
 	return
 }
