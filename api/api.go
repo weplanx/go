@@ -6,7 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"log"
 )
 
 type API struct {
@@ -113,10 +112,9 @@ func (x *API) getProjection(c *gin.Context) (projection bson.M, err error) {
 	}
 	projection = make(bson.M)
 	for _, x := range schema.Fields {
-		log.Println(x.Key, x.Private)
-		//if x.Private == true {
-		//	projection[x.Key] = 0
-		//}
+		if x.Private {
+			projection[x.Key] = 0
+		}
 	}
 	return
 }

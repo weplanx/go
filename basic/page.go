@@ -12,7 +12,7 @@ type Page struct {
 	Parent   string     `bson:"parent" json:"parent"`
 	Fragment string     `bson:"fragment" json:"fragment"`
 	Name     string     `bson:"name" json:"name"`
-	Nav      *bool      `bson:"nav" json:"nav"`
+	Nav      bool       `bson:"nav" json:"nav"`
 	Icon     string     `bson:"icon" json:"icon"`
 	Sort     uint8      `bson:"sort" json:"sort"`
 	Router   string     `bson:"router" json:"router"`
@@ -21,7 +21,7 @@ type Page struct {
 
 type PageOption struct {
 	Schema     string       `bson:"schema,omitempty" json:"schema,omitempty"`
-	Fetch      *bool        `bson:"fetch,omitempty" json:"fetch,omitempty"`
+	Fetch      bool         `bson:"fetch,omitempty" json:"fetch,omitempty"`
 	Fields     []ViewFields `bson:"fields,omitempty" json:"fields,omitempty"`
 	Validation string       `bson:"validation,omitempty" json:"validation,omitempty"`
 }
@@ -29,7 +29,7 @@ type PageOption struct {
 type ViewFields struct {
 	Key     string `bson:"key" json:"key"`
 	Label   string `bson:"label" json:"label"`
-	Display *bool  `bson:"display" json:"display"`
+	Display bool   `bson:"display" json:"display"`
 }
 
 func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
@@ -47,7 +47,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Parent:   "root",
 		Fragment: "dashboard",
 		Name:     "仪表盘",
-		Nav:      True(),
+		Nav:      true,
 		Icon:     "dashboard",
 		Router:   "manual",
 	}); err != nil {
@@ -57,7 +57,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Parent:   "root",
 		Fragment: "center",
 		Name:     "个人中心",
-		Nav:      False(),
+		Nav:      false,
 	})
 	if err != nil {
 		return
@@ -67,14 +67,14 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   center.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "profile",
 			Name:     "我的信息",
-			Nav:      False(),
+			Nav:      false,
 			Router:   "manual",
 		},
 		Page{
 			Parent:   center.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "notification",
 			Name:     "消息通知",
-			Nav:      False(),
+			Nav:      false,
 			Router:   "manual",
 		},
 	}); err != nil {
@@ -84,7 +84,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Parent:   "root",
 		Fragment: "settings",
 		Name:     "设置",
-		Nav:      True(),
+		Nav:      false,
 		Icon:     "setting",
 	})
 	if err != nil {
@@ -94,64 +94,64 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		{
 			Key:     "name",
 			Label:   "权限名称",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "key",
 			Label:   "权限代码",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "description",
 			Label:   "描述",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "pages",
 			Label:   "页面",
-			Display: True(),
+			Display: true,
 		},
 	}
 	adminViewFields := []ViewFields{
 		{
 			Key:     "username",
 			Label:   "用户名",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "password",
 			Label:   "密码",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "status",
 			Label:   "状态",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "roles",
 			Label:   "权限",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "name",
 			Label:   "姓名",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "email",
 			Label:   "邮件",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "phone",
 			Label:   "联系方式",
-			Display: True(),
+			Display: true,
 		},
 		{
 			Key:     "avatar",
 			Label:   "头像",
-			Display: True(),
+			Display: true,
 		},
 	}
 	if _, err = collection.InsertMany(ctx, []interface{}{
@@ -159,21 +159,21 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "schema",
 			Name:     "模式管理",
-			Nav:      True(),
+			Nav:      true,
 			Router:   "manual",
 		},
 		Page{
 			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "page",
 			Name:     "页面管理",
-			Nav:      True(),
+			Nav:      true,
 			Router:   "manual",
 		},
 		Page{
 			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "role",
 			Name:     "权限管理",
-			Nav:      True(),
+			Nav:      true,
 			Router:   "table",
 			Option: PageOption{
 				Schema: "role",
@@ -184,7 +184,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   settings.InsertedID.(primitive.ObjectID).Hex(),
 			Fragment: "admin",
 			Name:     "成员管理",
-			Nav:      True(),
+			Nav:      true,
 			Router:   "table",
 			Option: PageOption{
 				Schema: "admin",
@@ -206,11 +206,11 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   role["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "create",
 			Name:     "创建资源",
-			Nav:      False(),
+			Nav:      false,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "role",
-				Fetch:  False(),
+				Fetch:  false,
 				Fields: roleViewFields,
 			},
 		},
@@ -218,11 +218,11 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   role["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "update",
 			Name:     "更新资源",
-			Nav:      False(),
+			Nav:      false,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "role",
-				Fetch:  True(),
+				Fetch:  true,
 				Fields: roleViewFields,
 			},
 		},
@@ -241,7 +241,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   admin["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "create",
 			Name:     "创建资源",
-			Nav:      False(),
+			Nav:      false,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "admin",
@@ -252,11 +252,11 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Parent:   admin["_id"].(primitive.ObjectID).Hex(),
 			Fragment: "update",
 			Name:     "更新资源",
-			Nav:      False(),
+			Nav:      false,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "admin",
-				Fetch:  True(),
+				Fetch:  true,
 				Fields: adminViewFields,
 			},
 		},
