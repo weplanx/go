@@ -49,6 +49,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Name:     "仪表盘",
 		Nav:      true,
 		Icon:     "dashboard",
+		Sort:     0,
 		Router:   "manual",
 	}); err != nil {
 		return
@@ -58,6 +59,9 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Fragment: "center",
 		Name:     "个人中心",
 		Nav:      false,
+		Icon:     "",
+		Sort:     0,
+		Router:   "",
 	})
 	if err != nil {
 		return
@@ -68,6 +72,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "profile",
 			Name:     "我的信息",
 			Nav:      false,
+			Icon:     "",
+			Sort:     0,
 			Router:   "manual",
 		},
 		Page{
@@ -75,6 +81,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "notification",
 			Name:     "消息通知",
 			Nav:      false,
+			Icon:     "",
+			Sort:     0,
 			Router:   "manual",
 		},
 	}); err != nil {
@@ -86,6 +94,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Name:     "设置",
 		Nav:      false,
 		Icon:     "setting",
+		Sort:     0,
+		Router:   "",
 	})
 	if err != nil {
 		return
@@ -160,6 +170,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "schema",
 			Name:     "模式管理",
 			Nav:      true,
+			Icon:     "",
+			Sort:     0,
 			Router:   "manual",
 		},
 		Page{
@@ -167,6 +179,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "page",
 			Name:     "页面管理",
 			Nav:      true,
+			Icon:     "",
+			Sort:     0,
 			Router:   "manual",
 		},
 		Page{
@@ -174,6 +188,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "role",
 			Name:     "权限管理",
 			Nav:      true,
+			Icon:     "",
+			Sort:     0,
 			Router:   "table",
 			Option: PageOption{
 				Schema: "role",
@@ -185,6 +201,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "admin",
 			Name:     "成员管理",
 			Nav:      true,
+			Icon:     "",
+			Sort:     0,
 			Router:   "table",
 			Option: PageOption{
 				Schema: "admin",
@@ -207,6 +225,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "create",
 			Name:     "创建资源",
 			Nav:      false,
+			Icon:     "",
+			Sort:     0,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "role",
@@ -219,6 +239,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "update",
 			Name:     "更新资源",
 			Nav:      false,
+			Icon:     "",
+			Sort:     0,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "role",
@@ -242,6 +264,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "create",
 			Name:     "创建资源",
 			Nav:      false,
+			Icon:     "",
+			Sort:     0,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "admin",
@@ -253,6 +277,8 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 			Fragment: "update",
 			Name:     "更新资源",
 			Nav:      false,
+			Icon:     "",
+			Sort:     0,
 			Router:   "form",
 			Option: PageOption{
 				Schema: "admin",
