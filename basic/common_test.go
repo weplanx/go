@@ -24,3 +24,10 @@ func TestMain(m *testing.M) {
 	db = client.Database(os.Getenv("DB_NAME"))
 	os.Exit(m.Run())
 }
+
+func TestGenerateRoleAndAdmin(t *testing.T) {
+	ctx := context.Background()
+	if err := GenerateRoleAndAdmin(ctx, db); err != nil {
+		t.Error(err)
+	}
+}

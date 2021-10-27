@@ -58,28 +58,28 @@ func TestReturnsString(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/string", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Body.String(), `{"error":0,"msg":"Hi there"}`)
+	assert.Equal(t, res.Body.String(), `{"code":0,"message":"Hi there"}`)
 }
 
 func TestReturnsError(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/error", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Body.String(), `{"error":1,"msg":"this is a test"}`)
+	assert.Equal(t, res.Body.String(), `{"code":1,"message":"this is a test"}`)
 }
 
 func TestReturnsCustomCode(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/error-custom", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Body.String(), `{"error":100,"msg":"this is a test"}`)
+	assert.Equal(t, res.Body.String(), `{"code":100,"message":"this is a test"}`)
 }
 
 func TestReturnsDefault(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/default", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Body.String(), `{"data":{"status":"ok"},"error":0}`)
+	assert.Equal(t, res.Body.String(), `{"code":0,"data":{"status":"ok"},"message":"ok"}`)
 }
 
 func TestReturnsDefaultBool(t *testing.T) {
@@ -87,7 +87,7 @@ func TestReturnsDefaultBool(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/default-bool", nil)
 	r.ServeHTTP(res, req)
 	t.Log(res.Body.String())
-	assert.Equal(t, res.Body.String(), `{"data":true,"error":0}`)
+	assert.Equal(t, res.Body.String(), `{"code":0,"data":true,"message":"ok"}`)
 }
 
 func TestReturnsEmpty(t *testing.T) {

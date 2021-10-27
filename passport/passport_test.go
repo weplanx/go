@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var x *Authx
+var x *Passport
 
 func TestMain(m *testing.M) {
 	x = New(map[string]*Auth{

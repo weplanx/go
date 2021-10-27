@@ -92,7 +92,7 @@ func GeneratePage(ctx context.Context, db *mongo.Database) (err error) {
 		Parent:   "root",
 		Fragment: "settings",
 		Name:     "设置",
-		Nav:      false,
+		Nav:      true,
 		Icon:     "setting",
 		Sort:     0,
 		Router:   "",
