@@ -31,9 +31,16 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 		return err
 	}
 	name := x.getName(c)
-	total, err := x.Db.Collection(name).CountDocuments(c, body.Where)
-	if err != nil {
-		return err
+	var total int64
+	var err error
+	if body.Where != nil {
+		if total, err = x.Db.Collection(name).CountDocuments(c, body.Where); err != nil {
+			return err
+		}
+	} else {
+		if total, err = x.Db.Collection(name).EstimatedDocumentCount(c); err != nil {
+			return err
+		}
 	}
 	opts := options.Find()
 	page := body.Pagination
