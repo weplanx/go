@@ -26,7 +26,7 @@ func (x *API) Find(c *gin.Context) interface{} {
 	}
 	name := x.getName(c)
 	opts := options.Find()
-	opts.Sort = body.Sort
+	opts.SetSort(body.Sort)
 	projection, err := x.getProjection(c)
 	if err != nil {
 		return err

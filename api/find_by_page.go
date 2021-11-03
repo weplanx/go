@@ -8,7 +8,7 @@ import (
 
 type Pagination struct {
 	Index int64 `json:"index" binding:"gt=0,number,required"`
-	Limit int64 `json:"limit" binding:"gt=0,number,required"`
+	Size  int64 `json:"size" binding:"gt=0,number,required"`
 }
 
 // FindByPageBody Get the request body of the paged list resource
@@ -33,7 +33,7 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	name := x.getName(c)
 	var total int64
 	var err error
-	if body.Where != nil {
+	if len(body.Where) != 0 {
 		if total, err = x.Db.Collection(name).CountDocuments(c, body.Where); err != nil {
 			return err
 		}
@@ -44,8 +44,9 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	}
 	opts := options.Find()
 	page := body.Pagination
-	opts.SetLimit(page.Limit)
-	opts.SetSkip((page.Index - 1) * page.Limit)
+	opts.SetLimit(page.Size)
+	opts.SetSkip((page.Index - 1) * page.Size)
+	opts.SetSort(body.Sort)
 	projection, err := x.getProjection(c)
 	if err != nil {
 		return err
@@ -55,12 +56,12 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
-	var data []map[string]interface{}
-	if err := cursor.All(c, &data); err != nil {
+	var value []map[string]interface{}
+	if err := cursor.All(c, &value); err != nil {
 		return err
 	}
 	return gin.H{
-		"lists": data,
+		"value": value,
 		"total": total,
 	}
 }
