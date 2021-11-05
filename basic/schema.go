@@ -176,7 +176,10 @@ func GenerateSchema(ctx context.Context, db *mongo.Database) (err error) {
 		Keys: bson.M{
 			"key": 1,
 		},
-		Options: options.Index().SetUnique(true),
+		Options: options.
+			Index().
+			SetUnique(true).
+			SetName("key_idx"),
 	}); err != nil {
 		return
 	}
