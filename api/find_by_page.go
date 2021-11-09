@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 )
 
 type Pagination struct {
@@ -45,6 +46,7 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	opts := options.Find()
 	page := body.Pagination
 	if len(body.Sort) != 0 {
+		log.Println(body.Sort)
 		var sorts bson.D
 		for k, v := range body.Sort {
 			sorts = append(sorts, bson.E{Key: k, Value: v})
