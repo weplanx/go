@@ -44,9 +44,16 @@ func (x *API) FindByPage(c *gin.Context) interface{} {
 	}
 	opts := options.Find()
 	page := body.Pagination
+	if len(body.Sort) != 0 {
+		var sorts bson.D
+		for k, v := range body.Sort {
+			sorts = append(sorts, bson.E{Key: k, Value: v})
+		}
+		opts.SetSort(sorts)
+		opts.SetAllowDiskUse(true)
+	}
 	opts.SetLimit(page.Size)
 	opts.SetSkip((page.Index - 1) * page.Size)
-	opts.SetSort(body.Sort)
 	projection, err := x.getProjection(c)
 	if err != nil {
 		return err

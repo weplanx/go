@@ -26,7 +26,14 @@ func (x *API) Find(c *gin.Context) interface{} {
 	}
 	name := x.getName(c)
 	opts := options.Find()
-	opts.SetSort(body.Sort)
+	if len(body.Sort) != 0 {
+		var sorts bson.D
+		for k, v := range body.Sort {
+			sorts = append(sorts, bson.E{Key: k, Value: v})
+		}
+		opts.SetSort(sorts)
+		opts.SetAllowDiskUse(true)
+	}
 	projection, err := x.getProjection(c)
 	if err != nil {
 		return err
