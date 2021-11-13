@@ -1,3 +1,3 @@
-# Weplanx Support
+# Weplanx Go Support
 
-A tool to improve the efficiency of golang web development (Breaking update)
+Design an integrated package for the standard, many functions will reference popular third-party libraries

@@ -1,4 +1,4 @@
-module github.com/weplanx/support
+module github.com/weplanx/go
 
 go 1.15
 
