@@ -1,4 +1,4 @@
-package route
+package wpx
 
 import (
 	"github.com/gin-gonic/gin"
@@ -57,44 +57,42 @@ func Auto(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterG
 		for x := 0; x < typ.NumMethod(); x++ {
 			name := typ.Method(x).Name
 			method := val.MethodByName(name).Interface()
-			scopes[name] = append(scopes[name], Returns(method))
+			scopes[name] = append(scopes[name], Returns(method.(func(c *gin.Context) interface{})))
 			s.POST(xstrings.ToSnakeCase(name), scopes[name]...)
 		}
 	}
 	return s
 }
 
+type E struct {
+	Code    int64
+	Message string
+}
+
 // Returns 返回统一结果
-func Returns(handlerFn interface{}) gin.HandlerFunc {
+func Returns(fn func(c *gin.Context) interface{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if fn, ok := handlerFn.(func(c *gin.Context) interface{}); ok {
-			switch result := fn(c).(type) {
-			case string:
+		switch x := fn(c).(type) {
+		case E:
+			c.JSON(http.StatusOK, gin.H{
+				"code":    x.Code,
+				"message": x.Message,
+			})
+			break
+		case error:
+			c.JSON(http.StatusOK, gin.H{
+				"code":    -1,
+				"message": x.Error(),
+			})
+			break
+		default:
+			if x != nil {
 				c.JSON(http.StatusOK, gin.H{
-					"code":    0,
-					"message": result,
+					"code": 0,
+					"data": x,
 				})
-				break
-			case error:
-				code, exists := c.Get("code")
-				if !exists {
-					code = 1
-				}
-				c.JSON(http.StatusOK, gin.H{
-					"code":    code,
-					"message": result.Error(),
-				})
-				break
-			default:
-				if result != nil {
-					c.JSON(http.StatusOK, gin.H{
-						"code":    0,
-						"data":    result,
-						"message": "ok",
-					})
-				} else {
-					c.Status(http.StatusNotFound)
-				}
+			} else {
+				c.Status(http.StatusNotFound)
 			}
 		}
 	}
