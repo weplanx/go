@@ -14,7 +14,7 @@ func (x *API) Create(c *gin.Context) interface{} {
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	name := x.getName(c)
+	name := x.getCollectionName(c)
 	result, err := x.Db.Collection(name).InsertOne(c, body)
 	if err != nil {
 		return err

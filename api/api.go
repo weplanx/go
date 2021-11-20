@@ -94,7 +94,7 @@ func (x *API) setCollection(c *gin.Context) error {
 	return nil
 }
 
-func (x *API) getName(c *gin.Context) string {
+func (x *API) getCollectionName(c *gin.Context) string {
 	name, _ := c.Get("collection")
 	return name.(string)
 }
@@ -104,7 +104,7 @@ func (x *API) getProjection(c *gin.Context) (projection bson.M, err error) {
 		return
 	}
 	var schema basic.Schema
-	name := x.getName(c)
+	name := x.getCollectionName(c)
 	if err = x.Db.Collection("schema").FindOne(c, bson.M{
 		"key": name,
 	}).Decode(&schema); err != nil {
