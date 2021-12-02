@@ -1,7 +1,7 @@
 package wpx
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"github.com/huandu/xstrings"
 	"net/http"
 	"reflect"
@@ -21,11 +21,11 @@ func SetPath(path string) OptionFunc {
 }
 
 type MiddlewareOption struct {
-	Handler gin.HandlerFunc
+	Handler fiber.Handler
 	Effects []string
 }
 
-func SetMiddleware(middleware gin.HandlerFunc, effect ...string) OptionFunc {
+func SetMiddleware(middleware fiber.Handler, effect ...string) OptionFunc {
 	return func(option *Option) {
 		option.Middlewares = append(option.Middlewares, MiddlewareOption{
 			Handler: middleware,
@@ -35,7 +35,7 @@ func SetMiddleware(middleware gin.HandlerFunc, effect ...string) OptionFunc {
 }
 
 // Auto 生成路由
-func Auto(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterGroup {
+func Auto(r fiber.Router, i interface{}, options ...OptionFunc) fiber.Router {
 	typ := reflect.TypeOf(i)
 	val := reflect.ValueOf(i)
 	opt := new(Option)
@@ -44,7 +44,7 @@ func Auto(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterG
 	}
 	s := r.Group(opt.Path)
 	{
-		scopes := make(map[string][]gin.HandlerFunc)
+		scopes := make(map[string][]fiber.Handler)
 		for _, x := range opt.Middlewares {
 			if len(x.Effects) == 0 {
 				s.Use(x.Handler)
@@ -57,8 +57,8 @@ func Auto(r *gin.RouterGroup, i interface{}, options ...OptionFunc) *gin.RouterG
 		for x := 0; x < typ.NumMethod(); x++ {
 			name := typ.Method(x).Name
 			method := val.MethodByName(name).Interface()
-			scopes[name] = append(scopes[name], Returns(method.(func(c *gin.Context) interface{})))
-			s.POST(xstrings.ToSnakeCase(name), scopes[name]...)
+			scopes[name] = append(scopes[name], Returns(method.(func(c *fiber.Ctx) interface{})))
+			s.Post(xstrings.ToSnakeCase(name), scopes[name]...)
 		}
 	}
 	return s
@@ -70,29 +70,28 @@ type E struct {
 }
 
 // Returns 返回统一结果
-func Returns(fn func(c *gin.Context) interface{}) gin.HandlerFunc {
-	return func(c *gin.Context) {
+func Returns(fn func(c *fiber.Ctx) interface{}) fiber.Handler {
+	return func(c *fiber.Ctx) error {
 		switch x := fn(c).(type) {
 		case E:
-			c.JSON(http.StatusOK, gin.H{
+			return c.JSON(fiber.Map{
 				"code":    x.Code,
 				"message": x.Message,
 			})
-			break
 		case error:
-			c.JSON(http.StatusOK, gin.H{
+			return c.JSON(fiber.Map{
 				"code":    -1,
 				"message": x.Error(),
 			})
-			break
 		default:
 			if x != nil {
-				c.JSON(http.StatusOK, gin.H{
+				return c.JSON(fiber.Map{
 					"code": 0,
 					"data": x,
 				})
 			} else {
 				c.Status(http.StatusNotFound)
+				return nil
 			}
 		}
 	}
