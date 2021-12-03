@@ -8,21 +8,14 @@ import (
 
 type Passport struct {
 
-	// Multi-scene authentication
-	Scenes map[string]*Auth
-}
-
-// New create authentication
-// 	- scenes Multi-scene authentication, the key is equal to subject
-func New(scenes map[string]*Auth) *Passport {
-	return &Passport{scenes}
-}
-
-type Auth struct {
-
 	// Key used for signing
 	Key string `yaml:"key"`
 
+	// Token option
+	Option `yaml:"option"`
+}
+
+type Option struct {
 	// Identifies principal that issued the JWT
 	Iss string `yaml:"iss"`
 
@@ -39,18 +32,16 @@ type Auth struct {
 	Exp int64 `yaml:"exp"`
 }
 
-// Make obtain scene authorization
-// 	- name Scene name
-func (x *Passport) Make(name string) *Auth {
-	auth := x.Scenes[name]
-	auth.Sub = name
-	return auth
+// New authentication
+func New(key string, option Option) *Passport {
+	return &Passport{
+		Key:    key,
+		Option: option,
+	}
 }
 
-// Create create authentication token
-// 	- jti Case-sensitive unique identifier of the token even among different issuers
-// 	- data Custom claims
-func (x *Auth) Create(jti string, data map[string]interface{}) (tokenString string, err error) {
+// Create authentication token
+func (x *Passport) Create(jti string, data map[string]interface{}) (tokenString string, err error) {
 	claims := jwt.MapClaims{
 		"iat":  time.Now().Unix(),
 		"nbf":  time.Now().Add(time.Second * time.Duration(x.Nbf)).Unix(),
@@ -65,9 +56,8 @@ func (x *Auth) Create(jti string, data map[string]interface{}) (tokenString stri
 	return token.SignedString([]byte(x.Key))
 }
 
-// Verify Authentication
-// 	- tokenString The token string
-func (x *Auth) Verify(tokenString string) (claims jwt.MapClaims, err error) {
+// Verify authentication token
+func (x *Passport) Verify(tokenString string) (claims jwt.MapClaims, err error) {
 	var token *jwt.Token
 	if token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
