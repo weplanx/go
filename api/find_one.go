@@ -7,8 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// FindOneBody Get a single resource request body
-type FindOneBody struct {
+// FindOneDto Get a single resource request body
+type FindOneDto struct {
 	Id    *primitive.ObjectID `json:"id" validate:"required_without=Where"`
 	Where bson.M              `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
@@ -16,7 +16,7 @@ type FindOneBody struct {
 // FindOne Get a single resource
 func (x *API) FindOne(c *fiber.Ctx) interface{} {
 	ctx := c.UserContext()
-	var body FindOneBody
+	var body FindOneDto
 	if err := c.BodyParser(&body); err != nil {
 		return err
 	}

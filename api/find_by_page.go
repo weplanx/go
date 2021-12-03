@@ -7,8 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// FindByPageBody Get the request body of the paged list resource
-type FindByPageBody struct {
+// FindByPageDto Get the request body of the paged list resource
+type FindByPageDto struct {
 	Where      bson.M     `json:"where"`
 	Sort       bson.M     `json:"sort"`
 	Pagination Pagination `json:"page" validate:"required"`
@@ -22,7 +22,7 @@ type Pagination struct {
 // FindByPage Get paging list resources
 func (x *API) FindByPage(c *fiber.Ctx) interface{} {
 	ctx := c.UserContext()
-	var body FindByPageBody
+	var body FindByPageDto
 	if err := c.BodyParser(&body); err != nil {
 		return err
 	}

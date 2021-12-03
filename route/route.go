@@ -3,7 +3,6 @@ package route
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/huandu/xstrings"
-	"net/http"
 	"reflect"
 )
 
@@ -89,10 +88,8 @@ func Returns(fn func(c *fiber.Ctx) interface{}) fiber.Handler {
 					"code": 0,
 					"data": x,
 				})
-			} else {
-				c.Status(http.StatusNotFound)
-				return nil
 			}
+			return nil
 		}
 	}
 }

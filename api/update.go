@@ -7,8 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// UpdateBody Update resource request body
-type UpdateBody struct {
+// UpdateDto Update resource request body
+type UpdateDto struct {
 	Id     *primitive.ObjectID `json:"id" validate:"required_without=Where"`
 	Where  bson.M              `json:"where" validate:"required_without=Id"`
 	Update bson.M              `json:"update" validate:"required"`
@@ -17,7 +17,7 @@ type UpdateBody struct {
 // Update resources
 func (x *API) Update(c *fiber.Ctx) interface{} {
 	ctx := c.UserContext()
-	var body UpdateBody
+	var body UpdateDto
 	if err := c.BodyParser(&body); err != nil {
 		return err
 	}

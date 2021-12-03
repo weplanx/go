@@ -7,8 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// DeleteBody Delete resource request body
-type DeleteBody struct {
+// DeleteDto Delete resource request body
+type DeleteDto struct {
 	Id    []*primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
 	Where bson.M                `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
@@ -16,7 +16,7 @@ type DeleteBody struct {
 // Delete resource
 func (x *API) Delete(c *fiber.Ctx) interface{} {
 	ctx := c.UserContext()
-	var body DeleteBody
+	var body DeleteDto
 	if err := c.BodyParser(&body); err != nil {
 		return err
 	}

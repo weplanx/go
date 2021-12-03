@@ -8,8 +8,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// FindBody Get the original list resource request body
-type FindBody struct {
+// FindDto Get the original list resource request body
+type FindDto struct {
 	Id    []*primitive.ObjectID `json:"id" validate:"omitempty,gt=0"`
 	Where bson.M                `json:"where"`
 	Sort  bson.M                `json:"sort" validate:"omitempty"`
@@ -18,7 +18,7 @@ type FindBody struct {
 // Find Get the original list resource
 func (x *API) Find(c *fiber.Ctx) interface{} {
 	ctx := c.UserContext()
-	var body FindBody
+	var body FindDto
 	if err := c.BodyParser(&body); err != nil {
 		return err
 	}
