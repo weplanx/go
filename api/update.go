@@ -10,7 +10,7 @@ import (
 // UpdateBody Update resource request body
 type UpdateBody struct {
 	Id     *primitive.ObjectID `json:"id" validate:"required_without=Where"`
-	Where  bson.M              `json:"where" validate:"required_without=Id,excluded_with=Id"`
+	Where  bson.M              `json:"where" validate:"required_without=Id"`
 	Update bson.M              `json:"update" validate:"required"`
 }
 
@@ -25,11 +25,9 @@ func (x *API) Update(c *fiber.Ctx) interface{} {
 		return err
 	}
 	name := x.collectionName(c)
-	var filter bson.M
+	filter := body.Where
 	if body.Id != nil {
 		filter = bson.M{"_id": body.Id}
-	} else {
-		filter = body.Where
 	}
 	result, err := x.Db.Collection(name).UpdateOne(ctx, filter, body.Update)
 	if err != nil {

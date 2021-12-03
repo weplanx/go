@@ -10,8 +10,8 @@ import (
 
 // FindBody Get the original list resource request body
 type FindBody struct {
-	Id    []*primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
-	Where bson.M                `json:"where" validate:"required_without=Id,excluded_with=Id"`
+	Id    []*primitive.ObjectID `json:"id" validate:"omitempty,gt=0"`
+	Where bson.M                `json:"where"`
 	Sort  bson.M                `json:"sort" validate:"omitempty"`
 }
 
