@@ -1,30 +1,37 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // FindBody Get the original list resource request body
 type FindBody struct {
-	Where bson.M `json:"where"`
-	Sort  bson.M `json:"sort"`
+	Id    []*primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
+	Where bson.M                `json:"where" validate:"required_without=Id,excluded_with=Id"`
+	Sort  bson.M                `json:"sort" validate:"omitempty"`
 }
 
 // Find Get the original list resource
-func (x *API) Find(c *gin.Context) interface{} {
-	if err := x.setCollection(c); err != nil {
-		return err
-	}
+func (x *API) Find(c *fiber.Ctx) interface{} {
+	ctx := c.UserContext()
 	var body FindBody
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := c.BodyParser(&body); err != nil {
 		return err
 	}
-	if err := x.format(&body.Where); err != nil {
+	if err := validator.New().Struct(body); err != nil {
 		return err
 	}
-	name := x.getCollectionName(c)
+	name := x.collectionName(c)
+	var filter bson.M
+	if len(body.Id) != 0 {
+		filter = bson.M{"_id": bson.M{"$in": body.Id}}
+	} else {
+		filter = body.Where
+	}
 	opts := options.Find()
 	if len(body.Sort) != 0 {
 		var sorts bson.D
@@ -34,17 +41,12 @@ func (x *API) Find(c *gin.Context) interface{} {
 		opts.SetSort(sorts)
 		opts.SetAllowDiskUse(true)
 	}
-	projection, err := x.getProjection(c)
-	if err != nil {
-		return err
-	}
-	opts.SetProjection(projection)
-	cursor, err := x.Db.Collection(name).Find(c, body.Where, opts)
+	cursor, err := x.Db.Collection(name).Find(ctx, filter, opts)
 	if err != nil {
 		return err
 	}
 	var data []map[string]interface{}
-	if err = cursor.All(c, &data); err != nil {
+	if err = cursor.All(ctx, &data); err != nil {
 		return err
 	}
 	return data

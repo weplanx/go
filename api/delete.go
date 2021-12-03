@@ -1,36 +1,36 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // DeleteBody Delete resource request body
 type DeleteBody struct {
-	Where `json:"where" binding:"required"`
+	Id    []*primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
+	Where bson.M                `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
 
 // Delete resource
-func (x *API) Delete(c *gin.Context) interface{} {
-	if err := x.setCollection(c); err != nil {
+func (x *API) Delete(c *fiber.Ctx) interface{} {
+	ctx := c.UserContext()
+	var body DeleteBody
+	if err := c.BodyParser(&body); err != nil {
 		return err
 	}
-	h := x.getHook(c)
-	if h.body == nil {
-		var deleteBody DeleteBody
-		if err := c.ShouldBindJSON(&deleteBody); err != nil {
-			return err
-		}
-		h.SetBody(deleteBody)
-	}
-	body := h.body.(interface {
-		GetWhere() *primitive.M
-	})
-	if err := x.format(body.GetWhere()); err != nil {
+	if err := validator.New().Struct(body); err != nil {
 		return err
 	}
-	name := x.getCollectionName(c)
-	result, err := x.Db.Collection(name).DeleteMany(c, body.GetWhere())
+	name := x.collectionName(c)
+	var filter bson.M
+	if len(body.Id) != 0 {
+		filter = bson.M{"_id": bson.M{"$in": body.Id}}
+	} else {
+		filter = body.Where
+	}
+	result, err := x.Db.Collection(name).DeleteMany(ctx, filter)
 	if err != nil {
 		return err
 	}

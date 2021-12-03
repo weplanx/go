@@ -1,37 +1,37 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // FindOneBody Get a single resource request body
 type FindOneBody struct {
-	Where bson.M `json:"where"`
+	Id    *primitive.ObjectID `json:"id" validate:"required_without=Where"`
+	Where bson.M              `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
 
 // FindOne Get a single resource
-func (x *API) FindOne(c *gin.Context) interface{} {
-	if err := x.setCollection(c); err != nil {
+func (x *API) FindOne(c *fiber.Ctx) interface{} {
+	ctx := c.UserContext()
+	var body FindOneBody
+	if err := c.BodyParser(&body); err != nil {
 		return err
 	}
-	var body FindOneBody
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := validator.New().Struct(body); err != nil {
 		return err
 	}
 	data := make(map[string]interface{})
-	if err := x.format(&body.Where); err != nil {
-		return err
+	name := x.collectionName(c)
+	var filter bson.M
+	if body.Id != nil {
+		filter = bson.M{"_id": body.Id}
+	} else {
+		filter = body.Where
 	}
-	name := x.getCollectionName(c)
-	opts := options.FindOne()
-	projection, err := x.getProjection(c)
-	if err != nil {
-		return err
-	}
-	opts.SetProjection(projection)
-	if err := x.Db.Collection(name).FindOne(c, body.Where, opts).Decode(&data); err != nil {
+	if err := x.Db.Collection(name).FindOne(ctx, filter).Decode(&data); err != nil {
 		return err
 	}
 	return data
