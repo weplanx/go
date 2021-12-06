@@ -57,7 +57,7 @@ func (x *API) FindByPage(c *fiber.Ctx) interface{} {
 	if err != nil {
 		return err
 	}
-	var value []map[string]interface{}
+	value := make([]map[string]interface{}, page.Size)
 	if err := cursor.All(ctx, &value); err != nil {
 		return err
 	}
