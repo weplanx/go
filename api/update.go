@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 // UpdateBody Update resource request body
@@ -29,6 +30,7 @@ func (x *API) Update(c *fiber.Ctx) interface{} {
 	if body.Id != nil {
 		filter = bson.M{"_id": body.Id}
 	}
+	body.Update["$set"].(map[string]interface{})["update_time"] = time.Now()
 	result, err := x.Db.Collection(name).UpdateOne(ctx, filter, body.Update)
 	if err != nil {
 		return err
