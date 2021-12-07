@@ -40,6 +40,8 @@ func (x *API) Find(c *fiber.Ctx) interface{} {
 		}
 		opts.SetSort(sorts)
 		opts.SetAllowDiskUse(true)
+	} else {
+		opts.SetSort(bson.M{"_id": -1})
 	}
 	cursor, err := x.Db.Collection(name).Find(ctx, filter, opts)
 	if err != nil {

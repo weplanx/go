@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
+	"time"
 )
 
 // Create resources
@@ -13,6 +14,8 @@ func (x *API) Create(c *fiber.Ctx) interface{} {
 		return err
 	}
 	name := x.collectionName(c)
+	body["create_time"] = time.Now()
+	body["update_time"] = time.Now()
 	result, err := x.Db.Collection(name).InsertOne(ctx, body)
 	if err != nil {
 		return err

@@ -50,6 +50,8 @@ func (x *API) FindByPage(c *fiber.Ctx) interface{} {
 		}
 		opts.SetSort(sorts)
 		opts.SetAllowDiskUse(true)
+	} else {
+		opts.SetSort(bson.M{"_id": -1})
 	}
 	opts.SetLimit(page.Size)
 	opts.SetSkip((page.Index - 1) * page.Size)
