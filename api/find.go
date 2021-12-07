@@ -47,7 +47,7 @@ func (x *API) Find(c *fiber.Ctx) interface{} {
 	if err != nil {
 		return err
 	}
-	var data []map[string]interface{}
+	data := make([]map[string]interface{}, 0)
 	if err = cursor.All(ctx, &data); err != nil {
 		return err
 	}
