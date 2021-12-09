@@ -18,9 +18,5 @@ func New(client *mongo.Client, db *mongo.Database) *API {
 }
 
 func (x *API) collectionName(c *fiber.Ctx) string {
-	value := c.UserContext().Value("collection")
-	if value != nil {
-		return value.(string)
-	}
 	return c.Params("collection")
 }
