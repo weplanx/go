@@ -8,16 +8,25 @@ import (
 )
 
 type Controller struct {
-	API *API
+	API  *API
+	PATH string
 }
 
 func AutoController(api *API) *Controller {
-	return &Controller{api}
+	return &Controller{api, ""}
+}
+
+func SetController(api *API, path string) *Controller {
+	return &Controller{api, path}
 }
 
 func (x *Controller) setCollectionName(c *fiber.Ctx) {
+	name := c.Params("collection")
+	if x.PATH != "" {
+		name = x.PATH
+	}
 	c.SetUserContext(
-		context.WithValue(context.Background(), "collection", c.Params("collection")),
+		context.WithValue(context.Background(), "collection", name),
 	)
 }
 
