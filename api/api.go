@@ -45,26 +45,26 @@ func (x *API) Create(ctx context.Context, body interface{}) (*mongo.InsertOneRes
 
 // FindOneDto Get a single resource request body
 type FindOneDto struct {
-	Id    *primitive.ObjectID `json:"id" validate:"required_without=Where"`
-	Where bson.M              `json:"where" validate:"required_without=Id,excluded_with=Id"`
+	Id    primitive.ObjectID `json:"id" validate:"required_without=Where"`
+	Where bson.M             `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
 
 func (x *API) FindOne(ctx context.Context, body *FindOneDto, data interface{}) error {
 	name := x.getCollectionName(ctx)
 	var filter bson.M
-	if body.Id != nil {
+	if body.Id.IsZero() == false {
 		filter = bson.M{"_id": body.Id}
 	} else {
 		filter = body.Where
 	}
-	return x.Db.Collection(name).FindOne(ctx, filter).Decode(&data)
+	return x.Db.Collection(name).FindOne(ctx, filter).Decode(data)
 }
 
 // FindDto Get the original list resource request body
 type FindDto struct {
-	Id    []*primitive.ObjectID `json:"id" validate:"omitempty,gt=0"`
-	Where bson.M                `json:"where"`
-	Sort  bson.M                `json:"sort" validate:"omitempty"`
+	Id    []primitive.ObjectID `json:"id" validate:"omitempty,gt=0"`
+	Where bson.M               `json:"where"`
+	Sort  bson.M               `json:"sort" validate:"omitempty"`
 }
 
 func (x *API) Find(ctx context.Context, body *FindDto, data interface{}) (err error) {
@@ -151,15 +151,15 @@ func (x *API) FindByPage(ctx context.Context, body *FindByPageDto) (result FindB
 
 // UpdateDto Update resource request body
 type UpdateDto struct {
-	Id     *primitive.ObjectID `json:"id" validate:"required_without=Where"`
-	Where  bson.M              `json:"where" validate:"required_without=Id"`
-	Update bson.M              `json:"update" validate:"required"`
+	Id     primitive.ObjectID `json:"id" validate:"required_without=Where"`
+	Where  bson.M             `json:"where" validate:"required_without=Id"`
+	Update bson.M             `json:"update" validate:"required"`
 }
 
 func (x *API) Update(ctx context.Context, body *UpdateDto) (*mongo.UpdateResult, error) {
 	name := x.getCollectionName(ctx)
 	filter := body.Where
-	if body.Id != nil {
+	if body.Id.IsZero() == false {
 		filter = bson.M{"_id": body.Id}
 	}
 	body.Update["$set"].(map[string]interface{})["update_time"] = time.Now()
@@ -168,8 +168,8 @@ func (x *API) Update(ctx context.Context, body *UpdateDto) (*mongo.UpdateResult,
 
 // DeleteDto Delete resource request body
 type DeleteDto struct {
-	Id    []*primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
-	Where bson.M                `json:"where" validate:"required_without=Id,excluded_with=Id"`
+	Id    []primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
+	Where bson.M               `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
 
 func (x *API) Delete(ctx context.Context, body *DeleteDto) (*mongo.DeleteResult, error) {
