@@ -154,15 +154,24 @@ type UpdateDto struct {
 	Id     primitive.ObjectID `json:"id" validate:"required_without=Where"`
 	Where  bson.M             `json:"where" validate:"required_without=Id"`
 	Update bson.M             `json:"update" validate:"required"`
+	Refs   []string           `json:"refs"`
 }
 
-func (x *API) Update(ctx context.Context, body *UpdateDto) (*mongo.UpdateResult, error) {
+func (x *API) Update(ctx context.Context, body *UpdateDto) (result *mongo.UpdateResult, err error) {
 	name := x.getCollectionName(ctx)
 	filter := body.Where
 	if body.Id.IsZero() == false {
 		filter = bson.M{"_id": body.Id}
 	}
 	body.Update["$set"].(map[string]interface{})["update_time"] = time.Now()
+	for _, key := range body.Refs {
+		for i, id := range body.Update["$set"].(map[string]interface{})[key].([]interface{}) {
+			if body.Update["$set"].(map[string]interface{})[key].([]interface{})[i], err = primitive.
+				ObjectIDFromHex(id.(string)); err != nil {
+				return
+			}
+		}
+	}
 	return x.Db.Collection(name).UpdateOne(ctx, filter, body.Update)
 }
 
