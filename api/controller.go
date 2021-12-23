@@ -5,6 +5,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Controller struct {
@@ -44,6 +45,12 @@ func (x *Controller) Create(c *fiber.Ctx) interface{} {
 	return result
 }
 
+// FindOneDto Get a single resource request body
+type FindOneDto struct {
+	Id    primitive.ObjectID `json:"id" validate:"required_without=Where"`
+	Where bson.M             `json:"where" validate:"required_without=Id,excluded_with=Id"`
+}
+
 // FindOne Get a single resource
 func (x *Controller) FindOne(c *fiber.Ctx) interface{} {
 	var body FindOneDto
@@ -61,6 +68,13 @@ func (x *Controller) FindOne(c *fiber.Ctx) interface{} {
 	return data
 }
 
+// FindDto Get the original list resource request body
+type FindDto struct {
+	Id    []primitive.ObjectID `json:"id" validate:"omitempty,gt=0"`
+	Where bson.M               `json:"where"`
+	Sort  [][]interface{}      `json:"sort" validate:"omitempty"`
+}
+
 func (x *Controller) Find(c *fiber.Ctx) interface{} {
 	var body FindDto
 	if err := c.BodyParser(&body); err != nil {
@@ -74,7 +88,26 @@ func (x *Controller) Find(c *fiber.Ctx) interface{} {
 	if err := x.API.Find(c.UserContext(), &body, &data); err != nil {
 		return err
 	}
-	return data
+	return fiber.Map{
+		"value": data,
+	}
+}
+
+// FindByPageDto Get the request body of the paged list resource
+type FindByPageDto struct {
+	Where      bson.M     `json:"where"`
+	Sort       bson.M     `json:"sort"`
+	Pagination Pagination `json:"page" validate:"required"`
+}
+
+type Pagination struct {
+	Index int64 `json:"index" validate:"required,gt=0,number"`
+	Size  int64 `json:"size" validate:"required,oneof=10 20 50 100"`
+}
+
+type FindByPageResult struct {
+	Value []map[string]interface{} `json:"value"`
+	Total int64                    `json:"total"`
 }
 
 // FindByPage Get paging list resources
@@ -94,6 +127,14 @@ func (x *Controller) FindByPage(c *fiber.Ctx) interface{} {
 	return result
 }
 
+// UpdateDto Update resource request body
+type UpdateDto struct {
+	Id     primitive.ObjectID `json:"id" validate:"required_without=Where"`
+	Where  bson.M             `json:"where" validate:"required_without=Id"`
+	Update bson.M             `json:"update" validate:"required"`
+	Refs   []string           `json:"refs"`
+}
+
 // Update resources
 func (x *Controller) Update(c *fiber.Ctx) interface{} {
 	var body UpdateDto
@@ -109,6 +150,12 @@ func (x *Controller) Update(c *fiber.Ctx) interface{} {
 		return err
 	}
 	return result
+}
+
+// DeleteDto Delete resource request body
+type DeleteDto struct {
+	Id    []primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
+	Where bson.M               `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
 
 // Delete resource

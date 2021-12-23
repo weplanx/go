@@ -43,12 +43,6 @@ func (x *API) Create(ctx context.Context, body interface{}) (*mongo.InsertOneRes
 	return x.Db.Collection(name).InsertOne(ctx, body)
 }
 
-// FindOneDto Get a single resource request body
-type FindOneDto struct {
-	Id    primitive.ObjectID `json:"id" validate:"required_without=Where"`
-	Where bson.M             `json:"where" validate:"required_without=Id,excluded_with=Id"`
-}
-
 func (x *API) FindOne(ctx context.Context, body *FindOneDto, data interface{}) error {
 	name := x.getCollectionName(ctx)
 	var filter bson.M
@@ -58,13 +52,6 @@ func (x *API) FindOne(ctx context.Context, body *FindOneDto, data interface{}) e
 		filter = body.Where
 	}
 	return x.Db.Collection(name).FindOne(ctx, filter).Decode(data)
-}
-
-// FindDto Get the original list resource request body
-type FindDto struct {
-	Id    []primitive.ObjectID `json:"id" validate:"omitempty,gt=0"`
-	Where bson.M               `json:"where"`
-	Sort  bson.M               `json:"sort" validate:"omitempty"`
 }
 
 func (x *API) Find(ctx context.Context, body *FindDto, data interface{}) (err error) {
@@ -78,8 +65,8 @@ func (x *API) Find(ctx context.Context, body *FindDto, data interface{}) (err er
 	opts := options.Find()
 	if len(body.Sort) != 0 {
 		var sorts bson.D
-		for k, v := range body.Sort {
-			sorts = append(sorts, bson.E{Key: k, Value: v})
+		for _, v := range body.Sort {
+			sorts = append(sorts, bson.E{Key: v[0].(string), Value: v[1]})
 		}
 		opts.SetSort(sorts)
 		opts.SetAllowDiskUse(true)
@@ -95,23 +82,6 @@ func (x *API) Find(ctx context.Context, body *FindDto, data interface{}) (err er
 		return
 	}
 	return
-}
-
-// FindByPageDto Get the request body of the paged list resource
-type FindByPageDto struct {
-	Where      bson.M     `json:"where"`
-	Sort       bson.M     `json:"sort"`
-	Pagination Pagination `json:"page" validate:"required"`
-}
-
-type Pagination struct {
-	Index int64 `json:"index" validate:"required,gt=0,number"`
-	Size  int64 `json:"size" validate:"required,oneof=10 20 50 100"`
-}
-
-type FindByPageResult struct {
-	Value []map[string]interface{} `json:"value"`
-	Total int64                    `json:"total"`
 }
 
 func (x *API) FindByPage(ctx context.Context, body *FindByPageDto) (result FindByPageResult, err error) {
@@ -149,14 +119,6 @@ func (x *API) FindByPage(ctx context.Context, body *FindByPageDto) (result FindB
 	return
 }
 
-// UpdateDto Update resource request body
-type UpdateDto struct {
-	Id     primitive.ObjectID `json:"id" validate:"required_without=Where"`
-	Where  bson.M             `json:"where" validate:"required_without=Id"`
-	Update bson.M             `json:"update" validate:"required"`
-	Refs   []string           `json:"refs"`
-}
-
 func (x *API) Update(ctx context.Context, body *UpdateDto) (result *mongo.UpdateResult, err error) {
 	name := x.getCollectionName(ctx)
 	filter := body.Where
@@ -173,12 +135,6 @@ func (x *API) Update(ctx context.Context, body *UpdateDto) (result *mongo.Update
 		}
 	}
 	return x.Db.Collection(name).UpdateOne(ctx, filter, body.Update)
-}
-
-// DeleteDto Delete resource request body
-type DeleteDto struct {
-	Id    []primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
-	Where bson.M               `json:"where" validate:"required_without=Id,excluded_with=Id"`
 }
 
 func (x *API) Delete(ctx context.Context, body *DeleteDto) (*mongo.DeleteResult, error) {
