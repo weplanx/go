@@ -5,6 +5,7 @@ import (
 	"github.com/weplanx/go/route"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
+	"strconv"
 )
 
 type Controller struct {
@@ -78,7 +79,8 @@ func (x *Controller) Find(c *gin.Context) interface{} {
 		if err != nil {
 			return err
 		}
-		return result
+		c.Header("x-page-total", strconv.FormatInt(result.Total, 10))
+		return result.Data
 	}
 	result, err := x.Service.Find(ctx, name, query.Where, query.Sort)
 	if err != nil {

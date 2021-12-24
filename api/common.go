@@ -13,8 +13,8 @@ var Provides = wire.NewSet(
 )
 
 type Pagination struct {
-	Index int64 `header:"page" binding:"omitempty,gt=0,number"`
-	Size  int64 `header:"pagesize" binding:"omitempty,oneof=10 20 50 100"`
+	Index int64 `header:"x-page" binding:"omitempty,gt=0,number"`
+	Size  int64 `header:"x-page-size" binding:"omitempty,oneof=10 20 50 100"`
 }
 
 func RegisterValidation() {
