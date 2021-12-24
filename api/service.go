@@ -15,7 +15,11 @@ type Service struct {
 	Db *mongo.Database
 }
 
-func (x *Service) Create(ctx context.Context, name string, doc interface{}) (*mongo.InsertOneResult, error) {
+func (x *Service) Create(
+	ctx context.Context,
+	name string,
+	doc interface{},
+) (*mongo.InsertOneResult, error) {
 	if data, ok := doc.(bson.M); ok {
 		data["create_time"] = time.Now()
 		data["update_time"] = time.Now()
@@ -35,7 +39,7 @@ func (x *Service) Find(
 	if len(sort) != 0 {
 		sorts := make(bson.D, len(sort))
 		for i, x := range sort {
-			v := strings.Split(x, ",")
+			v := strings.Split(x, ".")
 			var direction int
 			if direction, err = strconv.Atoi(v[1]); err != nil {
 				return
@@ -49,8 +53,7 @@ func (x *Service) Find(
 	}
 	opts = append(opts, option)
 	var cursor *mongo.Cursor
-	if cursor, err = x.Db.Collection(name).
-		Find(ctx, filter, opts...); err != nil {
+	if cursor, err = x.Db.Collection(name).Find(ctx, filter, opts...); err != nil {
 		return
 	}
 	if err = cursor.All(ctx, &data); err != nil {
@@ -62,16 +65,16 @@ func (x *Service) Find(
 func (x *Service) FindById(
 	ctx context.Context,
 	name string,
-	id []string,
+	ids []string,
 	sort []string,
 ) (data []map[string]interface{}, err error) {
-	ids := make([]primitive.ObjectID, len(id))
-	for i, v := range id {
-		if ids[i], err = primitive.ObjectIDFromHex(v); err != nil {
+	oids := make([]primitive.ObjectID, len(ids))
+	for i, v := range ids {
+		if oids[i], err = primitive.ObjectIDFromHex(v); err != nil {
 			return
 		}
 	}
-	return x.Find(ctx, name, bson.M{"_id": bson.M{"$in": ids}}, sort)
+	return x.Find(ctx, name, bson.M{"_id": bson.M{"$in": oids}}, sort)
 }
 
 type FindResult struct {
@@ -82,18 +85,16 @@ type FindResult struct {
 func (x *Service) FindByPage(
 	ctx context.Context,
 	name string,
-	page PaginationDto,
+	page Pagination,
 	filter bson.M,
 	sort []string,
 ) (result FindResult, err error) {
 	if len(filter) != 0 {
-		if result.Total, err = x.Db.Collection(name).
-			CountDocuments(ctx, filter); err != nil {
+		if result.Total, err = x.Db.Collection(name).CountDocuments(ctx, filter); err != nil {
 			return
 		}
 	} else {
-		if result.Total, err = x.Db.Collection(name).
-			EstimatedDocumentCount(ctx); err != nil {
+		if result.Total, err = x.Db.Collection(name).EstimatedDocumentCount(ctx); err != nil {
 			return
 		}
 	}
@@ -106,19 +107,27 @@ func (x *Service) FindByPage(
 	return
 }
 
-func (x *Service) FindOne(ctx context.Context, name string, filter bson.M) (data map[string]interface{}, err error) {
+func (x *Service) FindOne(
+	ctx context.Context,
+	name string,
+	filter bson.M,
+) (data map[string]interface{}, err error) {
 	if err = x.Db.Collection(name).FindOne(ctx, filter).Decode(&data); err != nil {
 		return
 	}
 	return
 }
 
-func (x *Service) FindOneById(ctx context.Context, name string, id string) (data map[string]interface{}, err error) {
-	var objectId primitive.ObjectID
-	if objectId, err = primitive.ObjectIDFromHex(id); err != nil {
+func (x *Service) FindOneById(
+	ctx context.Context,
+	name string,
+	id string,
+) (data map[string]interface{}, err error) {
+	var oid primitive.ObjectID
+	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
 		return
 	}
-	return x.FindOne(ctx, name, bson.M{"_id": objectId})
+	return x.FindOne(ctx, name, bson.M{"_id": oid})
 }
 
 func (x *Service) UpdateMany(ctx context.Context,
@@ -136,16 +145,16 @@ func (x *Service) UpdateMany(ctx context.Context,
 func (x *Service) UpdateManyById(
 	ctx context.Context,
 	name string,
-	id []string,
+	ids []string,
 	update interface{},
 ) (result *mongo.UpdateResult, err error) {
-	ids := make([]primitive.ObjectID, len(id))
-	for i, v := range id {
-		if ids[i], err = primitive.ObjectIDFromHex(v); err != nil {
+	oids := make([]primitive.ObjectID, len(ids))
+	for i, v := range ids {
+		if oids[i], err = primitive.ObjectIDFromHex(v); err != nil {
 			return
 		}
 	}
-	return x.UpdateMany(ctx, name, bson.M{"_id": bson.M{"$in": ids}}, update)
+	return x.UpdateMany(ctx, name, bson.M{"_id": bson.M{"$in": oids}}, update)
 }
 
 func (x *Service) UpdateOne(
@@ -167,11 +176,11 @@ func (x *Service) UpdateOneById(
 	id string,
 	update interface{},
 ) (result *mongo.UpdateResult, err error) {
-	var objectId primitive.ObjectID
-	if objectId, err = primitive.ObjectIDFromHex(id); err != nil {
+	var oid primitive.ObjectID
+	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
 		return
 	}
-	return x.UpdateOne(ctx, name, bson.M{"_id": objectId}, update)
+	return x.UpdateOne(ctx, name, bson.M{"_id": oid}, update)
 }
 
 func (x *Service) ReplaceOneById(
@@ -180,11 +189,11 @@ func (x *Service) ReplaceOneById(
 	id string,
 	doc interface{},
 ) (result *mongo.UpdateResult, err error) {
-	var objectId primitive.ObjectID
-	if objectId, err = primitive.ObjectIDFromHex(id); err != nil {
+	var oid primitive.ObjectID
+	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
 		return
 	}
-	filter := bson.M{"_id": objectId}
+	filter := bson.M{"_id": oid}
 	if data, ok := doc.(bson.M); ok {
 		data["create_time"] = time.Now()
 		data["update_time"] = time.Now()
@@ -193,10 +202,14 @@ func (x *Service) ReplaceOneById(
 	return x.Db.Collection(name).ReplaceOne(ctx, filter, doc)
 }
 
-func (x *Service) DeleteOneById(ctx context.Context, name string, id string) (result *mongo.DeleteResult, err error) {
-	var objectId primitive.ObjectID
-	if objectId, err = primitive.ObjectIDFromHex(id); err != nil {
+func (x *Service) DeleteOneById(
+	ctx context.Context,
+	name string,
+	id string,
+) (result *mongo.DeleteResult, err error) {
+	var oid primitive.ObjectID
+	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
 		return
 	}
-	return x.Db.Collection(name).DeleteOne(ctx, bson.M{"_id": objectId})
+	return x.Db.Collection(name).DeleteOne(ctx, bson.M{"_id": oid})
 }

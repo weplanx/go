@@ -40,31 +40,26 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 	return result
 }
 
-type PaginationDto struct {
-	Index int64 `header:"page" binding:"omitempty,gt=0,number"`
-	Size  int64 `header:"pagesize" binding:"omitempty,oneof=10 20 50 100"`
-}
-
-type FindDto struct {
-	Id     []string `form:"id" binding:"omitempty"`
-	Where  bson.M   `form:"where" binding:"omitempty"`
-	Sort   []string `form:"sort" binding:"omitempty"`
+type FindQuery struct {
+	Id     []string `form:"id" binding:"omitempty,excluded_with=Where Single"`
+	Where  bson.M   `form:"where" binding:"omitempty,excluded_with=Id"`
 	Single bool     `form:"single"`
+	Sort   []string `form:"sort" binding:"omitempty,dive,gt=0,sort"`
 }
 
 // Find 通过获取多个文档
 func (x *Controller) Find(c *gin.Context) interface{} {
 	name := c.Param("name")
-	var page PaginationDto
+	var page Pagination
 	if err := c.ShouldBindHeader(&page); err != nil {
 		return err
 	}
-	var query FindDto
+	var query FindQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		return err
 	}
 	ctx := c.Request.Context()
-	if query.Single {
+	if query.Single == true {
 		result, err := x.Service.FindOne(ctx, name, query.Where)
 		if err != nil {
 			return err
@@ -72,23 +67,20 @@ func (x *Controller) Find(c *gin.Context) interface{} {
 		return result
 	}
 	if len(query.Id) != 0 {
-		result, err := x.Service.
-			FindById(ctx, name, query.Id, query.Sort)
+		result, err := x.Service.FindById(ctx, name, query.Id, query.Sort)
 		if err != nil {
 			return err
 		}
 		return result
 	}
 	if page.Index != 0 && page.Size != 0 {
-		result, err := x.Service.
-			FindByPage(ctx, name, page, query.Where, query.Sort)
+		result, err := x.Service.FindByPage(ctx, name, page, query.Where, query.Sort)
 		if err != nil {
 			return err
 		}
 		return result
 	}
-	result, err := x.Service.
-		Find(ctx, name, query.Where, query.Sort)
+	result, err := x.Service.Find(ctx, name, query.Where, query.Sort)
 	if err != nil {
 		return err
 	}
@@ -98,7 +90,7 @@ func (x *Controller) Find(c *gin.Context) interface{} {
 // FindOneById 通过 ID 获取单个文档
 func (x *Controller) FindOneById(c *gin.Context) interface{} {
 	name := c.Param("name")
-	id := c.Param("name")
+	id := c.Param("id")
 	err, result := x.Service.FindOneById(c.Request.Context(), name, id)
 	if err != nil {
 		return err
@@ -107,9 +99,9 @@ func (x *Controller) FindOneById(c *gin.Context) interface{} {
 }
 
 type UpdateQuery struct {
-	Id       []string `form:"id" binding:"omitempty"`
-	Where    bson.M   `form:"where" binding:"omitempty"`
-	Multiple bool     `form:"multiple" binding:"omitempty"`
+	Id       []string `form:"id" binding:"required_without=Where,excluded_with=Multiple"`
+	Where    bson.M   `form:"where" binding:"required_without=Id,excluded_with=Id"`
+	Multiple bool     `form:"multiple"`
 }
 
 type UpdateDto struct {
