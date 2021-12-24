@@ -24,7 +24,11 @@ func Use(fn func(c *gin.Context) interface{}) gin.HandlerFunc {
 			break
 		default:
 			if x != nil {
-				c.JSON(http.StatusOK, x)
+				statusCode, exists := c.Get("status_code")
+				if !exists {
+					statusCode = http.StatusOK
+				}
+				c.JSON(statusCode.(int), x)
 			} else {
 				c.Status(http.StatusNoContent)
 			}

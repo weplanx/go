@@ -2,175 +2,196 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/weplanx/go/route"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"net/http"
 )
 
 type Controller struct {
-	API  *API
-	PATH string
+	Service *Service
 }
 
-func AutoController(api *API) *Controller {
-	return &Controller{api, ""}
+func (x *Controller) Auto(r *gin.Engine) {
+	r.POST("/:name", route.Use(x.Create))
+	r.GET("/:name", route.Use(x.Find))
+	r.GET("/:name/:id", route.Use(x.FindOneById))
+	r.PATCH("/:name", route.Use(x.Update))
+	r.PATCH("/:name/:id", route.Use(x.UpdateOneById))
+	r.PUT("/:name/:id", route.Use(x.ReplaceOneById))
+	r.DELETE("/:name/:id", route.Use(x.DeleteOneById))
 }
 
-func SetController(api *API, path string) *Controller {
-	return &Controller{api, path}
+type CreateDto struct {
+	Doc bson.M `json:"doc" binding:"required"`
 }
 
-type Uri struct {
-	Name string `json:"name" binding:"required"`
-}
-
-func (x *Controller) setCollectionName(c *gin.Context) (err error) {
-	if x.PATH != "" {
-		c.Set("collection", x.PATH)
-		return
-	}
-	var uri Uri
-	if err = c.ShouldBindUri(&uri); err != nil {
-		return
-	}
-	c.Set("collection", uri.Name)
-	return
-}
-
-// Create resources
+// Create 创建文档
 func (x *Controller) Create(c *gin.Context) interface{} {
-	var body bson.M
+	name := c.Param("name")
+	var body CreateDto
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err := x.setCollectionName(c); err != nil {
-		return err
-	}
-	result, err := x.API.Create(c.Request.Context(), &body)
+	result, err := x.Service.Create(c.Request.Context(), name, body.Doc)
 	if err != nil {
 		return err
 	}
+	c.Set("status_code", http.StatusCreated)
 	return result
 }
 
-// FindOneDto Get a single resource request body
-type FindOneDto struct {
-	Id    primitive.ObjectID `json:"id" binding:"required_without=Where"`
-	Where bson.M             `json:"where" binding:"required_without=Id,excluded_with=Id"`
+type PaginationDto struct {
+	Index int64 `header:"page" binding:"omitempty,gt=0,number"`
+	Size  int64 `header:"pagesize" binding:"omitempty,oneof=10 20 50 100"`
 }
 
-// FindOne Get a single resource
-func (x *Controller) FindOne(c *gin.Context) interface{} {
-	var body FindOneDto
-	if err := c.ShouldBindJSON(&body); err != nil {
-		return err
-	}
-	if err := x.setCollectionName(c); err != nil {
-		return err
-	}
-	data := make(map[string]interface{})
-	if err := x.API.FindOne(c.Request.Context(), &body, &data); err != nil {
-		return err
-	}
-	return data
-}
-
-// FindDto Get the original list resource request body
 type FindDto struct {
-	Id    []primitive.ObjectID `json:"id" validate:"omitempty,gt=0"`
-	Where bson.M               `json:"where"`
-	Sort  [][]interface{}      `json:"sort" validate:"omitempty"`
+	Id     []string `form:"id" binding:"omitempty"`
+	Where  bson.M   `form:"where" binding:"omitempty"`
+	Sort   []string `form:"sort" binding:"omitempty"`
+	Single bool     `form:"single"`
 }
 
+// Find 通过获取多个文档
 func (x *Controller) Find(c *gin.Context) interface{} {
-	var body FindDto
-	if err := c.ShouldBindJSON(&body); err != nil {
+	name := c.Param("name")
+	var page PaginationDto
+	if err := c.ShouldBindHeader(&page); err != nil {
 		return err
 	}
-	if err := x.setCollectionName(c); err != nil {
+	var query FindDto
+	if err := c.ShouldBindQuery(&query); err != nil {
 		return err
 	}
-	data := make([]map[string]interface{}, 0)
-	if err := x.API.Find(c.Request.Context(), &body, &data); err != nil {
-		return err
+	ctx := c.Request.Context()
+	if query.Single {
+		result, err := x.Service.FindOne(ctx, name, query.Where)
+		if err != nil {
+			return err
+		}
+		return result
 	}
-	return gin.H{
-		"data": data,
+	if len(query.Id) != 0 {
+		result, err := x.Service.
+			FindById(ctx, name, query.Id, query.Sort)
+		if err != nil {
+			return err
+		}
+		return result
 	}
-}
-
-// FindByPageDto Get the request body of the paged list resource
-type FindByPageDto struct {
-	Where      bson.M     `json:"where"`
-	Sort       bson.M     `json:"sort"`
-	Pagination Pagination `json:"page" binding:"required"`
-}
-
-type Pagination struct {
-	Index int64 `json:"index" binding:"required,gt=0,number"`
-	Size  int64 `json:"size" binding:"required,oneof=10 20 50 100"`
-}
-
-type FindByPageResult struct {
-	Value []map[string]interface{} `json:"value"`
-	Total int64                    `json:"total"`
-}
-
-// FindByPage Get paging list resources
-func (x *Controller) FindByPage(c *gin.Context) interface{} {
-	var body FindByPageDto
-	if err := c.ShouldBindJSON(&body); err != nil {
-		return err
+	if page.Index != 0 && page.Size != 0 {
+		result, err := x.Service.
+			FindByPage(ctx, name, page, query.Where, query.Sort)
+		if err != nil {
+			return err
+		}
+		return result
 	}
-	if err := x.setCollectionName(c); err != nil {
-		return err
-	}
-	result, err := x.API.FindByPage(c.Request.Context(), &body)
+	result, err := x.Service.
+		Find(ctx, name, query.Where, query.Sort)
 	if err != nil {
 		return err
 	}
 	return result
 }
 
-// UpdateDto Update resource request body
-type UpdateDto struct {
-	Id     primitive.ObjectID `json:"id" binding:"required_without=Where"`
-	Where  bson.M             `json:"where" binding:"required_without=Id"`
-	Update bson.M             `json:"update" binding:"required"`
-	Refs   []string           `json:"refs"`
+// FindOneById 通过 ID 获取单个文档
+func (x *Controller) FindOneById(c *gin.Context) interface{} {
+	name := c.Param("name")
+	id := c.Param("name")
+	err, result := x.Service.FindOneById(c.Request.Context(), name, id)
+	if err != nil {
+		return err
+	}
+	return result
 }
 
-// Update resources
+type UpdateQuery struct {
+	Id       []string `form:"id" binding:"omitempty"`
+	Where    bson.M   `form:"where" binding:"omitempty"`
+	Multiple bool     `form:"multiple" binding:"omitempty"`
+}
+
+type UpdateDto struct {
+	Update bson.M `json:"update" binding:"required"`
+}
+
+// Update 更新文档
 func (x *Controller) Update(c *gin.Context) interface{} {
+	name := c.Param("name")
+	var query UpdateQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		return err
+	}
 	var body UpdateDto
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err := x.setCollectionName(c); err != nil {
-		return err
+	ctx := c.Request.Context()
+	if len(query.Id) != 0 {
+		result, err := x.Service.
+			UpdateManyById(ctx, name, query.Id, body.Update)
+		if err != nil {
+			return err
+		}
+		return result
 	}
-	result, err := x.API.Update(c.Request.Context(), &body)
+	if query.Multiple {
+		result, err := x.Service.
+			UpdateMany(ctx, name, query.Where, body.Update)
+		if err != nil {
+			return err
+		}
+		return result
+	}
+	result, err := x.Service.
+		UpdateOne(ctx, name, query.Where, body.Update)
 	if err != nil {
 		return err
 	}
 	return result
 }
 
-// DeleteDto Delete resource request body
-type DeleteDto struct {
-	Id    []primitive.ObjectID `json:"id" validate:"required_without=Where,omitempty,gt=0"`
-	Where bson.M               `json:"where" validate:"required_without=Id,excluded_with=Id"`
-}
-
-// Delete resource
-func (x *Controller) Delete(c *gin.Context) interface{} {
-	var body DeleteDto
+func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
+	name := c.Param("name")
+	id := c.Param("id")
+	var body UpdateDto
 	if err := c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err := x.setCollectionName(c); err != nil {
+	ctx := c.Request.Context()
+	result, err := x.Service.
+		UpdateOneById(ctx, name, id, body.Update)
+	if err != nil {
 		return err
 	}
-	result, err := x.API.Delete(c.Request.Context(), &body)
+	return result
+}
+
+type ReplaceOneDto struct {
+	Doc bson.M `json:"doc" binding:"required"`
+}
+
+func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
+	name := c.Param("name")
+	id := c.Param("id")
+	var body ReplaceOneDto
+	if err := c.ShouldBindJSON(&body); err != nil {
+		return err
+	}
+	ctx := c.Request.Context()
+	result, err := x.Service.ReplaceOneById(ctx, name, id, body.Doc)
+	if err != nil {
+		return err
+	}
+	return result
+}
+
+func (x *Controller) DeleteOneById(c *gin.Context) interface{} {
+	name := c.Param("name")
+	id := c.Param("id")
+	ctx := c.Request.Context()
+	result, err := x.Service.DeleteOneById(ctx, name, id)
 	if err != nil {
 		return err
 	}
