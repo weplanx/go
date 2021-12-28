@@ -70,9 +70,7 @@ func (x *Service) FindById(
 ) (data []map[string]interface{}, err error) {
 	oids := make([]primitive.ObjectID, len(ids))
 	for i, v := range ids {
-		if oids[i], err = primitive.ObjectIDFromHex(v); err != nil {
-			return
-		}
+		oids[i], _ = primitive.ObjectIDFromHex(v)
 	}
 	return x.Find(ctx, name, bson.M{"_id": bson.M{"$in": oids}}, sort)
 }
@@ -123,10 +121,7 @@ func (x *Service) FindOneById(
 	name string,
 	id string,
 ) (data map[string]interface{}, err error) {
-	var oid primitive.ObjectID
-	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
-		return
-	}
+	oid, _ := primitive.ObjectIDFromHex(id)
 	return x.FindOne(ctx, name, bson.M{"_id": oid})
 }
 
@@ -150,9 +145,7 @@ func (x *Service) UpdateManyById(
 ) (result *mongo.UpdateResult, err error) {
 	oids := make([]primitive.ObjectID, len(ids))
 	for i, v := range ids {
-		if oids[i], err = primitive.ObjectIDFromHex(v); err != nil {
-			return
-		}
+		oids[i], _ = primitive.ObjectIDFromHex(v)
 	}
 	return x.UpdateMany(ctx, name, bson.M{"_id": bson.M{"$in": oids}}, update)
 }
@@ -176,10 +169,7 @@ func (x *Service) UpdateOneById(
 	id string,
 	update interface{},
 ) (result *mongo.UpdateResult, err error) {
-	var oid primitive.ObjectID
-	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
-		return
-	}
+	oid, _ := primitive.ObjectIDFromHex(id)
 	return x.UpdateOne(ctx, name, bson.M{"_id": oid}, update)
 }
 
@@ -189,10 +179,7 @@ func (x *Service) ReplaceOneById(
 	id string,
 	doc interface{},
 ) (result *mongo.UpdateResult, err error) {
-	var oid primitive.ObjectID
-	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
-		return
-	}
+	oid, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": oid}
 	if data, ok := doc.(bson.M); ok {
 		data["create_time"] = time.Now()
@@ -207,9 +194,6 @@ func (x *Service) DeleteOneById(
 	name string,
 	id string,
 ) (result *mongo.DeleteResult, err error) {
-	var oid primitive.ObjectID
-	if oid, err = primitive.ObjectIDFromHex(id); err != nil {
-		return
-	}
+	oid, _ := primitive.ObjectIDFromHex(id)
 	return x.Db.Collection(name).DeleteOne(ctx, bson.M{"_id": oid})
 }
