@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/weplanx/go/route"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
 	"strconv"
@@ -10,16 +9,6 @@ import (
 
 type Controller struct {
 	Service *Service
-}
-
-func (x *Controller) Auto(r *gin.Engine) {
-	r.POST("/:model", route.Use(x.Create))
-	r.GET("/:model", route.Use(x.Find))
-	r.GET("/:model/:id", route.Use(x.FindOneById))
-	r.PATCH("/:model", route.Use(x.Update))
-	r.PATCH("/:model/:id", route.Use(x.UpdateOneById))
-	r.PUT("/:model/:id", route.Use(x.ReplaceOneById))
-	r.DELETE("/:model/:id", route.Use(x.DeleteOneById))
 }
 
 type CommonParams struct {
