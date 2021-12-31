@@ -5,8 +5,27 @@ import (
 	"net/http"
 )
 
-func Use(fn func(c *gin.Context) interface{}) gin.HandlerFunc {
+type Option struct {
+	Model string
+}
+
+type OptionFunc func(*Option)
+
+func SetModel(v string) OptionFunc {
+	return func(option *Option) {
+		option.Model = v
+	}
+}
+
+func Use(fn func(c *gin.Context) interface{}, options ...OptionFunc) gin.HandlerFunc {
+	opt := new(Option)
+	for _, v := range options {
+		v(opt)
+	}
 	return func(c *gin.Context) {
+		if opt.Model != "" {
+			c.Set("api-model-name", opt.Model)
+		}
 		switch x := fn(c).(type) {
 		case error:
 			statusCode, exists := c.Get("status_code")
