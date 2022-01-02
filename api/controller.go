@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strconv"
 )
@@ -27,7 +28,8 @@ func (x *Controller) Params(c *gin.Context) (params *CommonParams, err error) {
 }
 
 type CreateBody struct {
-	Doc bson.M `json:"doc" binding:"required"`
+	Doc bson.M   `json:"doc" binding:"required"`
+	Ref []string `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 // Create 创建文档
@@ -39,6 +41,14 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 	var body CreateBody
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
+	}
+	for _, key := range body.Ref {
+
+		if body.Doc[key], err = primitive.ObjectIDFromHex(
+			body.Doc[key].(string),
+		); err != nil {
+			return err
+		}
 	}
 	result, err := x.Service.Create(c.Request.Context(), params.Model, body.Doc)
 	if err != nil {
