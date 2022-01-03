@@ -42,12 +42,12 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	for _, key := range body.Ref {
-
-		if body.Doc[key], err = primitive.ObjectIDFromHex(
-			body.Doc[key].(string),
-		); err != nil {
-			return err
+	for _, ref := range body.Ref {
+		for i, id := range body.Doc[ref].([]interface{}) {
+			if body.Doc[ref].([]interface{})[i], err = primitive.
+				ObjectIDFromHex(id.(string)); err != nil {
+				return err
+			}
 		}
 	}
 	result, err := x.Service.Create(c.Request.Context(), params.Model, body.Doc)
