@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strconv"
 )
@@ -28,8 +27,9 @@ func (x *Controller) Params(c *gin.Context) (params *CommonParams, err error) {
 }
 
 type CreateBody struct {
-	Doc bson.M   `json:"doc" binding:"required"`
-	Ref []string `json:"ref" binding:"omitempty,dive,gt=0"`
+	Doc    bson.M   `json:"doc" binding:"required"`
+	Format bson.M   `json:"format" binding:"omitempty,dive,gt=0"`
+	Ref    []string `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 // Create 创建文档
@@ -42,13 +42,11 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	for _, ref := range body.Ref {
-		for i, id := range body.Doc[ref].([]interface{}) {
-			if body.Doc[ref].([]interface{})[i], err = primitive.
-				ObjectIDFromHex(id.(string)); err != nil {
-				return err
-			}
-		}
+	if err = x.Service.SetFormat(body.Format, &body.Doc); err != nil {
+		return err
+	}
+	if err = x.Service.SetRef(body.Ref, &body.Doc); err != nil {
+		return err
 	}
 	result, err := x.Service.Create(c.Request.Context(), params.Model, body.Doc)
 	if err != nil {
@@ -129,7 +127,9 @@ type UpdateQuery struct {
 }
 
 type UpdateBody struct {
-	Update bson.M `json:"update" binding:"required"`
+	Update bson.M   `json:"update" binding:"required"`
+	Format bson.M   `json:"format" binding:"omitempty,dive,gt=0"`
+	Ref    []string `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 // Update 更新文档
@@ -144,6 +144,12 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	}
 	var body UpdateBody
 	if err = c.ShouldBindJSON(&body); err != nil {
+		return err
+	}
+	if err = x.Service.SetFormat(body.Format, &body.Update); err != nil {
+		return err
+	}
+	if err = x.Service.SetRef(body.Ref, &body.Update); err != nil {
 		return err
 	}
 	ctx := c.Request.Context()
@@ -180,6 +186,12 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
+	if err = x.Service.SetFormat(body.Format, &body.Update); err != nil {
+		return err
+	}
+	if err = x.Service.SetRef(body.Ref, &body.Update); err != nil {
+		return err
+	}
 	ctx := c.Request.Context()
 	result, err := x.Service.
 		UpdateOneById(ctx, params.Model, params.Id, body.Update)
@@ -190,7 +202,9 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 }
 
 type ReplaceOneBody struct {
-	Doc bson.M `json:"doc" binding:"required"`
+	Doc    bson.M   `json:"doc" binding:"required"`
+	Format bson.M   `json:"format" binding:"omitempty,dive,gt=0"`
+	Ref    []string `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
@@ -200,6 +214,12 @@ func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
 	}
 	var body ReplaceOneBody
 	if err = c.ShouldBindJSON(&body); err != nil {
+		return err
+	}
+	if err = x.Service.SetFormat(body.Format, &body.Doc); err != nil {
+		return err
+	}
+	if err = x.Service.SetRef(body.Ref, &body.Doc); err != nil {
 		return err
 	}
 	ctx := c.Request.Context()

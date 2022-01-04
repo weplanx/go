@@ -15,6 +15,38 @@ type Service struct {
 	Db *mongo.Database
 }
 
+func (x *Service) SetFormat(formats bson.M, v *bson.M) (err error) {
+	for key, format := range formats {
+		if _, ok := (*v)[key]; !ok {
+			continue
+		}
+		switch format {
+		case "object_id":
+			if (*v)[key], err = primitive.
+				ObjectIDFromHex((*v)[key].(string)); err != nil {
+				return
+			}
+			break
+		}
+	}
+	return
+}
+
+func (x *Service) SetRef(refs []string, v *bson.M) (err error) {
+	for _, ref := range refs {
+		if _, ok := (*v)[ref]; !ok {
+			continue
+		}
+		for i, id := range (*v)[ref].([]interface{}) {
+			if (*v)[ref].([]interface{})[i], err = primitive.
+				ObjectIDFromHex(id.(string)); err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
 func (x *Service) Create(
 	ctx context.Context,
 	model string,
