@@ -2,12 +2,14 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
 	"strconv"
 )
 
 type Controller struct {
+	Js      nats.JetStreamContext
 	Service *Service
 }
 
