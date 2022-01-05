@@ -10,6 +10,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/google/wire v0.5.0
+	github.com/json-iterator/go v1.1.9
 	github.com/nats-io/nats-server/v2 v2.6.6 // indirect
 	github.com/nats-io/nats.go v1.13.1-0.20211122170419-d7c1d78a50fc
 	github.com/speps/go-hashids/v2 v2.0.1
