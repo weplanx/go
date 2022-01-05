@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"regexp"
@@ -37,11 +38,25 @@ func New(options ...OptionFunc) *Engine {
 	return x
 }
 
-func (x *Engine) Publish(sub string, data []byte) (err error) {
+type EventValue struct {
+	Id       interface{} `json:"id"`
+	Query    interface{} `json:"query"`
+	Body     interface{} `json:"body"`
+	Response interface{} `json:"response"`
+}
+
+func (x *Engine) Publish(model string, event string, v EventValue) (err error) {
 	if x.Js == nil {
 		return
 	}
-	if _, err = x.Js.Publish(fmt.Sprintf(`%s.%s`, x.App, sub), data); err != nil {
+	var data []byte
+	if data, err = jsoniter.Marshal(&v); err != nil {
+		return
+	}
+	if _, err = x.Js.Publish(
+		fmt.Sprintf(`%s.%s.%s`, x.App, model, event),
+		data,
+	); err != nil {
 		return
 	}
 	return

@@ -54,6 +54,12 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 		return err
 	}
 	c.Set("status_code", http.StatusCreated)
+	if err = x.Engine.Publish(params.Model, "create", EventValue{
+		Body:     body,
+		Response: result,
+	}); err != nil {
+		return err
+	}
 	return result
 }
 
@@ -175,6 +181,13 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
+	if err = x.Engine.Publish(params.Model, "update", EventValue{
+		Query:    query,
+		Body:     body,
+		Response: result,
+	}); err != nil {
+		return err
+	}
 	return result
 }
 
@@ -197,6 +210,13 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 	result, err := x.Service.
 		UpdateOneById(ctx, params.Model, params.Id, body.Update)
 	if err != nil {
+		return err
+	}
+	if err = x.Engine.Publish(params.Model, "update", EventValue{
+		Id:       params.Id,
+		Body:     body,
+		Response: result,
+	}); err != nil {
 		return err
 	}
 	return result
@@ -228,6 +248,13 @@ func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
+	if err = x.Engine.Publish(params.Model, "replace", EventValue{
+		Id:       params.Id,
+		Body:     body,
+		Response: result,
+	}); err != nil {
+		return err
+	}
 	return result
 }
 
@@ -239,6 +266,12 @@ func (x *Controller) DeleteOneById(c *gin.Context) interface{} {
 	ctx := c.Request.Context()
 	result, err := x.Service.DeleteOneById(ctx, params.Model, params.Id)
 	if err != nil {
+		return err
+	}
+	if err = x.Engine.Publish(params.Model, "delete", EventValue{
+		Id:       params.Id,
+		Response: result,
+	}); err != nil {
 		return err
 	}
 	return result
