@@ -41,16 +41,16 @@ func New(key string, option Option) *Passport {
 }
 
 // Create authentication token
-func (x *Passport) Create(jti string, data map[string]interface{}) (tokenString string, err error) {
+func (x *Passport) Create(jti string, context map[string]interface{}) (tokenString string, err error) {
 	claims := jwt.MapClaims{
-		"iat":  time.Now().Unix(),
-		"nbf":  time.Now().Add(time.Second * time.Duration(x.Nbf)).Unix(),
-		"exp":  time.Now().Add(time.Second * time.Duration(x.Exp)).Unix(),
-		"jti":  jti,
-		"iss":  x.Iss,
-		"aud":  x.Aud,
-		"sub":  x.Sub,
-		"data": data,
+		"iat":     time.Now().Unix(),
+		"nbf":     time.Now().Add(time.Second * time.Duration(x.Nbf)).Unix(),
+		"exp":     time.Now().Add(time.Second * time.Duration(x.Exp)).Unix(),
+		"jti":     jti,
+		"iss":     x.Iss,
+		"aud":     x.Aud,
+		"sub":     x.Sub,
+		"context": context,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(x.Key))

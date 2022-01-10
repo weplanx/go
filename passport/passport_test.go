@@ -13,9 +13,9 @@ var passport *Passport
 
 func TestMain(m *testing.M) {
 	passport = New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK", Option{
-		Iss: "passport",
-		Sub: "unittest",
-		Aud: []string{"unit"},
+		Iss: "weplanx",
+		Sub: "system",
+		Aud: []string{"api"},
 		Nbf: 1,
 		Exp: 720,
 	})
@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 func TestPassport(t *testing.T) {
 	jti := uuid.New().String()
 	tokenString, err := passport.Create(jti, map[string]interface{}{
-		"userId": "xs1fp",
+		"userId": []byte("xs1fp"),
 	})
 	assert.Nil(t, err)
 	assert.NotEmpty(t, tokenString)
@@ -37,7 +37,10 @@ func TestPassport(t *testing.T) {
 	time.Sleep(time.Second)
 	clamis, err = passport.Verify(tokenString)
 	assert.Nil(t, err)
-	assert.Equal(t, clamis["iss"], "passport")
-	assert.Equal(t, clamis["sub"], "unittest")
-	assert.Equal(t, clamis["aud"], []interface{}{"unit"})
+	assert.Equal(t, clamis["iss"], "weplanx")
+	assert.Equal(t, clamis["sub"], "system")
+	assert.Equal(t, clamis["aud"], []interface{}{"api"})
+	assert.Equal(t, clamis["context"], map[string]interface{}{
+		"userId": []byte("xs1fp"),
+	})
 }
