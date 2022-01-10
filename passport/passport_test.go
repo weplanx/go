@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 func TestPassport(t *testing.T) {
 	jti := uuid.New().String()
 	tokenString, err := passport.Create(jti, map[string]interface{}{
-		"userId": []byte("xs1fp"),
+		"userId": "xs1fp",
 	})
 	assert.Nil(t, err)
 	assert.NotEmpty(t, tokenString)
@@ -41,6 +41,6 @@ func TestPassport(t *testing.T) {
 	assert.Equal(t, clamis["sub"], "system")
 	assert.Equal(t, clamis["aud"], []interface{}{"api"})
 	assert.Equal(t, clamis["context"], map[string]interface{}{
-		"userId": []byte("xs1fp"),
+		"userId": "xs1fp",
 	})
 }
