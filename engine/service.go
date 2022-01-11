@@ -88,6 +88,7 @@ func (x *Service) Find(
 	if cursor, err = x.Db.Collection(model).Find(ctx, filter, opts...); err != nil {
 		return
 	}
+	data = make([]map[string]interface{}, 0)
 	if err = cursor.All(ctx, &data); err != nil {
 		return
 	}
