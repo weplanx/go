@@ -153,11 +153,13 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err = x.Service.SetFormat(body.Format, &body.Update); err != nil {
-		return err
-	}
-	if err = x.Service.SetRef(body.Ref, &body.Update); err != nil {
-		return err
+	if doc, ok := body.Update["$set"]; ok {
+		if err = x.Service.SetFormat(body.Format, &doc); err != nil {
+			return err
+		}
+		if err = x.Service.SetRef(body.Ref, &doc); err != nil {
+			return err
+		}
 	}
 	ctx := c.Request.Context()
 	if len(query.Id) != 0 {
@@ -200,11 +202,13 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err = x.Service.SetFormat(body.Format, &body.Update); err != nil {
-		return err
-	}
-	if err = x.Service.SetRef(body.Ref, &body.Update); err != nil {
-		return err
+	if doc, ok := body.Update["$set"]; ok {
+		if err = x.Service.SetFormat(body.Format, doc); err != nil {
+			return err
+		}
+		if err = x.Service.SetRef(body.Ref, doc); err != nil {
+			return err
+		}
 	}
 	ctx := c.Request.Context()
 	result, err := x.Service.

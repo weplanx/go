@@ -15,15 +15,16 @@ type Service struct {
 	Db *mongo.Database
 }
 
-func (x *Service) SetFormat(formats bson.M, v *bson.M) (err error) {
+func (x *Service) SetFormat(formats bson.M, v interface{}) (err error) {
+	doc, _ := v.(map[string]interface{})
 	for key, format := range formats {
-		if _, ok := (*v)[key]; !ok {
+		if _, ok := doc[key]; !ok {
 			continue
 		}
 		switch format {
 		case "object_id":
-			if (*v)[key], err = primitive.
-				ObjectIDFromHex((*v)[key].(string)); err != nil {
+			if doc[key], err = primitive.
+				ObjectIDFromHex(doc[key].(string)); err != nil {
 				return
 			}
 			break
@@ -32,13 +33,14 @@ func (x *Service) SetFormat(formats bson.M, v *bson.M) (err error) {
 	return
 }
 
-func (x *Service) SetRef(refs []string, v *bson.M) (err error) {
+func (x *Service) SetRef(refs []string, v interface{}) (err error) {
+	doc, _ := v.(map[string]interface{})
 	for _, ref := range refs {
-		if _, ok := (*v)[ref]; !ok {
+		if _, ok := doc[ref]; !ok {
 			continue
 		}
-		for i, id := range (*v)[ref].([]interface{}) {
-			if (*v)[ref].([]interface{})[i], err = primitive.
+		for i, id := range doc[ref].([]interface{}) {
+			if doc[ref].([]interface{})[i], err = primitive.
 				ObjectIDFromHex(id.(string)); err != nil {
 				return
 			}
