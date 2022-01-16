@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/weplanx/go/engine"
 	"net/http"
 )
 
@@ -24,7 +25,7 @@ func Use(fn func(c *gin.Context) interface{}, options ...OptionFunc) gin.Handler
 	}
 	return func(c *gin.Context) {
 		if opt.Model != "" {
-			c.Set("api-model-name", opt.Model)
+			c.Set(engine.ModelNameKey, opt.Model)
 		}
 		switch x := fn(c).(type) {
 		case error:

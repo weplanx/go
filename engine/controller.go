@@ -21,7 +21,7 @@ func (x *Controller) Params(c *gin.Context) (params *CommonParams, err error) {
 	if err = c.ShouldBindUri(&params); err != nil {
 		return
 	}
-	if value, exists := c.Get("api-model-name"); exists {
+	if value, exists := c.Get(ModelNameKey); exists {
 		params.Model = value.(string)
 	}
 	return

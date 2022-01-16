@@ -11,6 +11,8 @@ import (
 	"regexp"
 )
 
+const ModelNameKey = "model-name"
+
 type Engine struct {
 	App string
 	Js  nats.JetStreamContext
