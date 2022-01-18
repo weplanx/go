@@ -28,9 +28,9 @@ func (x *Controller) Params(c *gin.Context) (params *CommonParams, err error) {
 }
 
 type CreateBody struct {
-	Doc    bson.M   `json:"doc" binding:"required"`
-	Format bson.M   `json:"format" binding:"omitempty,dive,gt=0"`
-	Ref    []string `json:"ref" binding:"omitempty,dive,gt=0"`
+	Doc    map[string]interface{} `json:"doc" binding:"required"`
+	Format map[string]interface{} `json:"format" binding:"omitempty,dive,gt=0"`
+	Ref    []string               `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 // Create 创建文档

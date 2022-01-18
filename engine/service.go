@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"github.com/weplanx/go/password"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,7 +17,7 @@ type Service struct {
 	Db     *mongo.Database
 }
 
-func (x *Service) SetFormat(formats bson.M, v interface{}) (err error) {
+func (x *Service) SetFormat(formats map[string]interface{}, v interface{}) (err error) {
 	doc, _ := v.(map[string]interface{})
 	for key, format := range formats {
 		if _, ok := doc[key]; !ok {
@@ -26,6 +27,11 @@ func (x *Service) SetFormat(formats bson.M, v interface{}) (err error) {
 		case "object_id":
 			if doc[key], err = primitive.
 				ObjectIDFromHex(doc[key].(string)); err != nil {
+				return
+			}
+			break
+		case "password":
+			if doc[key], err = password.Create(doc[key].(string)); err != nil {
 				return
 			}
 			break
