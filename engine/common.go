@@ -7,6 +7,7 @@ import (
 	"github.com/google/wire"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"regexp"
 )
@@ -14,8 +15,13 @@ import (
 const ModelNameKey = "model-name"
 
 type Engine struct {
-	App string
-	Js  nats.JetStreamContext
+	App     string
+	Options map[string]Option
+	Js      nats.JetStreamContext
+}
+
+type Option struct {
+	Projection bson.M `yaml:"projection"`
 }
 
 type OptionFunc func(engine *Engine)
@@ -26,9 +32,15 @@ func SetApp(v string) OptionFunc {
 	}
 }
 
-func UseEvents(js nats.JetStreamContext) OptionFunc {
+func UseStaticOptions(v map[string]Option) OptionFunc {
 	return func(engine *Engine) {
-		engine.Js = js
+		engine.Options = v
+	}
+}
+
+func UseEvents(v nats.JetStreamContext) OptionFunc {
+	return func(engine *Engine) {
+		engine.Js = v
 	}
 }
 

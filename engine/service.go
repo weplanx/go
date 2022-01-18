@@ -12,7 +12,8 @@ import (
 )
 
 type Service struct {
-	Db *mongo.Database
+	Engine *Engine
+	Db     *mongo.Database
 }
 
 func (x *Service) SetFormat(formats bson.M, v interface{}) (err error) {
@@ -85,6 +86,11 @@ func (x *Service) Find(
 	} else {
 		option.SetSort(bson.M{"_id": -1})
 	}
+	if staticOpt, ok := x.Engine.Options[model]; ok {
+		if len(staticOpt.Projection) != 0 {
+			option.SetProjection(staticOpt.Projection)
+		}
+	}
 	opts = append(opts, option)
 	var cursor *mongo.Cursor
 	if cursor, err = x.Db.Collection(model).Find(ctx, filter, opts...); err != nil {
@@ -145,7 +151,13 @@ func (x *Service) FindOne(
 	model string,
 	filter bson.M,
 ) (data map[string]interface{}, err error) {
-	if err = x.Db.Collection(model).FindOne(ctx, filter).Decode(&data); err != nil {
+	option := options.FindOne()
+	if staticOpt, ok := x.Engine.Options[model]; ok {
+		if len(staticOpt.Projection) != 0 {
+			option.SetProjection(staticOpt.Projection)
+		}
+	}
+	if err = x.Db.Collection(model).FindOne(ctx, filter, option).Decode(&data); err != nil {
 		return
 	}
 	return
