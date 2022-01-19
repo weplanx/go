@@ -2,7 +2,6 @@ package engine
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
 	"strconv"
 )
@@ -43,10 +42,10 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err = x.Service.SetFormat(body.Format, &body.Doc); err != nil {
+	if err = x.Service.SetFormat(body.Format, body.Doc); err != nil {
 		return err
 	}
-	if err = x.Service.SetRef(body.Ref, &body.Doc); err != nil {
+	if err = x.Service.SetRef(body.Ref, body.Doc); err != nil {
 		return err
 	}
 	result, err := x.Service.Create(c.Request.Context(), params.Model, body.Doc)
@@ -64,10 +63,10 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 }
 
 type FindQuery struct {
-	Id     []string `form:"id" binding:"omitempty,excluded_with=Where Single,dive,objectId"`
-	Where  bson.M   `form:"where" binding:"omitempty,excluded_with=Id"`
-	Single bool     `form:"single"`
-	Sort   []string `form:"sort" binding:"omitempty,dive,gt=0,sort"`
+	Id     []string               `form:"id" binding:"omitempty,excluded_with=Where Single,dive,objectId"`
+	Where  map[string]interface{} `form:"where" binding:"omitempty,excluded_with=Id"`
+	Single bool                   `form:"single"`
+	Sort   []string               `form:"sort" binding:"omitempty,dive,gt=0,sort"`
 }
 
 // Find 通过获取多个文档
@@ -128,15 +127,15 @@ func (x *Controller) FindOneById(c *gin.Context) interface{} {
 }
 
 type UpdateQuery struct {
-	Id       []string `form:"id" binding:"required_without=Where,excluded_with=Multiple,dive,objectId"`
-	Where    bson.M   `form:"where" binding:"required_without=Id,excluded_with=Id"`
-	Multiple bool     `form:"multiple"`
+	Id       []string               `form:"id" binding:"required_without=Where,excluded_with=Multiple,dive,objectId"`
+	Where    map[string]interface{} `form:"where" binding:"required_without=Id,excluded_with=Id"`
+	Multiple bool                   `form:"multiple"`
 }
 
 type UpdateBody struct {
-	Update bson.M   `json:"update" binding:"required"`
-	Format bson.M   `json:"format" binding:"omitempty,dive,gt=0"`
-	Ref    []string `json:"ref" binding:"omitempty,dive,gt=0"`
+	Update map[string]interface{} `json:"update" binding:"required"`
+	Format map[string]interface{} `json:"format" binding:"omitempty,dive,gt=0"`
+	Ref    []string               `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 // Update 更新文档
@@ -154,10 +153,10 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 		return err
 	}
 	if doc, ok := body.Update["$set"]; ok {
-		if err = x.Service.SetFormat(body.Format, &doc); err != nil {
+		if err = x.Service.SetFormat(body.Format, doc); err != nil {
 			return err
 		}
-		if err = x.Service.SetRef(body.Ref, &doc); err != nil {
+		if err = x.Service.SetRef(body.Ref, doc); err != nil {
 			return err
 		}
 	}
@@ -227,9 +226,9 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 }
 
 type ReplaceOneBody struct {
-	Doc    bson.M   `json:"doc" binding:"required"`
-	Format bson.M   `json:"format" binding:"omitempty,dive,gt=0"`
-	Ref    []string `json:"ref" binding:"omitempty,dive,gt=0"`
+	Doc    map[string]interface{} `json:"doc" binding:"required"`
+	Format map[string]interface{} `json:"format" binding:"omitempty,dive,gt=0"`
+	Ref    []string               `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
@@ -241,10 +240,10 @@ func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err = x.Service.SetFormat(body.Format, &body.Doc); err != nil {
+	if err = x.Service.SetFormat(body.Format, body.Doc); err != nil {
 		return err
 	}
-	if err = x.Service.SetRef(body.Ref, &body.Doc); err != nil {
+	if err = x.Service.SetRef(body.Ref, body.Doc); err != nil {
 		return err
 	}
 	ctx := c.Request.Context()
