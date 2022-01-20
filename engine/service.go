@@ -17,7 +17,7 @@ type Service struct {
 	Db     *mongo.Database
 }
 
-func (x *Service) SetFormat(formats map[string]interface{}, v interface{}) (err error) {
+func (x *Service) setFormat(formats map[string]interface{}, v interface{}) (err error) {
 	doc, _ := v.(map[string]interface{})
 	for key, format := range formats {
 		if _, ok := doc[key]; !ok {
@@ -40,7 +40,7 @@ func (x *Service) SetFormat(formats map[string]interface{}, v interface{}) (err 
 	return
 }
 
-func (x *Service) SetRef(refs []string, v interface{}) (err error) {
+func (x *Service) setRef(refs []string, v interface{}) (err error) {
 	doc, _ := v.(map[string]interface{})
 	for _, ref := range refs {
 		if _, ok := doc[ref]; !ok {
@@ -56,17 +56,44 @@ func (x *Service) SetRef(refs []string, v interface{}) (err error) {
 	return
 }
 
-func (x *Service) Create(
+func (x *Service) InsertOne(
 	ctx context.Context,
 	model string,
-	doc interface{},
-) (*mongo.InsertOneResult, error) {
-	if data, ok := doc.(bson.M); ok {
-		data["create_time"] = time.Now()
-		data["update_time"] = time.Now()
-		return x.Db.Collection(model).InsertOne(ctx, data)
+	doc map[string]interface{},
+	format map[string]interface{},
+	ref []string,
+) (result *mongo.InsertOneResult, err error) {
+	if err = x.setFormat(format, doc); err != nil {
+		return
 	}
+	if err = x.setRef(ref, doc); err != nil {
+		return
+	}
+	doc["create_time"] = time.Now()
+	doc["update_time"] = time.Now()
 	return x.Db.Collection(model).InsertOne(ctx, doc)
+}
+
+func (x *Service) InsertMany(
+	ctx context.Context,
+	model string,
+	docs []map[string]interface{},
+	format map[string]interface{},
+	ref []string,
+) (result *mongo.InsertManyResult, err error) {
+	data := make([]interface{}, len(docs))
+	for i, doc := range docs {
+		if err = x.setFormat(format, doc); err != nil {
+			return
+		}
+		if err = x.setRef(ref, doc); err != nil {
+			return
+		}
+		doc["create_time"] = time.Now()
+		doc["update_time"] = time.Now()
+		data[i] = doc
+	}
+	return x.Db.Collection(model).InsertMany(ctx, data)
 }
 
 func (x *Service) Find(
@@ -181,12 +208,17 @@ func (x *Service) FindOneById(
 func (x *Service) UpdateMany(ctx context.Context,
 	model string,
 	filter bson.M,
-	update interface{},
+	update map[string]interface{},
+	format map[string]interface{},
+	ref []string,
 ) (result *mongo.UpdateResult, err error) {
-	if data, ok := update.(bson.M); ok {
-		data["$set"].(map[string]interface{})["update_time"] = time.Now()
-		return x.Db.Collection(model).UpdateMany(ctx, filter, data)
+	if err = x.setFormat(format, update["$set"]); err != nil {
+		return
 	}
+	if err = x.setRef(ref, update["$set"]); err != nil {
+		return
+	}
+	update["$set"].(map[string]interface{})["update_time"] = time.Now()
 	return x.Db.Collection(model).UpdateMany(ctx, filter, update)
 }
 
@@ -194,25 +226,32 @@ func (x *Service) UpdateManyById(
 	ctx context.Context,
 	model string,
 	ids []string,
-	update interface{},
+	update map[string]interface{},
+	format map[string]interface{},
+	ref []string,
 ) (result *mongo.UpdateResult, err error) {
 	oids := make([]primitive.ObjectID, len(ids))
 	for i, v := range ids {
 		oids[i], _ = primitive.ObjectIDFromHex(v)
 	}
-	return x.UpdateMany(ctx, model, bson.M{"_id": bson.M{"$in": oids}}, update)
+	return x.UpdateMany(ctx, model, bson.M{"_id": bson.M{"$in": oids}}, update, format, ref)
 }
 
 func (x *Service) UpdateOne(
 	ctx context.Context,
 	model string,
 	filter bson.M,
-	update interface{},
+	update map[string]interface{},
+	format map[string]interface{},
+	ref []string,
 ) (result *mongo.UpdateResult, err error) {
-	if data, ok := update.(bson.M); ok {
-		data["$set"].(map[string]interface{})["update_time"] = time.Now()
-		return x.Db.Collection(model).UpdateOne(ctx, filter, data)
+	if err = x.setFormat(format, update["$set"]); err != nil {
+		return
 	}
+	if err = x.setRef(ref, update["$set"]); err != nil {
+		return
+	}
+	update["$set"].(map[string]interface{})["update_time"] = time.Now()
 	return x.Db.Collection(model).UpdateOne(ctx, filter, update)
 }
 
@@ -220,25 +259,32 @@ func (x *Service) UpdateOneById(
 	ctx context.Context,
 	model string,
 	id string,
-	update interface{},
+	update map[string]interface{},
+	format map[string]interface{},
+	ref []string,
 ) (result *mongo.UpdateResult, err error) {
 	oid, _ := primitive.ObjectIDFromHex(id)
-	return x.UpdateOne(ctx, model, bson.M{"_id": oid}, update)
+	return x.UpdateOne(ctx, model, bson.M{"_id": oid}, update, format, ref)
 }
 
 func (x *Service) ReplaceOneById(
 	ctx context.Context,
 	model string,
 	id string,
-	doc interface{},
+	doc map[string]interface{},
+	format map[string]interface{},
+	ref []string,
 ) (result *mongo.UpdateResult, err error) {
 	oid, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": oid}
-	if data, ok := doc.(bson.M); ok {
-		data["create_time"] = time.Now()
-		data["update_time"] = time.Now()
-		return x.Db.Collection(model).ReplaceOne(ctx, filter, data)
+	if err = x.setFormat(format, doc); err != nil {
+		return
 	}
+	if err = x.setRef(ref, doc); err != nil {
+		return
+	}
+	doc["create_time"] = time.Now()
+	doc["update_time"] = time.Now()
 	return x.Db.Collection(model).ReplaceOne(ctx, filter, doc)
 }
 

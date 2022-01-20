@@ -27,9 +27,10 @@ func (x *Controller) Params(c *gin.Context) (params *CommonParams, err error) {
 }
 
 type CreateBody struct {
-	Doc    map[string]interface{} `json:"doc" binding:"required"`
-	Format map[string]interface{} `json:"format" binding:"omitempty,dive,gt=0"`
-	Ref    []string               `json:"ref" binding:"omitempty,dive,gt=0"`
+	Doc    map[string]interface{}   `json:"doc" binding:"required_without=Docs"`
+	Docs   []map[string]interface{} `json:"docs" binding:"required_without=Doc,excluded_with=Doc,dive,gt=0"`
+	Format map[string]interface{}   `json:"format" binding:"omitempty,dive,gt=0"`
+	Ref    []string                 `json:"ref" binding:"omitempty,dive,gt=0"`
 }
 
 // Create 创建文档
@@ -42,15 +43,19 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err = x.Service.SetFormat(body.Format, body.Doc); err != nil {
-		return err
-	}
-	if err = x.Service.SetRef(body.Ref, body.Doc); err != nil {
-		return err
-	}
-	result, err := x.Service.Create(c.Request.Context(), params.Model, body.Doc)
-	if err != nil {
-		return err
+	var result interface{}
+	if len(body.Docs) != 0 {
+		if result, err = x.Service.InsertMany(c.Request.Context(),
+			params.Model, body.Docs, body.Format, body.Ref,
+		); err != nil {
+			return err
+		}
+	} else {
+		if result, err = x.Service.InsertOne(c.Request.Context(),
+			params.Model, body.Doc, body.Format, body.Ref,
+		); err != nil {
+			return err
+		}
 	}
 	c.Set("status_code", http.StatusCreated)
 	if err = x.Engine.Publish(params.Model, "create", EventValue{
@@ -152,18 +157,10 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if doc, ok := body.Update["$set"]; ok {
-		if err = x.Service.SetFormat(body.Format, doc); err != nil {
-			return err
-		}
-		if err = x.Service.SetRef(body.Ref, doc); err != nil {
-			return err
-		}
-	}
 	ctx := c.Request.Context()
 	if len(query.Id) != 0 {
 		result, err := x.Service.
-			UpdateManyById(ctx, params.Model, query.Id, body.Update)
+			UpdateManyById(ctx, params.Model, query.Id, body.Update, body.Format, body.Ref)
 		if err != nil {
 			return err
 		}
@@ -171,14 +168,14 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	}
 	if query.Multiple {
 		result, err := x.Service.
-			UpdateMany(ctx, params.Model, query.Where, body.Update)
+			UpdateMany(ctx, params.Model, query.Where, body.Update, body.Format, body.Ref)
 		if err != nil {
 			return err
 		}
 		return result
 	}
 	result, err := x.Service.
-		UpdateOne(ctx, params.Model, query.Where, body.Update)
+		UpdateOne(ctx, params.Model, query.Where, body.Update, body.Format, body.Ref)
 	if err != nil {
 		return err
 	}
@@ -201,17 +198,9 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if doc, ok := body.Update["$set"]; ok {
-		if err = x.Service.SetFormat(body.Format, doc); err != nil {
-			return err
-		}
-		if err = x.Service.SetRef(body.Ref, doc); err != nil {
-			return err
-		}
-	}
 	ctx := c.Request.Context()
 	result, err := x.Service.
-		UpdateOneById(ctx, params.Model, params.Id, body.Update)
+		UpdateOneById(ctx, params.Model, params.Id, body.Update, body.Format, body.Ref)
 	if err != nil {
 		return err
 	}
@@ -240,14 +229,8 @@ func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	if err = x.Service.SetFormat(body.Format, body.Doc); err != nil {
-		return err
-	}
-	if err = x.Service.SetRef(body.Ref, body.Doc); err != nil {
-		return err
-	}
 	ctx := c.Request.Context()
-	result, err := x.Service.ReplaceOneById(ctx, params.Model, params.Id, body.Doc)
+	result, err := x.Service.ReplaceOneById(ctx, params.Model, params.Id, body.Doc, body.Format, body.Ref)
 	if err != nil {
 		return err
 	}
