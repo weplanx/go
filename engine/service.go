@@ -117,7 +117,7 @@ func (x *Service) Find(
 		option.SetSort(sorts)
 		option.SetAllowDiskUse(true)
 	} else {
-		option.SetSort(bson.M{"_id": -1})
+		option.SetSort(bson.M{"create_time": -1})
 	}
 	if staticOpt, ok := x.Engine.Options[model]; ok {
 		if len(staticOpt.Projection) != 0 {
@@ -158,7 +158,7 @@ func (x *Service) FindByPage(
 	ctx context.Context,
 	model string,
 	page Pagination,
-	filter bson.M,
+	filter map[string]interface{},
 	sort []string,
 ) (result FindResult, err error) {
 	if len(filter) != 0 {
