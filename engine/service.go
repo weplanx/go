@@ -117,7 +117,7 @@ func (x *Service) Find(
 		option.SetSort(sorts)
 		option.SetAllowDiskUse(true)
 	} else {
-		option.SetSort(bson.M{"create_time": -1})
+		option.SetSort(bson.M{"_id": -1})
 	}
 	if staticOpt, ok := x.Engine.Options[model]; ok {
 		if len(staticOpt.Projection) != 0 {

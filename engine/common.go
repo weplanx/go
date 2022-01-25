@@ -78,7 +78,7 @@ func (x *Engine) Publish(model string, event string, v EventValue) (err error) {
 
 type Pagination struct {
 	Index int64 `header:"x-page" binding:"omitempty,gt=0,number"`
-	Size  int64 `header:"x-page-size" binding:"omitempty,oneof=10 20 50 100"`
+	Size  int64 `header:"x-page-size" binding:"omitempty,number"`
 }
 
 func RegisterValidation() {
