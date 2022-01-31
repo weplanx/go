@@ -10,17 +10,13 @@ jobs:
     name: Weplanx Go Testing
     runs-on: ubuntu-latest
     services:
-    #      postgres:
-    #        image: postgres:alpine
-    #        env:
-    #          POSTGRES_PASSWORD: postgres
-    #        options: >-
-    #          --health-cmd pg_isready
-    #          --health-interval 10s
-    #          --health-timeout 5s
-    #          --health-retries 5
-    #        ports:
-    #          - 5432:5432
+      mongodb:
+        image: mongo
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: example
+        ports:
+          - 27017:27017
 
     steps:
       - name: Check out the repo
