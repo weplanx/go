@@ -20,19 +20,22 @@ func NewCipher(key string) (x *Cipher, err error) {
 }
 
 // Encode data encryption
-func (x *Cipher) Encode(data []byte) (string, error) {
+func (x *Cipher) Encode(data []byte) (ciphertext string, err error) {
 	nonce := make([]byte, x.AEAD.NonceSize(), x.AEAD.NonceSize()+len(data)+x.AEAD.Overhead())
-	rand.Read(nonce)
+	if _, err = rand.Read(nonce); err != nil {
+		return
+	}
 	encrypted := x.AEAD.Seal(nonce, nonce, data, nil)
-	return base64.StdEncoding.EncodeToString(encrypted), nil
+	ciphertext = base64.StdEncoding.EncodeToString(encrypted)
+	return
 }
 
 // Decode data decryption
-func (x *Cipher) Decode(text string) ([]byte, error) {
-	encrypted, err := base64.StdEncoding.DecodeString(text)
+func (x *Cipher) Decode(ciphertext string) (data []byte, err error) {
+	encrypted, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
-		return nil, err
+		return
 	}
-	nonce, ciphertext := encrypted[:x.AEAD.NonceSize()], encrypted[x.AEAD.NonceSize():]
-	return x.AEAD.Open(nil, nonce, ciphertext, nil)
+	nonce, text := encrypted[:x.AEAD.NonceSize()], encrypted[x.AEAD.NonceSize():]
+	return x.AEAD.Open(nil, nonce, text, nil)
 }

@@ -3,15 +3,15 @@ package encryption
 import "github.com/speps/go-hashids/v2"
 
 type IDx struct {
-	HashIDData *hashids.HashIDData
-	HashID     *hashids.HashID
+	HashID *hashids.HashID
 }
 
-func NewIDx(key string) (x *IDx, err error) {
+func NewIDx(key string, alphabet string) (x *IDx, err error) {
 	x = new(IDx)
-	x.HashIDData = hashids.NewData()
-	x.HashIDData.Salt = key
-	if x.HashID, err = hashids.NewWithData(x.HashIDData); err != nil {
+	if x.HashID, err = hashids.NewWithData(&hashids.HashIDData{
+		Alphabet: alphabet,
+		Salt:     key,
+	}); err != nil {
 		return
 	}
 	return
