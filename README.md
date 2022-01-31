@@ -1,3 +1,3 @@
 # Weplanx Go Support
 
-Design an integrated package for the standard, many functions will reference popular third-party libraries
+后端集成库，一些功能将直接引用流行的第三方库
