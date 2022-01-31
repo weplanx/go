@@ -37,10 +37,10 @@ func TestPassport(t *testing.T) {
 	time.Sleep(time.Second)
 	clamis, err = passport.Verify(tokenString)
 	assert.Nil(t, err)
-	assert.Equal(t, clamis["iss"], "weplanx")
-	assert.Equal(t, clamis["sub"], "system")
-	assert.Equal(t, clamis["aud"], []interface{}{"api"})
-	assert.Equal(t, clamis["context"], map[string]interface{}{
+	assert.Equal(t, "weplanx", clamis["iss"])
+	assert.Equal(t, "system", clamis["sub"])
+	assert.Equal(t, []interface{}{"api"}, clamis["aud"])
+	assert.Equal(t, map[string]interface{}{
 		"userId": "xs1fp",
-	})
+	}, clamis["context"])
 }

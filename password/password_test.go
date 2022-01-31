@@ -12,7 +12,7 @@ func TestPassword(t *testing.T) {
 	err = Verify("pass@VAN1234", "asdaqweqwexcxzcqweqw")
 	assert.Error(t, err)
 	err = Verify("pass@VAN1235", hash)
-	assert.Equal(t, err, NotMatch)
+	assert.Equal(t, NotMatch, err)
 	err = Verify("pass@VAN1234", hash)
 	assert.Nil(t, err)
 }

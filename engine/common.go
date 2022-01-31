@@ -2,14 +2,10 @@ package engine
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"regexp"
 )
 
 const ModelNameKey = "model-name"
@@ -79,22 +75,6 @@ func (x *Engine) Publish(model string, event string, v EventValue) (err error) {
 type Pagination struct {
 	Index int64 `header:"x-page" binding:"omitempty,gt=0,number"`
 	Size  int64 `header:"x-page-size" binding:"omitempty,number"`
-}
-
-func RegisterValidation() {
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterValidation("objectId", func(fl validator.FieldLevel) bool {
-			return primitive.IsValidObjectID(fl.Field().String())
-		})
-		v.RegisterValidation("key", func(fl validator.FieldLevel) bool {
-			matched, _ := regexp.MatchString(`^[a-z_]+$`, fl.Field().String())
-			return matched
-		})
-		v.RegisterValidation("sort", func(fl validator.FieldLevel) bool {
-			matched, _ := regexp.MatchString(`^[a-z_]+\.(1|-1)$`, fl.Field().String())
-			return matched
-		})
-	}
 }
 
 var Provides = wire.NewSet(

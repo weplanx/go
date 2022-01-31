@@ -19,7 +19,7 @@ func TestCipher(t *testing.T) {
 	assert.Nil(t, err)
 	decryptedText, err := cipher.Decode(encryptedText)
 	assert.Nil(t, err)
-	assert.Equal(t, string(decryptedText), "Gophers, gophers, gophers everywhere!")
+	assert.Equal(t, "Gophers, gophers, gophers everywhere!", string(decryptedText))
 	_, err = xcipher.Decode(encryptedText)
 	assert.Error(t, err)
 }

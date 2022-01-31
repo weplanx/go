@@ -13,7 +13,7 @@ func TestIdx(t *testing.T) {
 	assert.Nil(t, err)
 	val, err := idx.DecodeId(hash)
 	assert.Nil(t, err)
-	assert.Equal(t, val, []int{651})
+	assert.Equal(t, []int{651}, val)
 	_, err = NewIDx("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK", "abcd")
 	assert.Error(t, err)
 }

@@ -71,47 +71,47 @@ func TestRouteDefault(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 200)
-	assert.Equal(t, res.Body.String(), `{"msg":"你好"}`)
+	assert.Equal(t, 200, res.Code)
+	assert.Equal(t, `{"msg":"你好"}`, res.Body.String())
 }
 
 func TestRouteCreate(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 201)
-	assert.EqualValues(t, res.Body.String(), `{"count":1,"hook-id":"xxx-xxx-xxx"}`)
+	assert.Equal(t, 201, res.Code)
+	assert.EqualValues(t, `{"count":1,"hook-id":"xxx-xxx-xxx"}`, res.Body.String())
 }
 
 func TestRouteEmpty(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/empty", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 204)
-	assert.Equal(t, res.Body.Len(), 0)
+	assert.Equal(t, 204, res.Code)
+	assert.Equal(t, 0, res.Body.Len())
 }
 
 func TestRouteError(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/error", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 400)
-	assert.Equal(t, res.Body.String(), `{"code":"INVALID","message":"模拟一个错误"}`)
+	assert.Equal(t, 400, res.Code)
+	assert.Equal(t, `{"code":"INVALID","message":"模拟一个错误"}`, res.Body.String())
 }
 
 func TestRouteErrorCustom(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/error-custom", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 401)
-	assert.Equal(t, res.Body.String(), `{"code":"AUTH_FAILED","message":"模拟一个自定义错误"}`)
+	assert.Equal(t, 401, res.Code)
+	assert.Equal(t, `{"code":"AUTH_FAILED","message":"模拟一个自定义错误"}`, res.Body.String())
 }
 
 func TestRouteModel(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/model", nil)
 	r.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 200)
-	assert.Equal(t, res.Body.String(), `{"name":"tests"}`)
+	assert.Equal(t, 200, res.Code)
+	assert.Equal(t, `{"name":"tests"}`, res.Body.String())
 	t.Log(res.Body)
 }
