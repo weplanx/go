@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/go/engine"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -46,7 +45,7 @@ func (x *Example) Empty(c *gin.Context) interface{} {
 }
 
 func (x *Example) ModelName(c *gin.Context) interface{} {
-	name, _ := c.Get(engine.ModelNameKey)
+	name, _ := c.Get("model")
 	return gin.H{
 		"name": name,
 	}

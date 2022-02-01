@@ -1,4 +1,4 @@
-package testing
+package engine
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/thoas/go-funk"
-	"github.com/weplanx/go/engine"
 	"github.com/weplanx/go/helper"
 	"github.com/weplanx/go/password"
 	"github.com/weplanx/go/route"
@@ -29,8 +28,8 @@ var db *mongo.Database
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	r = gin.Default()
-	x := engine.New(
-		engine.SetApp("testing"),
+	x := New(
+		SetApp("testing"),
 	)
 	client, err := mongo.Connect(
 		context.TODO(),
@@ -40,11 +39,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	db = client.Database("example")
-	service := engine.Service{
+	service := Service{
 		Engine: x,
 		Db:     db,
 	}
-	controller := engine.Controller{
+	controller := Controller{
 		Engine:  x,
 		Service: &service,
 	}
@@ -65,7 +64,7 @@ func TestController_Create(t *testing.T) {
 	}
 	// 创建文档
 	res1 := httptest.NewRecorder()
-	body1, err := jsoniter.Marshal(engine.CreateBody{
+	body1, err := jsoniter.Marshal(CreateBody{
 		Doc: map[string]interface{}{
 			"name": "agent",
 		},
@@ -91,7 +90,7 @@ func TestController_Create(t *testing.T) {
 	// 包含引用
 	res2 := httptest.NewRecorder()
 	insertedID := result1["InsertedID"].(string)
-	body2, err := jsoniter.Marshal(engine.CreateBody{
+	body2, err := jsoniter.Marshal(CreateBody{
 		Doc: map[string]interface{}{
 			"privileges": []string{insertedID},
 			"name":       "Kenny Boyer",
@@ -120,7 +119,7 @@ func TestController_Create(t *testing.T) {
 
 	// 格式转换
 	res3 := httptest.NewRecorder()
-	body3, err := jsoniter.Marshal(engine.CreateBody{
+	body3, err := jsoniter.Marshal(CreateBody{
 		Doc: map[string]interface{}{
 			"name":     "admin",
 			"alias":    "61f7ef84dfdb15138a09cdad",
@@ -148,7 +147,7 @@ func TestController_Create(t *testing.T) {
 
 	// 批量创建
 	res4 := httptest.NewRecorder()
-	body4, err := jsoniter.Marshal(engine.CreateBody{
+	body4, err := jsoniter.Marshal(CreateBody{
 		Docs: []map[string]interface{}{
 			{
 				"name": "Genevieve50",

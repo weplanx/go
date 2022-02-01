@@ -8,8 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-const ModelNameKey = "model-name"
-
 type Engine struct {
 	App     string
 	Options map[string]Option
