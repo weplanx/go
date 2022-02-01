@@ -176,11 +176,11 @@ func TestController_Create(t *testing.T) {
 }
 
 func TestController_Find(t *testing.T) {
+	var body []map[string]interface{}
 	// 获取文档
 	res1 := httptest.NewRecorder()
 	req1, _ := http.NewRequest("GET", "/members", nil)
 	r.ServeHTTP(res1, req1)
-	var body []map[string]interface{}
 	if err := jsoniter.Unmarshal(res1.Body.Bytes(), &body); err != nil {
 		t.Error(err)
 	}
@@ -215,7 +215,7 @@ func TestController_Find(t *testing.T) {
 	res3 := httptest.NewRecorder()
 	var ids []string
 	for _, x := range body {
-		ids = append(ids, fmt.Sprintf(`id=%s`, x["_id"].(primitive.ObjectID).Hex()))
+		ids = append(ids, fmt.Sprintf(`id=%s`, x["_id"].(string)))
 	}
 	idsQuery := strings.Join(ids, "&")
 	req3, _ := http.NewRequest("GET", fmt.Sprintf(`/members?%s`, idsQuery), nil)
