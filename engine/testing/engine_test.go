@@ -3,9 +3,11 @@ package testing
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/thoas/go-funk"
 	"github.com/weplanx/go/engine"
 	"github.com/weplanx/go/helper"
 	"github.com/weplanx/go/password"
@@ -17,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -170,4 +173,60 @@ func TestController_Create(t *testing.T) {
 		t.Error(err)
 	}
 	assert.Equal(t, int64(3), count)
+}
+
+func TestController_Find(t *testing.T) {
+	// 获取文档
+	res1 := httptest.NewRecorder()
+	req1, _ := http.NewRequest("GET", "/members", nil)
+	r.ServeHTTP(res1, req1)
+	var body []map[string]interface{}
+	if err := jsoniter.Unmarshal(res1.Body.Bytes(), &body); err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t,
+		[]string{"Ottilie90", "Jaden32", "Genevieve50"},
+		funk.Map(body, func(x map[string]interface{}) string {
+			return x["name"].(string)
+		}),
+	)
+
+	// 多个文档过滤
+	res2 := httptest.NewRecorder()
+	where, err := jsoniter.Marshal(map[string]interface{}{
+		"name": map[string]interface{}{"$in": []string{"Ottilie90", "Jaden32"}},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	req2, _ := http.NewRequest("GET", fmt.Sprintf(`/members?where=%s`, where), nil)
+	r.ServeHTTP(res2, req2)
+	if err := jsoniter.Unmarshal(res2.Body.Bytes(), &body); err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t,
+		[]string{"Ottilie90", "Jaden32"},
+		funk.Map(body, func(x map[string]interface{}) string {
+			return x["name"].(string)
+		}),
+	)
+
+	// 多个文档ID
+	res3 := httptest.NewRecorder()
+	var ids []string
+	for _, x := range body {
+		ids = append(ids, fmt.Sprintf(`id=%s`, x["_id"].(primitive.ObjectID).Hex()))
+	}
+	idsQuery := strings.Join(ids, "&")
+	req3, _ := http.NewRequest("GET", fmt.Sprintf(`/members?%s`, idsQuery), nil)
+	r.ServeHTTP(res3, req3)
+	if err := jsoniter.Unmarshal(res3.Body.Bytes(), &body); err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t,
+		[]string{"Ottilie90", "Jaden32"},
+		funk.Map(body, func(x map[string]interface{}) string {
+			return x["name"].(string)
+		}),
+	)
 }

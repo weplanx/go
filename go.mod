@@ -15,6 +15,7 @@ require (
 	github.com/nats-io/nats.go v1.13.1-0.20211122170419-d7c1d78a50fc
 	github.com/speps/go-hashids/v2 v2.0.1
 	github.com/stretchr/testify v1.7.0
+	github.com/thoas/go-funk v0.9.1
 	go.mongodb.org/mongo-driver v1.8.0
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
 	golang.org/x/text v0.3.7 // indirect

@@ -34,6 +34,7 @@ jobs:
         run: go test -race -covermode atomic -coverprofile=covprofile ./...
         env:
           GO111MODULE: on
+          TEST_DB: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
 
       - name: Install goveralls
         run: go install github.com/mattn/goveralls@latest
