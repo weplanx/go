@@ -20,6 +20,10 @@ func TestCipher(t *testing.T) {
 	decryptedText, err := cipher.Decode(encryptedText)
 	assert.Nil(t, err)
 	assert.Equal(t, "Gophers, gophers, gophers everywhere!", string(decryptedText))
+	// 不同密钥发生错误
 	_, err = xcipher.Decode(encryptedText)
+	assert.Error(t, err)
+	// 非Base64发生错误
+	_, err = cipher.Decode("asdasdasd")
 	assert.Error(t, err)
 }

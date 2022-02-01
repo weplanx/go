@@ -1,6 +1,6 @@
 # Weplanx Go Support
 
-[![Github Actions](https://img.shields.io/github/workflow/status/weplanx/go/testing?style=flat-square)](https://github.com/weplanx/go/testing)
+[![Github Actions](https://img.shields.io/github/workflow/status/weplanx/go/testing?style=flat-square)](https://github.com/weplanx/go/actions)
 [![Coveralls github](https://img.shields.io/coveralls/github/weplanx/go.svg?style=flat-square)](https://coveralls.io/github/weplanx/go)
 [![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/weplanx/go?style=flat-square)](https://github.com/weplanx/go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/weplanx/go?style=flat-square)](https://goreportcard.com/report/github.com/weplanx/go)

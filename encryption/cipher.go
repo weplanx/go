@@ -22,9 +22,7 @@ func NewCipher(key string) (x *Cipher, err error) {
 // Encode data encryption
 func (x *Cipher) Encode(data []byte) (ciphertext string, err error) {
 	nonce := make([]byte, x.AEAD.NonceSize(), x.AEAD.NonceSize()+len(data)+x.AEAD.Overhead())
-	if _, err = rand.Read(nonce); err != nil {
-		return
-	}
+	rand.Read(nonce)
 	encrypted := x.AEAD.Seal(nonce, nonce, data, nil)
 	ciphertext = base64.StdEncoding.EncodeToString(encrypted)
 	return
