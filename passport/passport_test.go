@@ -43,4 +43,7 @@ func TestPassport(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"userId": "xs1fp",
 	}, clamis["context"])
+	// 使用其他签名的Token进行验证
+	_, err = passport.Verify(`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c`)
+	assert.Error(t, err)
 }
