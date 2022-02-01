@@ -12,10 +12,6 @@ import (
 
 type Example struct{}
 
-func (x *Example) String(c *gin.Context) interface{} {
-	return "Hi there"
-}
-
 func (x *Example) Default(c *gin.Context) interface{} {
 	return gin.H{
 		"msg": "你好",
