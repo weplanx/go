@@ -2,11 +2,8 @@ package engine
 
 import (
 	"context"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/nats-io/nats.go"
 	"github.com/weplanx/go/password"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,7 +18,6 @@ import (
 type Engine struct {
 	App     string
 	Options map[string]Option
-	Js      nats.JetStreamContext
 }
 
 type Option struct {
@@ -42,42 +38,12 @@ func UseStaticOptions(v map[string]Option) OptionFunc {
 	}
 }
 
-func UseEvents(v nats.JetStreamContext) OptionFunc {
-	return func(engine *Engine) {
-		engine.Js = v
-	}
-}
-
 func New(options ...OptionFunc) *Engine {
 	x := &Engine{App: ""}
 	for _, v := range options {
 		v(x)
 	}
 	return x
-}
-
-type EventValue struct {
-	Id       interface{} `json:"id"`
-	Query    interface{} `json:"query"`
-	Body     interface{} `json:"body"`
-	Response interface{} `json:"response"`
-}
-
-func (x *Engine) Publish(model string, event string, v EventValue) (err error) {
-	if x.Js == nil {
-		return
-	}
-	var data []byte
-	if data, err = jsoniter.Marshal(&v); err != nil {
-		return
-	}
-	if _, err = x.Js.Publish(
-		fmt.Sprintf(`%s.%s.%s`, x.App, model, event),
-		data,
-	); err != nil {
-		return
-	}
-	return
 }
 
 type Pagination struct {
@@ -142,12 +108,6 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 		}
 	}
 	c.Set("status_code", http.StatusCreated)
-	if err = x.Engine.Publish(params.Model, "create", EventValue{
-		Body:     body,
-		Response: result,
-	}); err != nil {
-		return err
-	}
 	return result
 }
 
@@ -263,13 +223,6 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
-	if err = x.Engine.Publish(params.Model, "update", EventValue{
-		Query:    query,
-		Body:     body,
-		Response: result,
-	}); err != nil {
-		return err
-	}
 	return result
 }
 
@@ -286,13 +239,6 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 	result, err := x.Service.
 		UpdateOneById(ctx, params.Model, params.Id, body.Update, body.Format, body.Ref)
 	if err != nil {
-		return err
-	}
-	if err = x.Engine.Publish(params.Model, "update", EventValue{
-		Id:       params.Id,
-		Body:     body,
-		Response: result,
-	}); err != nil {
 		return err
 	}
 	return result
@@ -318,13 +264,6 @@ func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
-	if err = x.Engine.Publish(params.Model, "replace", EventValue{
-		Id:       params.Id,
-		Body:     body,
-		Response: result,
-	}); err != nil {
-		return err
-	}
 	return result
 }
 
@@ -336,12 +275,6 @@ func (x *Controller) DeleteOneById(c *gin.Context) interface{} {
 	ctx := c.Request.Context()
 	result, err := x.Service.DeleteOneById(ctx, params.Model, params.Id)
 	if err != nil {
-		return err
-	}
-	if err = x.Engine.Publish(params.Model, "delete", EventValue{
-		Id:       params.Id,
-		Response: result,
-	}); err != nil {
 		return err
 	}
 	return result

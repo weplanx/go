@@ -29,6 +29,13 @@ func TestMain(m *testing.M) {
 	r = gin.Default()
 	x := New(
 		SetApp("testing"),
+		UseStaticOptions(map[string]Option{
+			"users": {
+				Projection: map[string]interface{}{
+					"password": 0,
+				},
+			},
+		}),
 	)
 	client, err := mongo.Connect(
 		context.TODO(),
@@ -553,4 +560,19 @@ func TestDeleteOne(t *testing.T) {
 		t.Error(err)
 	}
 	assert.Equal(t, int64(0), count)
+}
+
+func TestFindUsers(t *testing.T) {
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/users", nil)
+
+	r.ServeHTTP(res, req)
+	assert.Equal(t, 200, res.Code)
+
+	var data []map[string]interface{}
+	if err := jsoniter.Unmarshal(res.Body.Bytes(), &data); err != nil {
+		t.Error(err)
+	}
+
+	assert.Nil(t, data[0]["password"])
 }
