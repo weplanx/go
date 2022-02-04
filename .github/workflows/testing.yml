@@ -1,4 +1,4 @@
-name: testing
+name: 单元测试
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 jobs:
 
   testing:
-    name: Weplanx Go Testing
     runs-on: ubuntu-latest
     services:
       mongodb:
@@ -19,27 +18,26 @@ jobs:
           - 27017:27017
 
     steps:
-      - name: Check out the repo
+      - name: 检出
         uses: actions/checkout@v2
 
-      - name: Setup Golang
+      - name: 安装 Golang
         uses: actions/setup-go@v2
         with:
           go-version: ^1.15
 
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Run Unit tests
+      - name: 启动测试
         run: go test -race -covermode atomic -coverprofile=covprofile ./...
         env:
           GO111MODULE: on
           TEST_DB: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
 
-      - name: Install goveralls
-        run: go install github.com/mattn/goveralls@latest
-
-      - name: Send coverage
-        run: goveralls -coverprofile=covprofile -service=github
+      - name: 推送覆盖率至 COVERALLS
+        run: |
+          go install github.com/mattn/goveralls@latest
+          goveralls -coverprofile=covprofile -service=github
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 推送 FOSSAS
+        run: "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
