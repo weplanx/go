@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"github.com/weplanx/go/password"
@@ -17,10 +18,12 @@ import (
 
 type Engine struct {
 	App     string
+	Pulsar  pulsar.Client
 	Options map[string]Option
 }
 
 type Option struct {
+	Event      bool   `yaml:"event"`
 	Projection bson.M `yaml:"projection"`
 }
 
@@ -29,6 +32,12 @@ type OptionFunc func(engine *Engine)
 func SetApp(v string) OptionFunc {
 	return func(engine *Engine) {
 		engine.App = v
+	}
+}
+
+func UsePulsar(v pulsar.Client) OptionFunc {
+	return func(engine *Engine) {
+		engine.Pulsar = v
 	}
 }
 
