@@ -5,6 +5,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/weplanx/go/password"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,7 +24,7 @@ type Engine struct {
 }
 
 type Option struct {
-	Event      bool   `yaml:"event"`
+	Event      string `yaml:"event"`
 	Projection bson.M `yaml:"projection"`
 }
 
@@ -102,21 +103,25 @@ func (x *Controller) Create(c *gin.Context) interface{} {
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
+	ctx := c.Request.Context()
 	var result interface{}
 	if len(body.Docs) != 0 {
-		if result, err = x.Service.InsertMany(c.Request.Context(),
+		if result, err = x.Service.InsertMany(ctx,
 			params.Model, body.Docs, body.Format, body.Ref,
 		); err != nil {
 			return err
 		}
 	} else {
-		if result, err = x.Service.InsertOne(c.Request.Context(),
+		if result, err = x.Service.InsertOne(ctx,
 			params.Model, body.Doc, body.Format, body.Ref,
 		); err != nil {
 			return err
 		}
 	}
 	c.Set("status_code", http.StatusCreated)
+	if err = x.Service.Event(ctx, params.Model, result); err != nil {
+		return err
+	}
 	return result
 }
 
@@ -232,6 +237,9 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
+	if err = x.Service.Event(ctx, params.Model, result); err != nil {
+		return err
+	}
 	return result
 }
 
@@ -248,6 +256,9 @@ func (x *Controller) UpdateOneById(c *gin.Context) interface{} {
 	result, err := x.Service.
 		UpdateOneById(ctx, params.Model, params.Id, body.Update, body.Format, body.Ref)
 	if err != nil {
+		return err
+	}
+	if err = x.Service.Event(ctx, params.Model, result); err != nil {
 		return err
 	}
 	return result
@@ -273,6 +284,9 @@ func (x *Controller) ReplaceOneById(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
+	if err = x.Service.Event(ctx, params.Model, result); err != nil {
+		return err
+	}
 	return result
 }
 
@@ -286,12 +300,42 @@ func (x *Controller) DeleteOneById(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
+	if err = x.Service.Event(ctx, params.Model, result); err != nil {
+		return err
+	}
 	return result
 }
 
 type Service struct {
 	Engine *Engine
 	Db     *mongo.Database
+}
+
+func (x *Service) Event(ctx context.Context, model string, data interface{}) (err error) {
+	if option, ok := x.Engine.Options[model]; ok {
+		if option.Event == "" {
+			return
+
+		}
+		var producer pulsar.Producer
+		if producer, err = x.Engine.Pulsar.CreateProducer(pulsar.ProducerOptions{
+			Topic: option.Event,
+		}); err != nil {
+			return
+		}
+		defer producer.Close()
+		var payload []byte
+		if payload, err = jsoniter.Marshal(data); err != nil {
+			return
+		}
+		if _, err = producer.Send(ctx, &pulsar.ProducerMessage{
+			Key:     model,
+			Payload: payload,
+		}); err != nil {
+			return
+		}
+	}
+	return
 }
 
 func (x *Service) setFormat(formats map[string]interface{}, v interface{}) (err error) {
@@ -489,13 +533,15 @@ func (x *Service) UpdateMany(ctx context.Context,
 	format map[string]interface{},
 	ref []string,
 ) (result *mongo.UpdateResult, err error) {
-	if err = x.setFormat(format, update["$set"]); err != nil {
-		return
+	if update["$set"] != nil {
+		if err = x.setFormat(format, update["$set"]); err != nil {
+			return
+		}
+		if err = x.setRef(ref, update["$set"]); err != nil {
+			return
+		}
+		update["$set"].(map[string]interface{})["update_time"] = time.Now()
 	}
-	if err = x.setRef(ref, update["$set"]); err != nil {
-		return
-	}
-	update["$set"].(map[string]interface{})["update_time"] = time.Now()
 	return x.Db.Collection(model).UpdateMany(ctx, filter, update)
 }
 
@@ -522,13 +568,15 @@ func (x *Service) UpdateOne(
 	format map[string]interface{},
 	ref []string,
 ) (result *mongo.UpdateResult, err error) {
-	if err = x.setFormat(format, update["$set"]); err != nil {
-		return
+	if update["$set"] != nil {
+		if err = x.setFormat(format, update["$set"]); err != nil {
+			return
+		}
+		if err = x.setRef(ref, update["$set"]); err != nil {
+			return
+		}
+		update["$set"].(map[string]interface{})["update_time"] = time.Now()
 	}
-	if err = x.setRef(ref, update["$set"]); err != nil {
-		return
-	}
-	update["$set"].(map[string]interface{})["update_time"] = time.Now()
 	return x.Db.Collection(model).UpdateOne(ctx, filter, update)
 }
 
