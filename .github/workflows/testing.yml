@@ -31,6 +31,9 @@ jobs:
         env:
           GO111MODULE: on
           TEST_DB: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
+          TEST_PULSAR: ${{ secrets.PULSAR }}
+          TEST_PULSAR_TOKEN: ${{ secrets.PULSAR_TOKEN }}
+          TEST_PULSAR_TOPIC: ${{ secrets.PULSAR_TOPIC }}
 
       - name: 推送覆盖率至 COVERALLS
         run: |

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
@@ -19,24 +20,17 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 )
 
 var r *gin.Engine
 var db *mongo.Database
 
+var pulsarClient pulsar.Client
+
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	r = gin.Default()
-	x := New(
-		SetApp("testing"),
-		UseStaticOptions(map[string]Option{
-			"users": {
-				Projection: map[string]interface{}{
-					"password": 0,
-				},
-			},
-		}),
-	)
 	client, err := mongo.Connect(
 		context.TODO(),
 		options.Client().ApplyURI(os.Getenv("TEST_DB")),
@@ -45,6 +39,28 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	db = client.Database("example")
+	if pulsarClient, err = pulsar.NewClient(pulsar.ClientOptions{
+		URL:               os.Getenv("TEST_PULSAR"),
+		Authentication:    pulsar.NewAuthenticationToken(os.Getenv("TEST_PULSAR_TOKEN")),
+		OperationTimeout:  30 * time.Second,
+		ConnectionTimeout: 30 * time.Second,
+	}); err != nil {
+		panic(err)
+	}
+	x := New(
+		SetApp("testing"),
+		UseStaticOptions(map[string]Option{
+			"pages": {
+				Event: os.Getenv("TEST_PULSAR_TOPIC"),
+			},
+			"users": {
+				Projection: map[string]interface{}{
+					"password": 0,
+				},
+			},
+		}),
+		UsePulsar(pulsarClient),
+	)
 	service := Service{
 		Engine: x,
 		Db:     db,
@@ -1188,4 +1204,89 @@ func TestFindOneForStaticProjection(t *testing.T) {
 	}
 
 	assert.Nil(t, data["password"])
+}
+
+// 创建文档，队列事件测试
+func TestCreateForStaticEvent(t *testing.T) {
+	consumer, err := pulsarClient.Subscribe(pulsar.ConsumerOptions{
+		Topic:            os.Getenv("TEST_PULSAR_TOPIC"),
+		SubscriptionName: "beta",
+		Type:             pulsar.Shared,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	defer consumer.Close()
+
+	res := httptest.NewRecorder()
+	body, err := jsoniter.Marshal(CreateBody{
+		Doc: map[string]interface{}{
+			"name": "首页",
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	req, _ := http.NewRequest("POST", "/pages", bytes.NewBuffer(body))
+
+	r.ServeHTTP(res, req)
+	assert.Equal(t, 201, res.Code)
+
+	msg, err := consumer.Receive(context.TODO())
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.NotEmpty(t, msg.ID())
+	assert.NotEmpty(t, string(msg.Payload()))
+
+	consumer.Ack(msg)
+}
+
+func TestUpdateForStaticEvent(t *testing.T) {
+	consumer, err := pulsarClient.Subscribe(pulsar.ConsumerOptions{
+		Topic:            os.Getenv("TEST_PULSAR_TOPIC"),
+		SubscriptionName: "beta",
+		Type:             pulsar.Shared,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	defer consumer.Close()
+
+	res := httptest.NewRecorder()
+	where, err := jsoniter.Marshal(map[string]interface{}{
+		"name": "首页",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	body, err := jsoniter.Marshal(UpdateBody{
+		Update: map[string]interface{}{
+			"$set": map[string]interface{}{
+				"sort": 1,
+			},
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	req, _ := http.NewRequest("PATCH", "/pages", bytes.NewBuffer(body))
+	query := req.URL.Query()
+	query.Add("where", string(where))
+	query.Add("single", "true")
+	req.URL.RawQuery = query.Encode()
+
+	r.ServeHTTP(res, req)
+	assert.Equal(t, 200, res.Code)
+
+	msg, err := consumer.Receive(context.TODO())
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.NotEmpty(t, msg.ID())
+	assert.NotEmpty(t, string(msg.Payload()))
+
+	consumer.Ack(msg)
 }
