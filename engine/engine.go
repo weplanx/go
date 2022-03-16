@@ -2,15 +2,17 @@ package engine
 
 import (
 	"context"
-	"github.com/apache/pulsar-client-go/pulsar"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/nats-io/nats.go"
 	"github.com/weplanx/go/password"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,32 +21,45 @@ import (
 
 type Engine struct {
 	App     string
-	Pulsar  pulsar.Client
+	Js      nats.JetStreamContext
 	Options map[string]Option
 }
 
 type Option struct {
-	Event      string `yaml:"event"`
+	Event      bool   `yaml:"event"`
 	Projection bson.M `yaml:"projection"`
 }
 
 type OptionFunc func(engine *Engine)
 
-func SetApp(v string) OptionFunc {
+func SetApp(name string) OptionFunc {
 	return func(engine *Engine) {
-		engine.App = v
+		engine.App = name
 	}
 }
 
-func UsePulsar(v pulsar.Client) OptionFunc {
+func UseStaticOptions(options map[string]Option) OptionFunc {
 	return func(engine *Engine) {
-		engine.Pulsar = v
+		engine.Options = options
 	}
 }
 
-func UseStaticOptions(v map[string]Option) OptionFunc {
+func UseEvents(js nats.JetStreamContext) OptionFunc {
 	return func(engine *Engine) {
-		engine.Options = v
+		for k, v := range engine.Options {
+			if v.Event {
+				name := fmt.Sprintf(`%s:events:%s`, engine.App, k)
+				subject := fmt.Sprintf(`%s.events.%s`, engine.App, k)
+				if _, err := js.AddStream(&nats.StreamConfig{
+					Name:      name,
+					Subjects:  []string{subject},
+					Retention: nats.WorkQueuePolicy,
+				}); err != nil {
+					log.Fatalln(err)
+				}
+			}
+		}
+		engine.Js = js
 	}
 }
 
@@ -311,27 +326,18 @@ type Service struct {
 	Db     *mongo.Database
 }
 
+// Event 发送事件
 func (x *Service) Event(ctx context.Context, model string, data interface{}) (err error) {
 	if option, ok := x.Engine.Options[model]; ok {
-		if option.Event == "" {
-			return
-
-		}
-		var producer pulsar.Producer
-		if producer, err = x.Engine.Pulsar.CreateProducer(pulsar.ProducerOptions{
-			Topic: option.Event,
-		}); err != nil {
+		if !option.Event {
 			return
 		}
-		defer producer.Close()
 		var payload []byte
 		if payload, err = jsoniter.Marshal(data); err != nil {
 			return
 		}
-		if _, err = producer.Send(ctx, &pulsar.ProducerMessage{
-			Key:     model,
-			Payload: payload,
-		}); err != nil {
+		subject := fmt.Sprintf(`%s.events.%s`, x.Engine.App, model)
+		if _, err = x.Engine.Js.Publish(subject, payload, nats.Context(ctx)); err != nil {
 			return
 		}
 	}

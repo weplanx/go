@@ -14,6 +14,8 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/google/wire v0.5.0
 	github.com/json-iterator/go v1.1.11
+	github.com/nats-io/nats-server/v2 v2.7.4 // indirect
+	github.com/nats-io/nats.go v1.13.1-0.20220308171302-2f2f6968e98d
 	github.com/speps/go-hashids/v2 v2.0.1
 	github.com/stretchr/testify v1.7.0
 	github.com/thoas/go-funk v0.9.1

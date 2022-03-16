@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/assert"
 	"github.com/thoas/go-funk"
 	"github.com/weplanx/go/helper"
@@ -19,14 +20,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
 
 var r *gin.Engine
 var db *mongo.Database
-
-var pulsarClient pulsar.Client
+var nc *nats.Conn
+var js nats.JetStreamContext
 
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
@@ -38,20 +40,39 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	db = client.Database("example")
-	if pulsarClient, err = pulsar.NewClient(pulsar.ClientOptions{
-		URL:               os.Getenv("TEST_PULSAR"),
-		Authentication:    pulsar.NewAuthenticationToken(os.Getenv("TEST_PULSAR_TOKEN")),
-		OperationTimeout:  30 * time.Second,
-		ConnectionTimeout: 30 * time.Second,
-	}); err != nil {
+	db = client.Database("test")
+	var kp nkeys.KeyPair
+	if kp, err = nkeys.FromSeed([]byte(os.Getenv("TEST_NATS_NKEY"))); err != nil {
+		return
+	}
+	defer kp.Wipe()
+	var pub string
+	if pub, err = kp.PublicKey(); err != nil {
+		return
+	}
+	if !nkeys.IsValidPublicUserKey(pub) {
+		panic("nkey 验证失败")
+	}
+	if nc, err = nats.Connect(
+		os.Getenv("TEST_NATS"),
+		nats.MaxReconnects(5),
+		nats.ReconnectWait(2*time.Second),
+		nats.ReconnectJitter(500*time.Millisecond, 2*time.Second),
+		nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
+			sig, _ := kp.Sign(nonce)
+			return sig, nil
+		}),
+	); err != nil {
+		panic(err)
+	}
+	if js, err = nc.JetStream(nats.PublishAsyncMaxPending(256)); err != nil {
 		panic(err)
 	}
 	x := New(
-		SetApp("testing"),
+		SetApp("test"),
 		UseStaticOptions(map[string]Option{
 			"pages": {
-				Event: os.Getenv("TEST_PULSAR_TOPIC"),
+				Event: true,
 			},
 			"users": {
 				Projection: map[string]interface{}{
@@ -59,7 +80,7 @@ func TestMain(m *testing.M) {
 				},
 			},
 		}),
-		UsePulsar(pulsarClient),
+		UseEvents(js),
 	)
 	service := Service{
 		Engine: x,
@@ -1208,16 +1229,18 @@ func TestFindOneForStaticProjection(t *testing.T) {
 
 // 创建文档，队列事件测试
 func TestCreateForStaticEvent(t *testing.T) {
-	consumer, err := pulsarClient.Subscribe(pulsar.ConsumerOptions{
-		Topic:            os.Getenv("TEST_PULSAR_TOPIC"),
-		SubscriptionName: "beta",
-		Type:             pulsar.Shared,
+	var wg sync.WaitGroup
+	wg.Add(1)
+	subj := "test.events.pages"
+	queue := "test:events:pages"
+	sub, err := js.QueueSubscribe(subj, queue, func(msg *nats.Msg) {
+		assert.NotEmpty(t, msg.Data)
+		wg.Done()
 	})
 	if err != nil {
 		t.Error(err)
 	}
-	defer consumer.Close()
-
+	defer sub.Unsubscribe()
 	res := httptest.NewRecorder()
 	body, err := jsoniter.Marshal(CreateBody{
 		Doc: map[string]interface{}{
@@ -1231,29 +1254,22 @@ func TestCreateForStaticEvent(t *testing.T) {
 
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 201, res.Code)
-
-	msg, err := consumer.Receive(context.TODO())
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.NotEmpty(t, msg.ID())
-	assert.NotEmpty(t, string(msg.Payload()))
-
-	consumer.Ack(msg)
+	wg.Wait()
 }
 
 func TestUpdateForStaticEvent(t *testing.T) {
-	consumer, err := pulsarClient.Subscribe(pulsar.ConsumerOptions{
-		Topic:            os.Getenv("TEST_PULSAR_TOPIC"),
-		SubscriptionName: "beta",
-		Type:             pulsar.Shared,
+	var wg sync.WaitGroup
+	wg.Add(1)
+	subj := "test.events.pages"
+	queue := "test:events:pages"
+	sub, err := js.QueueSubscribe(subj, queue, func(msg *nats.Msg) {
+		assert.NotEmpty(t, msg.Data)
+		wg.Done()
 	})
 	if err != nil {
 		t.Error(err)
 	}
-	defer consumer.Close()
-
+	defer sub.Unsubscribe()
 	res := httptest.NewRecorder()
 	where, err := jsoniter.Marshal(map[string]interface{}{
 		"name": "首页",
@@ -1280,13 +1296,5 @@ func TestUpdateForStaticEvent(t *testing.T) {
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 200, res.Code)
 
-	msg, err := consumer.Receive(context.TODO())
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.NotEmpty(t, msg.ID())
-	assert.NotEmpty(t, string(msg.Payload()))
-
-	consumer.Ack(msg)
+	wg.Wait()
 }
