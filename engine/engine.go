@@ -26,8 +26,8 @@ type Engine struct {
 }
 
 type Option struct {
-	Event      bool   `yaml:"event"`
-	Projection bson.M `yaml:"projection"`
+	Event bool     `yaml:"event"`
+	Field []string `yaml:"field"`
 }
 
 type OptionFunc func(engine *Engine)
@@ -145,6 +145,7 @@ type FindQuery struct {
 	Where  map[string]interface{} `form:"where" binding:"omitempty,excluded_with=Id"`
 	Single bool                   `form:"single"`
 	Sort   []string               `form:"sort" binding:"omitempty,dive,gt=0,sort"`
+	Field  []string               `form:"field"`
 }
 
 // Find 通过获取多个文档
@@ -163,32 +164,36 @@ func (x *Controller) Find(c *gin.Context) interface{} {
 	}
 	ctx := c.Request.Context()
 	if query.Single == true {
-		result, err := x.Service.FindOne(ctx, params.Model, query.Where)
+		result, err := x.Service.FindOne(ctx, params.Model, query.Where, query.Field)
 		if err != nil {
 			return err
 		}
 		return result
 	}
 	if len(query.Id) != 0 {
-		result, err := x.Service.FindById(ctx, params.Model, query.Id, query.Sort)
+		result, err := x.Service.FindById(ctx, params.Model, query.Id, query.Sort, query.Field)
 		if err != nil {
 			return err
 		}
 		return result
 	}
 	if page.Index != 0 && page.Size != 0 {
-		result, err := x.Service.FindByPage(ctx, params.Model, page, query.Where, query.Sort)
+		result, err := x.Service.FindByPage(ctx, params.Model, page, query.Where, query.Sort, query.Field)
 		if err != nil {
 			return err
 		}
 		c.Header("x-page-total", strconv.FormatInt(result.Total, 10))
 		return result.Data
 	}
-	result, err := x.Service.Find(ctx, params.Model, query.Where, query.Sort)
+	result, err := x.Service.Find(ctx, params.Model, query.Where, query.Sort, query.Field)
 	if err != nil {
 		return err
 	}
 	return result
+}
+
+type FindOneByIdQuery struct {
+	Field []string `form:"field"`
 }
 
 // FindOneById 通过 ID 获取单个文档
@@ -197,7 +202,11 @@ func (x *Controller) FindOneById(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
-	result, err := x.Service.FindOneById(c.Request.Context(), params.Model, params.Id)
+	var query FindOneByIdQuery
+	if err = c.ShouldBindQuery(&query); err != nil {
+		return err
+	}
+	result, err := x.Service.FindOneById(c.Request.Context(), params.Model, params.Id, query.Field)
 	if err != nil {
 		return err
 	}
@@ -428,6 +437,7 @@ func (x *Service) Find(
 	model string,
 	filter bson.M,
 	sort []string,
+	field []string,
 	opts ...*options.FindOptions,
 ) (data []map[string]interface{}, err error) {
 	option := options.Find()
@@ -446,11 +456,28 @@ func (x *Service) Find(
 	} else {
 		option.SetSort(bson.M{"_id": -1})
 	}
-	if staticOpt, ok := x.Engine.Options[model]; ok {
-		if len(staticOpt.Projection) != 0 {
-			option.SetProjection(staticOpt.Projection)
+
+	project := make(bson.M)
+	if static, ok := x.Engine.Options[model]; ok {
+		for _, v := range static.Field {
+			project[v] = 1
 		}
 	}
+	if len(project) != 0 && len(field) != 0 {
+		minProject := make(bson.M)
+		for _, v := range field {
+			if _, ok := project[v]; ok {
+				minProject[v] = 1
+			}
+		}
+		project = minProject
+	} else {
+		for _, v := range field {
+			project[v] = 1
+		}
+	}
+	option.SetProjection(project)
+
 	opts = append(opts, option)
 	var cursor *mongo.Cursor
 	if cursor, err = x.Db.Collection(model).Find(ctx, filter, opts...); err != nil {
@@ -468,12 +495,13 @@ func (x *Service) FindById(
 	model string,
 	ids []string,
 	sort []string,
+	field []string,
 ) (data []map[string]interface{}, err error) {
 	oids := make([]primitive.ObjectID, len(ids))
 	for i, v := range ids {
 		oids[i], _ = primitive.ObjectIDFromHex(v)
 	}
-	return x.Find(ctx, model, bson.M{"_id": bson.M{"$in": oids}}, sort)
+	return x.Find(ctx, model, bson.M{"_id": bson.M{"$in": oids}}, sort, field)
 }
 
 type FindResult struct {
@@ -487,6 +515,7 @@ func (x *Service) FindByPage(
 	page Pagination,
 	filter map[string]interface{},
 	sort []string,
+	field []string,
 ) (result FindResult, err error) {
 	if len(filter) != 0 {
 		if result.Total, err = x.Db.Collection(model).CountDocuments(ctx, filter); err != nil {
@@ -500,7 +529,7 @@ func (x *Service) FindByPage(
 	option := options.Find()
 	option.SetLimit(page.Size)
 	option.SetSkip((page.Index - 1) * page.Size)
-	if result.Data, err = x.Find(ctx, model, filter, sort, option); err != nil {
+	if result.Data, err = x.Find(ctx, model, filter, sort, field, option); err != nil {
 		return
 	}
 	return
@@ -510,13 +539,29 @@ func (x *Service) FindOne(
 	ctx context.Context,
 	model string,
 	filter bson.M,
+	field []string,
 ) (data map[string]interface{}, err error) {
 	option := options.FindOne()
+	project := make(bson.M)
 	if staticOpt, ok := x.Engine.Options[model]; ok {
-		if len(staticOpt.Projection) != 0 {
-			option.SetProjection(staticOpt.Projection)
+		for _, v := range staticOpt.Field {
+			project[v] = 1
 		}
 	}
+	if len(project) != 0 && len(field) != 0 {
+		minProject := make(bson.M)
+		for _, v := range field {
+			if _, ok := project[v]; ok {
+				minProject[v] = 1
+			}
+		}
+		project = minProject
+	} else {
+		for _, v := range field {
+			project[v] = 1
+		}
+	}
+	option.SetProjection(project)
 	if err = x.Db.Collection(model).FindOne(ctx, filter, option).Decode(&data); err != nil {
 		return
 	}
@@ -527,9 +572,10 @@ func (x *Service) FindOneById(
 	ctx context.Context,
 	model string,
 	id string,
+	exclude []string,
 ) (data map[string]interface{}, err error) {
 	oid, _ := primitive.ObjectIDFromHex(id)
-	return x.FindOne(ctx, model, bson.M{"_id": oid})
+	return x.FindOne(ctx, model, bson.M{"_id": oid}, exclude)
 }
 
 func (x *Service) UpdateMany(ctx context.Context,

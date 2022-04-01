@@ -75,9 +75,7 @@ func TestMain(m *testing.M) {
 				Event: true,
 			},
 			"users": {
-				Projection: map[string]interface{}{
-					"password": 0,
-				},
+				Field: []string{"name", "alias"},
 			},
 		}),
 		UseEvents(js),
