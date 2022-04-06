@@ -102,10 +102,10 @@ type FindQuery struct {
 	Type   string   `form:"type" binding:"omitempty"`
 	Id     []string `form:"id" binding:"omitempty,excluded_with=Filter,dive,objectId"`
 	Filter M        `form:"filter" binding:"omitempty,excluded_with=Id"`
-	Order  []string `form:"order" binding:"omitempty,dive,gt=0,order"`
-	Field  []string `form:"field" binding:"omitempty,dive,gt=0"`
-	Limit  int64    `form:"limit" binding:"omitempty,dive,gt=0,lt=10000"`
-	Skip   int64    `form:"skip" binding:"omitempty,dive,gte=0"`
+	Order  []string `form:"order" binding:"omitempty,gt=0,order"`
+	Field  []string `form:"field" binding:"omitempty,gt=0"`
+	Limit  int64    `form:"limit" binding:"omitempty,gt=0,lt=10000"`
+	Skip   int64    `form:"skip" binding:"omitempty,gte=0"`
 }
 
 // Find 通过获取多个文档
@@ -160,7 +160,7 @@ type FindOneByIdQuery struct {
 	Field []string `form:"field"`
 }
 
-// FindOneById 通过 ID 获取单个文档
+// FindOneById 获取单个文档
 func (x *Controller) FindOneById(c *gin.Context) interface{} {
 	ctx, err := x.NewContext(c)
 	if err != nil {
@@ -177,6 +177,52 @@ func (x *Controller) FindOneById(c *gin.Context) interface{} {
 	return data
 }
 
+type CountQuery struct {
+	Filter M `form:"filter"`
+}
+
+// Count 获取集合文档总数
+func (x *Controller) Count(c *gin.Context) interface{} {
+	ctx, err := x.NewContext(c)
+	if err != nil {
+		return err
+	}
+	var query CountQuery
+	if err = c.ShouldBindQuery(&query); err != nil {
+		return err
+	}
+	count, err := x.Service.Count(ctx, query.Filter)
+	if err != nil {
+		return err
+	}
+	return M{
+		"total": count,
+	}
+}
+
+type ExistsQuery struct {
+	Filter M `form:"filter" binding:"required"`
+}
+
+// Exists 获取文档是否存在
+func (x *Controller) Exists(c *gin.Context) interface{} {
+	ctx, err := x.NewContext(c)
+	if err != nil {
+		return err
+	}
+	var query ExistsQuery
+	if err = c.ShouldBindQuery(&query); err != nil {
+		return err
+	}
+	exists, err := x.Service.Exists(ctx, query.Filter)
+	if err != nil {
+		return err
+	}
+	return M{
+		"exists": exists,
+	}
+}
+
 type UpdateQuery struct {
 	Id     []string `form:"id" binding:"required_without=Filter,dive,objectId"`
 	Filter M        `form:"filter" binding:"required_without=Id,excluded_with=Id"`
@@ -187,7 +233,7 @@ type UpdateBody struct {
 	Format M `json:"format" binding:"omitempty,dive,gt=0"`
 }
 
-// Update 更新文档
+// Update 局部更新文档
 func (x *Controller) Update(c *gin.Context) interface{} {
 	ctx, err := x.NewContext(c)
 	if err != nil {
@@ -221,7 +267,7 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 	return result
 }
 
-// UpdateOne 更新单个文档
+// UpdateOne 局部更新指定文档
 func (x *Controller) UpdateOne(c *gin.Context) interface{} {
 	ctx, err := x.NewContext(c)
 	if err != nil {
@@ -246,7 +292,7 @@ type ReplaceOneBody struct {
 	Format M `json:"format" binding:"omitempty,dive,gt=0"`
 }
 
-// ReplaceOne 替换文档
+// ReplaceOne 更新文档
 func (x *Controller) ReplaceOne(c *gin.Context) interface{} {
 	ctx, err := x.NewContext(c)
 	if err != nil {

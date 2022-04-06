@@ -105,18 +105,9 @@ func (x *Service) FindByPage(
 	orders []string,
 	fields []string,
 ) (data []M, err error) {
-	params := ctx.Value("params").(*Params)
 	p := ctx.Value("page").(*Pagination)
-	if len(filter) != 0 {
-		if p.Total, err = x.Db.Collection(params.Model).
-			CountDocuments(ctx, filter); err != nil {
-			return
-		}
-	} else {
-		if p.Total, err = x.Db.Collection(params.Model).
-			EstimatedDocumentCount(ctx); err != nil {
-			return
-		}
+	if p.Total, err = x.Count(ctx, filter); err != nil {
+		return
 	}
 	option := options.Find().
 		SetLimit(p.Size).
@@ -200,6 +191,33 @@ func (x *Service) DeleteOne(ctx context.Context) (interface{}, error) {
 	params := ctx.Value("params").(*Params)
 	oid, _ := primitive.ObjectIDFromHex(params.Id)
 	return x.Db.Collection(params.Model).DeleteOne(ctx, M{"_id": oid})
+}
+
+func (x *Service) Count(ctx context.Context, filter M) (count int64, err error) {
+	params := ctx.Value("params").(*Params)
+	if len(filter) != 0 {
+		if count, err = x.Db.Collection(params.Model).
+			CountDocuments(ctx, filter); err != nil {
+			return
+		}
+	} else {
+		if count, err = x.Db.Collection(params.Model).
+			EstimatedDocumentCount(ctx); err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (x *Service) Exists(ctx context.Context, filter M) (result bool, err error) {
+	params := ctx.Value("params").(*Params)
+	var count int64
+	if count, err = x.Db.Collection(params.Model).
+		CountDocuments(ctx, filter); err != nil {
+		return
+	}
+	result = count != 0
+	return
 }
 
 // Format 格式化
