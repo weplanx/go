@@ -283,14 +283,17 @@ func (x *Service) Project(model string, fields []string) bson.M {
 }
 
 // Event 发送事件
-func (x *Service) Event(ctx context.Context, content interface{}) (err error) {
+func (x *Service) Event(ctx context.Context, action string, content interface{}) (err error) {
 	params := ctx.Value("params").(*Params)
 	if option, ok := x.Engine.Options[params.Model]; ok {
 		if !option.Event {
 			return
 		}
 		var payload []byte
-		if payload, err = jsoniter.Marshal(content); err != nil {
+		if payload, err = jsoniter.Marshal(M{
+			"action":  action,
+			"content": content,
+		}); err != nil {
 			return
 		}
 		subject := fmt.Sprintf(`%s.events.%s`, x.Engine.App, params.Model)

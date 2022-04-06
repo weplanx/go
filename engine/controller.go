@@ -34,7 +34,7 @@ type ActionsBody struct {
 	Docs   []M                  `json:"docs" binding:"omitempty,dive,gt=0"`
 	Ids    []primitive.ObjectID `json:"ids" binding:"omitempty,excluded_with=Filter,gt=0"`
 	Filter M                    `json:"filter" binding:"omitempty,excluded_with=Ids,gt=0"`
-	Format M                    `json:"format" binding:"omitempty,gt=0"`
+	Format M                    `json:"format" binding:"omitempty,gt=0,dive,oneof=object_id password ref"`
 }
 
 func (x *Controller) Actions(c *gin.Context) interface{} {
@@ -57,7 +57,7 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 			return err
 		}
 		c.Set("status_code", http.StatusCreated)
-		if err = x.Service.Event(ctx, result); err != nil {
+		if err = x.Service.Event(ctx, "create", result); err != nil {
 			return err
 		}
 		return result
@@ -71,7 +71,7 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 			return err
 		}
 		c.Set("status_code", http.StatusCreated)
-		if err = x.Service.Event(ctx, result); err != nil {
+		if err = x.Service.Event(ctx, "bulk-create", result); err != nil {
 			return err
 		}
 		return result
@@ -90,7 +90,7 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 				return err
 			}
 		}
-		if err = x.Service.Event(ctx, result); err != nil {
+		if err = x.Service.Event(ctx, "delete", result); err != nil {
 			return err
 		}
 		return result
@@ -230,7 +230,7 @@ type UpdateQuery struct {
 
 type UpdateBody struct {
 	Update M `json:"update" binding:"required"`
-	Format M `json:"format" binding:"omitempty,dive,gt=0"`
+	Format M `json:"format" binding:"omitempty,gt=0,dive,oneof=object_id password ref"`
 }
 
 // Update 局部更新文档
@@ -261,7 +261,7 @@ func (x *Controller) Update(c *gin.Context) interface{} {
 			return err
 		}
 	}
-	if err = x.Service.Event(ctx, result); err != nil {
+	if err = x.Service.Event(ctx, "update", result); err != nil {
 		return err
 	}
 	return result
@@ -281,7 +281,7 @@ func (x *Controller) UpdateOne(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
-	if err = x.Service.Event(ctx, result); err != nil {
+	if err = x.Service.Event(ctx, "update", result); err != nil {
 		return err
 	}
 	return result
@@ -289,7 +289,7 @@ func (x *Controller) UpdateOne(c *gin.Context) interface{} {
 
 type ReplaceOneBody struct {
 	Doc    M `json:"doc" binding:"required"`
-	Format M `json:"format" binding:"omitempty,dive,gt=0"`
+	Format M `json:"format" binding:"omitempty,gt=0,dive,oneof=object_id password ref"`
 }
 
 // ReplaceOne 更新文档
@@ -306,7 +306,7 @@ func (x *Controller) ReplaceOne(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
-	if err = x.Service.Event(ctx, result); err != nil {
+	if err = x.Service.Event(ctx, "update", result); err != nil {
 		return err
 	}
 	return result
@@ -322,7 +322,7 @@ func (x *Controller) DeleteOne(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
-	if err = x.Service.Event(ctx, result); err != nil {
+	if err = x.Service.Event(ctx, "delete", result); err != nil {
 		return err
 	}
 	return result
