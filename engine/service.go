@@ -20,7 +20,16 @@ type Service struct {
 	Db     *mongo.Database
 }
 
-func (x *Service) InsertMany(ctx context.Context, docs []M, format M) (result interface{}, err error) {
+func (x *Service) InsertOne(ctx context.Context, doc M, format M) (_ interface{}, err error) {
+	params := ctx.Value("params").(*Params)
+	if err = x.Format(doc, format); err != nil {
+		return
+	}
+	doc["create_time"], doc["update_time"] = time.Now(), time.Now()
+	return x.Db.Collection(params.Model).InsertOne(ctx, doc)
+}
+
+func (x *Service) InsertMany(ctx context.Context, docs []M, format M) (_ interface{}, err error) {
 	params := ctx.Value("params").(*Params)
 	data := make([]interface{}, len(docs))
 	for i, doc := range docs {
@@ -171,11 +180,20 @@ func (x *Service) UpdateOne(ctx context.Context, update M, format M) (_ interfac
 func (x *Service) ReplaceOne(ctx context.Context, doc M, format M) (_ interface{}, err error) {
 	params := ctx.Value("params").(*Params)
 	oid, _ := primitive.ObjectIDFromHex(params.Id)
-	if err = x.Format(format, doc); err != nil {
+	if err = x.Format(doc, format); err != nil {
 		return
 	}
 	doc["create_time"], doc["update_time"] = time.Now(), time.Now()
 	return x.Db.Collection(params.Model).ReplaceOne(ctx, M{"_id": oid}, doc)
+}
+
+func (x *Service) DeleteMany(ctx context.Context, filter M) (interface{}, error) {
+	params := ctx.Value("params").(*Params)
+	return x.Db.Collection(params.Model).DeleteMany(ctx, filter)
+}
+
+func (x *Service) DeleteManyById(ctx context.Context, oids []primitive.ObjectID) (interface{}, error) {
+	return x.DeleteMany(ctx, M{"_id": M{"$in": oids}})
 }
 
 func (x *Service) DeleteOne(ctx context.Context) (interface{}, error) {

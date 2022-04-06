@@ -2,7 +2,9 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strconv"
 )
@@ -26,30 +28,74 @@ func (x *Controller) NewContext(c *gin.Context) (ctx context.Context, err error)
 	return
 }
 
-type CreateBody struct {
-	Docs   []M `json:"docs" binding:"required,dive,gt=0"`
-	Format M   `json:"format" binding:"omitempty,dive,gt=0"`
+type ActionsBody struct {
+	Action string               `json:"action" binding:"required,oneof=create bulk-create bulk-delete"`
+	Doc    M                    `json:"doc" binding:"omitempty,gt=0"`
+	Docs   []M                  `json:"docs" binding:"omitempty,dive,gt=0"`
+	Ids    []primitive.ObjectID `json:"ids" binding:"omitempty,excluded_with=Filter,gt=0"`
+	Filter M                    `json:"filter" binding:"omitempty,excluded_with=Ids,gt=0"`
+	Format M                    `json:"format" binding:"omitempty,gt=0"`
 }
 
-// Create 创建文档
-func (x *Controller) Create(c *gin.Context) interface{} {
+func (x *Controller) Actions(c *gin.Context) interface{} {
 	ctx, err := x.NewContext(c)
 	if err != nil {
 		return err
 	}
-	var body CreateBody
+	var body ActionsBody
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
 	}
-	result, err := x.Service.InsertMany(ctx, body.Docs, body.Format)
-	if err != nil {
-		return err
+	switch body.Action {
+	case "create":
+		// 创建文档
+		if len(body.Doc) == 0 {
+			return fmt.Errorf(`Key: 'ActionsBody.Doc' Error:Field validation for 'Doc' failed on the 'required' tag`)
+		}
+		result, err := x.Service.InsertOne(ctx, body.Doc, body.Format)
+		if err != nil {
+			return err
+		}
+		c.Set("status_code", http.StatusCreated)
+		if err = x.Service.Event(ctx, result); err != nil {
+			return err
+		}
+		return result
+	case "bulk-create":
+		// 批量创建文档
+		if len(body.Docs) == 0 {
+			return fmt.Errorf(`Key: 'ActionsBody.Docs' Error:Field validation for 'Docs' failed on the 'required' tag`)
+		}
+		result, err := x.Service.InsertMany(ctx, body.Docs, body.Format)
+		if err != nil {
+			return err
+		}
+		c.Set("status_code", http.StatusCreated)
+		if err = x.Service.Event(ctx, result); err != nil {
+			return err
+		}
+		return result
+	case "bulk-delete":
+		// 批量删除文档
+		if len(body.Ids) == 0 && len(body.Filter) == 0 {
+			return fmt.Errorf(`A field must be defined from 'ActionsBody.Docs' or 'ActionsBody.Filter'`)
+		}
+		var result interface{}
+		if len(body.Ids) != 0 {
+			if result, err = x.Service.DeleteManyById(ctx, body.Ids); err != nil {
+				return err
+			}
+		} else {
+			if result, err = x.Service.DeleteMany(ctx, body.Filter); err != nil {
+				return err
+			}
+		}
+		if err = x.Service.Event(ctx, result); err != nil {
+			return err
+		}
+		return result
 	}
-	c.Set("status_code", http.StatusCreated)
-	if err = x.Service.Event(ctx, result); err != nil {
-		return err
-	}
-	return result
+	return nil
 }
 
 type FindQuery struct {
