@@ -51,7 +51,7 @@ func (x *Service) Find(
 	filter M,
 	orders []string,
 	fields []string,
-	opts ...*options.FindOptions,
+	opt *options.FindOptions,
 ) (data []M, err error) {
 	params := x.Params(ctx)
 	option := options.Find().
@@ -79,15 +79,14 @@ func (x *Service) Find(
 	if params.Skip != 0 {
 		option.SetSkip(params.Skip)
 	}
-
 	if err = x.Format(filter, params.FormatFilter); err != nil {
 		return
 	}
 	var cursor *mongo.Cursor
-	opts, data = append(opts, option), make([]M, 0)
-	if cursor, err = x.Db.Collection(params.Model).Find(ctx, filter, opts...); err != nil {
+	if cursor, err = x.Db.Collection(params.Model).Find(ctx, filter, option, opt); err != nil {
 		return
 	}
+	data = make([]M, 0)
 	if err = cursor.All(ctx, &data); err != nil {
 		return
 	}

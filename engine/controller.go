@@ -166,7 +166,7 @@ func (x *Controller) Get(c *gin.Context) interface{} {
 		c.Header("wpx-total", strconv.FormatInt(params.Total, 10))
 		return data
 	}
-	if data, err = x.Find(ctx, query.Filter, query.Order, query.Field); err != nil {
+	if data, err = x.Find(ctx, query.Filter, query.Order, query.Field, nil); err != nil {
 		return err
 	}
 	return data
