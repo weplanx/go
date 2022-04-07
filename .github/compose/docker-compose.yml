@@ -25,6 +25,6 @@ services:
     image: nats:alpine
     command: [ "-c","/etc/nats.conf" ]
     volumes:
-      - "./nats-2.conf:/etc/nats.conf"
+      - "./nats-3.conf:/etc/nats.conf"
     ports:
       - "4224:4222"
