@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 部署环境
-        run: docker-compose up -d --build
-
       - name: 检出
         uses: actions/checkout@v2
+
+      - name: 部署环境
+        run: docker-compose up -d
 
       - name: 安装 Golang
         uses: actions/setup-go@v2
