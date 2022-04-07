@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: 部署环境
-        run: docker-compose -f ".github/workflows/docker-compose.yml" up -d --build
+        run: docker-compose up -d --build
 
       - name: 检出
         uses: actions/checkout@v2
