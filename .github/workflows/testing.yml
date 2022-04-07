@@ -8,46 +8,11 @@ jobs:
 
   testing:
     runs-on: ubuntu-latest
-    services:
-      nats-1:
-        image: nats:alpine
-        command:
-          - --jetstream
-          - --auth s3cr3t
-          - --routes nats-route://nats-2:6222,nats-route://nats-3:6222
-          - --cluster 0.0.0.0:6222
-          - --cluster_name cluster
-        ports:
-          - 4222:4222
-      nats-2:
-        image: nats:alpine
-        command:
-          - --jetstream
-          - --auth s3cr3t
-          - --routes nats-route://nats-1:6222,nats-route://nats-3:6222
-          - --cluster 0.0.0.0:6222
-          - --cluster_name cluster
-        ports:
-          - 4223:4222
-      nats-3:
-        image: nats:alpine
-        command:
-          - --jetstream
-          - --auth s3cr3t
-          - --routes nats-route://nats-1:6222,nats-route://nats-2:6222
-          - --cluster 0.0.0.0:6222
-          - --cluster_name cluster
-        ports:
-          - 4224:4222
-      mongodb:
-        image: mongo
-        env:
-          MONGO_INITDB_ROOT_USERNAME: root
-          MONGO_INITDB_ROOT_PASSWORD: example
-        ports:
-          - 27017:27017
 
     steps:
+      - name: 部署环境
+        run: docker-compose -f "docker-compose.yml" up -d --build
+
       - name: 检出
         uses: actions/checkout@v2
 
