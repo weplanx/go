@@ -9,6 +9,36 @@ jobs:
   testing:
     runs-on: ubuntu-latest
     services:
+      nats-1:
+        image: nats:alpine
+        command:
+          - --jetstream
+          - --auth s3cr3t
+          - --routes nats-route://nats-2:6222,nats-route://nats-3:6222
+          - --cluster 0.0.0.0:6222
+          - --cluster_name cluster
+        ports:
+          - 4222:4222
+      nats-2:
+        image: nats:alpine
+        command:
+          - --jetstream
+          - --auth s3cr3t
+          - --routes nats-route://nats-1:6222,nats-route://nats-3:6222
+          - --cluster 0.0.0.0:6222
+          - --cluster_name cluster
+        ports:
+          - 4223:4222
+      nats-3:
+        image: nats:alpine
+        command:
+          - --jetstream
+          - --auth s3cr3t
+          - --routes nats-route://nats-1:6222,nats-route://nats-2:6222
+          - --cluster 0.0.0.0:6222
+          - --cluster_name cluster
+        ports:
+          - 4224:4222
       mongodb:
         image: mongo
         env:
@@ -31,8 +61,8 @@ jobs:
         env:
           GO111MODULE: on
           TEST_DB: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
-          TEST_NATS: ${{ secrets.NATS }}
-          TEST_NATS_NKEY: ${{ secrets.NATS_NKEY }}
+          TEST_NATS: nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224
+          TEST_NATS_TOKEN: s3cr3t
 
       - name: 推送覆盖率至 COVERALLS
         run: |

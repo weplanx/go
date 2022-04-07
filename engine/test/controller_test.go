@@ -589,7 +589,6 @@ func TestGetFindByPageWithSort(t *testing.T) {
 	if err = jsoniter.Unmarshal(res.Body.Bytes(), &values); err != nil {
 		t.Error(err)
 	}
-	fmt.Println(values)
 	assert.Len(t, values, 5)
 	option := options.Find().
 		SetSort(bson.M{"price": 1}).
@@ -604,7 +603,6 @@ func TestGetFindByPageWithSort(t *testing.T) {
 	if err = cursor.All(context.TODO(), &data); err != nil {
 		t.Error(err)
 	}
-	fmt.Println(data)
 	for k, v := range data {
 		assert.Equal(t, v["name"], values[k]["name"])
 	}

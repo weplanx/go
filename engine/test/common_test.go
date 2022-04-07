@@ -78,27 +78,34 @@ func SetMongoDB() (err error) {
 }
 
 func SetNats() (err error) {
-	var kp nkeys.KeyPair
-	if kp, err = nkeys.FromSeed([]byte(os.Getenv("TEST_NATS_NKEY"))); err != nil {
-		return
+	var auth nats.Option
+	if os.Getenv("TEST_NATS_TOKEN") != "" {
+		auth = nats.Token(os.Getenv("TEST_NATS_TOKEN"))
 	}
-	defer kp.Wipe()
-	var pub string
-	if pub, err = kp.PublicKey(); err != nil {
-		return
-	}
-	if !nkeys.IsValidPublicUserKey(pub) {
-		panic("nkey 验证失败")
+	if os.Getenv("TEST_NATS_NKEY") != "" {
+		var kp nkeys.KeyPair
+		if kp, err = nkeys.FromSeed([]byte(os.Getenv("TEST_NATS_NKEY"))); err != nil {
+			return
+		}
+		defer kp.Wipe()
+		var pub string
+		if pub, err = kp.PublicKey(); err != nil {
+			return
+		}
+		if !nkeys.IsValidPublicUserKey(pub) {
+			panic("nkey 验证失败")
+		}
+		auth = nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
+			sig, _ := kp.Sign(nonce)
+			return sig, nil
+		})
 	}
 	if nc, err = nats.Connect(
 		os.Getenv("TEST_NATS"),
 		nats.MaxReconnects(5),
 		nats.ReconnectWait(2*time.Second),
 		nats.ReconnectJitter(500*time.Millisecond, 2*time.Second),
-		nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
-			sig, _ := kp.Sign(nonce)
-			return sig, nil
-		}),
+		auth,
 	); err != nil {
 		panic(err)
 	}
