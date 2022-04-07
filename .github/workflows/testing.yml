@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: 部署环境
-        run: docker-compose up -d
+        run: docker-compose -f ".github/compose/docker-compose.yml" up -d
 
       - name: 安装 Golang
         uses: actions/setup-go@v2
