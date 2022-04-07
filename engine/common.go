@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
@@ -64,15 +65,41 @@ func UseEvents(js nats.JetStreamContext) OptionFunc {
 	}
 }
 
+var (
+	BodyEmpty = errors.New("the request body data cannot be empty")
+)
+
 type M = map[string]interface{}
 
 type Params struct {
-	Model string `uri:"model" binding:"omitempty,key"`
-	Id    string `uri:"id" binding:"omitempty,objectId"`
+	*Uri
+	*Headers
 }
 
-type Pagination struct {
-	Index int64 `header:"x-page" binding:"omitempty,gt=0,number"`
-	Size  int64 `header:"x-page-size" binding:"omitempty,number"`
-	Total int64
+type Uri struct {
+	// 模型命名
+	Model string `uri:"model" binding:"omitempty,key"`
+	// 文档 ID
+	Id string `uri:"id" binding:"omitempty,objectId"`
+}
+
+type Headers struct {
+	// 方法
+	Action string `header:"wpx-action" binding:"omitempty,oneof=create bulk-create bulk-delete"`
+	// 查询类型
+	Type string `header:"wpx-type" binding:"omitempty"`
+	// 最大返回数量
+	Limit int64 `header:"wpx-limit" binding:"omitempty,gt=0,lt=10000"`
+	// 跳过数量
+	Skip int64 `header:"wpx-skip" binding:"omitempty,gte=0"`
+	// 分页码
+	Index int64 `header:"wpx-page" binding:"omitempty,gt=0,number"`
+	// 分页大小
+	Size int64 `header:"wpx-page-size" binding:"omitempty,number"`
+	// 总数
+	Total int64 `header:"wpx-total"`
+	// 格式化过滤
+	FormatFilter []string `header:"wpx-format-filter" binding:"omitempty,gt=0"`
+	// 格式化文档
+	FormatDoc []string `header:"wpx-format-doc" binding:"omitempty,gt=0"`
 }

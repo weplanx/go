@@ -98,7 +98,7 @@ func TestMain(m *testing.M) {
 	{
 		route.Engine(api, &controller)
 		// alias
-		api.GET("svc/:id", route.Use(controller.FindOneById, route.SetModel("services")))
+		api.GET("svc/:id", route.Use(controller.GetById, route.SetModel("services")))
 	}
 	if err := db.Drop(context.TODO()); err != nil {
 		panic(err)
@@ -106,7 +106,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-var mock = []map[string]interface{}{
+var services = []map[string]interface{}{
 	{"number": "55826199", "name": "Handmade Soft Salad", "price": 727.00},
 	{"number": "57277117", "name": "Intelligent Fresh Shoes", "price": 47.00},
 	{"number": "52697132", "name": "Practical Metal Chips", "price": 859.00},

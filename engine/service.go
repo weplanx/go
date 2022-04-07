@@ -20,20 +20,24 @@ type Service struct {
 	Db     *mongo.Database
 }
 
-func (x *Service) InsertOne(ctx context.Context, doc M, format M) (_ interface{}, err error) {
-	params := ctx.Value("params").(*Params)
-	if err = x.Format(doc, format); err != nil {
+func (x *Service) Params(ctx context.Context) *Params {
+	return ctx.Value("params").(*Params)
+}
+
+func (x *Service) InsertOne(ctx context.Context, doc M) (_ interface{}, err error) {
+	params := x.Params(ctx)
+	if err = x.Format(doc, params.FormatDoc); err != nil {
 		return
 	}
 	doc["create_time"], doc["update_time"] = time.Now(), time.Now()
 	return x.Db.Collection(params.Model).InsertOne(ctx, doc)
 }
 
-func (x *Service) InsertMany(ctx context.Context, docs []M, format M) (_ interface{}, err error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) InsertMany(ctx context.Context, docs []M) (_ interface{}, err error) {
+	params := x.Params(ctx)
 	data := make([]interface{}, len(docs))
 	for i, doc := range docs {
-		if err = x.Format(doc, format); err != nil {
+		if err = x.Format(doc, params.FormatDoc); err != nil {
 			return
 		}
 		doc["create_time"], doc["update_time"] = time.Now(), time.Now()
@@ -47,18 +51,14 @@ func (x *Service) Find(
 	filter M,
 	orders []string,
 	fields []string,
-	limit int64,
-	skip int64,
 	opts ...*options.FindOptions,
 ) (data []M, err error) {
-	params := ctx.Value("params").(*Params)
-
+	params := x.Params(ctx)
 	option := options.Find().
 		SetProjection(x.Project(params.Model, fields)).
 		SetSort(bson.M{"_id": -1}).
 		SetLimit(100)
-
-	// 自定义排序
+	// 排序
 	if len(orders) != 0 {
 		sort := make(bson.D, len(orders))
 		for i, order := range orders {
@@ -71,18 +71,21 @@ func (x *Service) Find(
 		option.SetSort(sort)
 		option.SetAllowDiskUse(true)
 	}
-
-	if skip != 0 {
-		option.SetSkip(skip)
+	// 最大返回数量
+	if params.Limit != 0 {
+		option.SetLimit(params.Limit)
 	}
-	if limit != 0 {
-		option.SetLimit(limit)
+	// 跳过数量
+	if params.Skip != 0 {
+		option.SetSkip(params.Skip)
 	}
 
+	if err = x.Format(filter, params.FormatFilter); err != nil {
+		return
+	}
 	var cursor *mongo.Cursor
 	opts, data = append(opts, option), make([]M, 0)
-	if cursor, err = x.Db.Collection(params.Model).
-		Find(ctx, filter, opts...); err != nil {
+	if cursor, err = x.Db.Collection(params.Model).Find(ctx, filter, opts...); err != nil {
 		return
 	}
 	if err = cursor.All(ctx, &data); err != nil {
@@ -91,28 +94,20 @@ func (x *Service) Find(
 	return
 }
 
-func (x *Service) FindById(ctx context.Context, ids []string, orders []string, fields []string) ([]M, error) {
-	oids := make([]primitive.ObjectID, len(ids))
-	for i, v := range ids {
-		oids[i], _ = primitive.ObjectIDFromHex(v)
-	}
-	return x.Find(ctx, bson.M{"_id": bson.M{"$in": oids}}, orders, fields, 0, 0)
-}
-
 func (x *Service) FindByPage(
 	ctx context.Context,
 	filter M,
 	orders []string,
 	fields []string,
 ) (data []M, err error) {
-	p := ctx.Value("page").(*Pagination)
-	if p.Total, err = x.Count(ctx, filter); err != nil {
+	params := x.Params(ctx)
+	if params.Total, err = x.CountDocuments(ctx, filter); err != nil {
 		return
 	}
 	option := options.Find().
-		SetLimit(p.Size).
-		SetSkip((p.Index - 1) * p.Size)
-	if data, err = x.Find(ctx, filter, orders, fields, 0, 0, option); err != nil {
+		SetLimit(params.Size).
+		SetSkip((params.Index - 1) * params.Size)
+	if data, err = x.Find(ctx, filter, orders, fields, option); err != nil {
 		return
 	}
 	return
@@ -137,10 +132,13 @@ func (x *Service) FindOneById(ctx context.Context, fields []string) (M, error) {
 	return x.FindOne(ctx, M{"_id": oid}, fields)
 }
 
-func (x *Service) UpdateMany(ctx context.Context, filter M, update M, format M) (_ interface{}, err error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) UpdateMany(ctx context.Context, filter M, update M) (_ interface{}, err error) {
+	params := x.Params(ctx)
+	if err = x.Format(filter, params.FormatFilter); err != nil {
+		return
+	}
 	if update["$set"] != nil {
-		if err = x.Format(update["$set"].(M), format); err != nil {
+		if err = x.Format(update["$set"].(M), params.FormatDoc); err != nil {
 			return
 		}
 		update["$set"].(M)["update_time"] = time.Now()
@@ -148,18 +146,10 @@ func (x *Service) UpdateMany(ctx context.Context, filter M, update M, format M) 
 	return x.Db.Collection(params.Model).UpdateMany(ctx, filter, update)
 }
 
-func (x *Service) UpdateManyById(ctx context.Context, ids []string, update M, format M) (interface{}, error) {
-	oids := make([]primitive.ObjectID, len(ids))
-	for i, id := range ids {
-		oids[i], _ = primitive.ObjectIDFromHex(id)
-	}
-	return x.UpdateMany(ctx, M{"_id": M{"$in": oids}}, update, format)
-}
-
-func (x *Service) UpdateOne(ctx context.Context, update M, format M) (_ interface{}, err error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) UpdateOneById(ctx context.Context, update M) (_ interface{}, err error) {
+	params := x.Params(ctx)
 	if update["$set"] != nil {
-		if err = x.Format(update["$set"].(M), format); err != nil {
+		if err = x.Format(update["$set"].(M), params.FormatDoc); err != nil {
 			return
 		}
 		update["$set"].(M)["update_time"] = time.Now()
@@ -168,33 +158,33 @@ func (x *Service) UpdateOne(ctx context.Context, update M, format M) (_ interfac
 	return x.Db.Collection(params.Model).UpdateOne(ctx, M{"_id": oid}, update)
 }
 
-func (x *Service) ReplaceOne(ctx context.Context, doc M, format M) (_ interface{}, err error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) ReplaceOneById(ctx context.Context, doc M) (_ interface{}, err error) {
+	params := x.Params(ctx)
 	oid, _ := primitive.ObjectIDFromHex(params.Id)
-	if err = x.Format(doc, format); err != nil {
+	if err = x.Format(doc, params.FormatDoc); err != nil {
 		return
 	}
 	doc["create_time"], doc["update_time"] = time.Now(), time.Now()
 	return x.Db.Collection(params.Model).ReplaceOne(ctx, M{"_id": oid}, doc)
 }
 
-func (x *Service) DeleteMany(ctx context.Context, filter M) (interface{}, error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) DeleteMany(ctx context.Context, filter M) (_ interface{}, err error) {
+	params := x.Params(ctx)
+	// 格式化定义
+	if err = x.Format(filter, params.FormatFilter); err != nil {
+		return
+	}
 	return x.Db.Collection(params.Model).DeleteMany(ctx, filter)
 }
 
-func (x *Service) DeleteManyById(ctx context.Context, oids []primitive.ObjectID) (interface{}, error) {
-	return x.DeleteMany(ctx, M{"_id": M{"$in": oids}})
-}
-
-func (x *Service) DeleteOne(ctx context.Context) (interface{}, error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) DeleteOneById(ctx context.Context) (interface{}, error) {
+	params := x.Params(ctx)
 	oid, _ := primitive.ObjectIDFromHex(params.Id)
 	return x.Db.Collection(params.Model).DeleteOne(ctx, M{"_id": oid})
 }
 
-func (x *Service) Count(ctx context.Context, filter M) (count int64, err error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) CountDocuments(ctx context.Context, filter M) (count int64, err error) {
+	params := x.Params(ctx)
 	if len(filter) != 0 {
 		if count, err = x.Db.Collection(params.Model).
 			CountDocuments(ctx, filter); err != nil {
@@ -209,8 +199,9 @@ func (x *Service) Count(ctx context.Context, filter M) (count int64, err error) 
 	return
 }
 
-func (x *Service) Exists(ctx context.Context, filter M) (result bool, err error) {
-	params := ctx.Value("params").(*Params)
+// ExistDocument 文档
+func (x *Service) ExistDocument(ctx context.Context, filter M) (result bool, err error) {
+	params := x.Params(ctx)
 	var count int64
 	if count, err = x.Db.Collection(params.Model).
 		CountDocuments(ctx, filter); err != nil {
@@ -220,17 +211,34 @@ func (x *Service) Exists(ctx context.Context, filter M) (result bool, err error)
 	return
 }
 
-// Format 格式化
-func (x *Service) Format(doc M, rules M) (err error) {
-	for field, rule := range rules {
-		if _, ok := doc[field]; !ok {
+// Format 针对 filter 或 document 字段格式化
+func (x *Service) Format(data M, rules []string) (err error) {
+	for _, rule := range rules {
+		spec := strings.Split(rule, ":")
+		keys, cursor := strings.Split(spec[0], "."), data
+		n := len(keys) - 1
+		for _, key := range keys[:n] {
+			if v, ok := cursor[key].(M); ok {
+				cursor = v
+			}
+		}
+		key := keys[n]
+		if cursor[key] == nil {
 			continue
 		}
-		switch rule {
-		case "object_id":
-			// 转换为 ObjectId，为空保留
-			if id, ok := doc[field].(string); ok {
-				if doc[field], err = primitive.ObjectIDFromHex(id); err != nil {
+		switch spec[1] {
+		case "oid":
+			// 转换为 ObjectId
+			if cursor[key], err = primitive.ObjectIDFromHex(cursor[key].(string)); err != nil {
+				return
+			}
+			break
+
+		case "oids":
+			// 转换为 ObjectId 数组
+			oids := cursor[key].([]interface{})
+			for i, id := range oids {
+				if oids[i], err = primitive.ObjectIDFromHex(id.(string)); err != nil {
 					return
 				}
 			}
@@ -238,18 +246,8 @@ func (x *Service) Format(doc M, rules M) (err error) {
 
 		case "password":
 			// 密码类型，转换为 Argon2id
-			if doc[field], err = password.Create(doc[field].(string)); err != nil {
+			if cursor[key], err = password.Create(cursor[key].(string)); err != nil {
 				return
-			}
-			break
-
-		case "ref":
-			// 应用类型，转换为 ObjectId 数组
-			value := doc[field].([]interface{})
-			for i, v := range value {
-				if value[i], err = primitive.ObjectIDFromHex(v.(string)); err != nil {
-					return
-				}
 			}
 			break
 		}
@@ -283,16 +281,16 @@ func (x *Service) Project(model string, fields []string) bson.M {
 }
 
 // Event 发送事件
-func (x *Service) Event(ctx context.Context, action string, content interface{}) (err error) {
-	params := ctx.Value("params").(*Params)
+func (x *Service) Event(ctx context.Context, action string, data interface{}) (err error) {
+	params := x.Params(ctx)
 	if option, ok := x.Engine.Options[params.Model]; ok {
 		if !option.Event {
 			return
 		}
 		var payload []byte
 		if payload, err = jsoniter.Marshal(M{
-			"action":  action,
-			"content": content,
+			"action": action,
+			"data":   data,
 		}); err != nil {
 			return
 		}
