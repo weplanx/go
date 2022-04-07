@@ -2,7 +2,6 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/weplanx/go/engine"
 	"net/http"
 )
 
@@ -54,16 +53,4 @@ func Use(fn func(c *gin.Context) interface{}, options ...OptionFunc) gin.Handler
 			}
 		}
 	}
-}
-
-func Engine(r *gin.RouterGroup, engine *engine.Controller) {
-	r.POST("/:model", Use(engine.Actions))
-	r.HEAD("/:model/_count", Use(engine.Count))
-	r.HEAD("/:model/_exists", Use(engine.Exists))
-	r.GET("/:model", Use(engine.Get))
-	r.GET("/:model/:id", Use(engine.GetById))
-	r.PATCH("/:model", Use(engine.Patch))
-	r.PATCH("/:model/:id", Use(engine.PatchById))
-	r.PUT("/:model/:id", Use(engine.Put))
-	r.DELETE("/:model/:id", Use(engine.Delete))
 }

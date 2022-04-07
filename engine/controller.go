@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	"github.com/weplanx/go/route"
 	"net/http"
 	"strconv"
 )
@@ -10,6 +11,18 @@ import (
 type Controller struct {
 	Engine *Engine
 	*Service
+}
+
+func (x *Controller) DefaultRouters(r *gin.RouterGroup) {
+	r.POST("/:model", route.Use(x.Actions))
+	r.HEAD("/:model/_count", route.Use(x.Count))
+	r.HEAD("/:model/_exists", route.Use(x.Exists))
+	r.GET("/:model", route.Use(x.Get))
+	r.GET("/:model/:id", route.Use(x.GetById))
+	r.PATCH("/:model", route.Use(x.Patch))
+	r.PATCH("/:model/:id", route.Use(x.PatchById))
+	r.PUT("/:model/:id", route.Use(x.Put))
+	r.DELETE("/:model/:id", route.Use(x.Delete))
 }
 
 func (x *Controller) NewContext(c *gin.Context) (ctx context.Context, err error) {
