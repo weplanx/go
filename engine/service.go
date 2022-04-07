@@ -49,7 +49,7 @@ func (x *Service) InsertMany(ctx context.Context, docs []M) (_ interface{}, err 
 func (x *Service) Find(
 	ctx context.Context,
 	filter M,
-	orders []string,
+	sorts []string,
 	fields []string,
 	opt *options.FindOptions,
 ) (data []M, err error) {
@@ -59,16 +59,14 @@ func (x *Service) Find(
 		SetSort(bson.M{"_id": -1}).
 		SetLimit(100)
 	// 排序
-	if len(orders) != 0 {
-		sort := make(bson.D, len(orders))
-		for i, order := range orders {
+	if len(sorts) != 0 {
+		sortOpt := make(bson.D, len(sorts))
+		for i, order := range sorts {
 			v := strings.Split(order, ".")
-			sort[i] = bson.E{Key: v[0]}
-			if sort[i].Value, err = strconv.Atoi(v[1]); err != nil {
-				return
-			}
+			sortOpt[i] = bson.E{Key: v[0]}
+			sortOpt[i].Value, _ = strconv.Atoi(v[1])
 		}
-		option.SetSort(sort)
+		option.SetSort(sortOpt)
 		option.SetAllowDiskUse(true)
 	}
 	// 最大返回数量
@@ -96,7 +94,7 @@ func (x *Service) Find(
 func (x *Service) FindByPage(
 	ctx context.Context,
 	filter M,
-	orders []string,
+	sorts []string,
 	fields []string,
 ) (data []M, err error) {
 	params := x.Params(ctx)
@@ -106,7 +104,7 @@ func (x *Service) FindByPage(
 	option := options.Find().
 		SetLimit(params.Size).
 		SetSkip((params.Index - 1) * params.Size)
-	if data, err = x.Find(ctx, filter, orders, fields, option); err != nil {
+	if data, err = x.Find(ctx, filter, sorts, fields, option); err != nil {
 		return
 	}
 	return
@@ -114,9 +112,11 @@ func (x *Service) FindByPage(
 
 func (x *Service) FindOne(ctx context.Context, filter M, fields []string) (data M, err error) {
 	params := ctx.Value("params").(*Params)
+	if err = x.Format(filter, params.FormatFilter); err != nil {
+		return
+	}
 	option := options.FindOne().
 		SetProjection(x.Project(params.Model, fields))
-
 	if err = x.Db.Collection(params.Model).
 		FindOne(ctx, filter, option).
 		Decode(&data); err != nil {

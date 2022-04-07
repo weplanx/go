@@ -40,7 +40,7 @@ func (x *Example) KeyValidate(c *gin.Context) interface{} {
 	return nil
 }
 
-func (x *Example) SortValidate(c *gin.Context) interface{} {
+func (x *Example) OrderValidate(c *gin.Context) interface{} {
 	var query struct {
 		Sort string `form:"sort" binding:"sort"`
 	}
@@ -59,7 +59,7 @@ func BeforeServe() {
 	example := new(Example)
 	r.GET("/xxx/:id", route.Use(example.ObjectIdValidate))
 	r.GET("/xxx/exists", route.Use(example.KeyValidate))
-	r.GET("/xxx", route.Use(example.SortValidate))
+	r.GET("/xxx", route.Use(example.OrderValidate))
 }
 
 func TestObjectIdValidate(t *testing.T) {

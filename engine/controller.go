@@ -146,8 +146,8 @@ func (x *Controller) Get(c *gin.Context) interface{} {
 	params := x.Params(ctx)
 	var query struct {
 		Filter M        `form:"filter" binding:"omitempty,gt=0"`
-		Order  []string `form:"order" binding:"omitempty,gt=0,order"`
-		Field  []string `form:"field" binding:"omitempty,gt=0"`
+		Sort   []string `form:"sort" binding:"omitempty,gt=0,dive,sort"`
+		Field  []string `form:"field" binding:"omitempty,gt=0,dive,key"`
 	}
 	if err = c.ShouldBindQuery(&query); err != nil {
 		return err
@@ -160,13 +160,13 @@ func (x *Controller) Get(c *gin.Context) interface{} {
 		}
 		return data
 	case "find-by-page":
-		if data, err = x.FindByPage(ctx, query.Filter, query.Order, query.Field); err != nil {
+		if data, err = x.FindByPage(ctx, query.Filter, query.Sort, query.Field); err != nil {
 			return err
 		}
 		c.Header("wpx-total", strconv.FormatInt(params.Total, 10))
 		return data
 	}
-	if data, err = x.Find(ctx, query.Filter, query.Order, query.Field, nil); err != nil {
+	if data, err = x.Find(ctx, query.Filter, query.Sort, query.Field, nil); err != nil {
 		return err
 	}
 	return data
@@ -179,7 +179,7 @@ func (x *Controller) GetById(c *gin.Context) interface{} {
 		return err
 	}
 	var query struct {
-		Field []string `form:"field"`
+		Field []string `form:"field" binding:"omitempty,gt=0,dive,key"`
 	}
 	if err = c.ShouldBindQuery(&query); err != nil {
 		return err

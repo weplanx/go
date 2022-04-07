@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/assert"
@@ -17,10 +18,11 @@ import (
 )
 
 var (
-	r  *gin.Engine
-	db *mongo.Database
-	nc *nats.Conn
-	js nats.JetStreamContext
+	r      *gin.Engine
+	client *mongo.Client
+	db     *mongo.Database
+	nc     *nats.Conn
+	js     nats.JetStreamContext
 )
 
 type M = map[string]interface{}
@@ -37,11 +39,9 @@ func TestMain(m *testing.M) {
 	e := engine.New(
 		engine.SetApp("example"),
 		engine.UseStaticOptions(map[string]engine.Option{
-			"pages": {
-				Event: true,
-			},
 			"users": {
-				Field: []string{"name", "alias"},
+				Event: true,
+				Field: []string{"name", "batch"},
 			},
 		}),
 		engine.UseEvents(js),
@@ -60,20 +60,20 @@ func TestMain(m *testing.M) {
 		route.Engine(api, &controller)
 		api.GET("svc/:id", route.Use(controller.GetById, route.SetModel("services")))
 	}
-	if err := db.Drop(context.TODO()); err != nil {
-		panic(err)
-	}
+
 	os.Exit(m.Run())
 }
 
 func SetMongoDB() (err error) {
-	var client *mongo.Client
 	if client, err = mongo.Connect(context.TODO(),
 		options.Client().ApplyURI(os.Getenv("TEST_DB")),
 	); err != nil {
 		return
 	}
 	db = client.Database("example")
+	if err = db.Drop(context.TODO()); err != nil {
+		return
+	}
 	return
 }
 
@@ -105,6 +105,7 @@ func SetNats() (err error) {
 	if js, err = nc.JetStream(nats.PublishAsyncMaxPending(256)); err != nil {
 		panic(err)
 	}
+	js.DeleteStream("example:events:users")
 	return
 }
 
@@ -120,4 +121,21 @@ func Comparison(t *testing.T, exptcted []M, actual []M) {
 		assert.Equal(t, doc["name"], v["name"])
 		assert.Equal(t, doc["price"], v["price"])
 	}
+}
+
+func Event(t *testing.T, expected string) {
+	sub, err := js.PullSubscribe("example.events.users", "example:events:users")
+	if err != nil {
+		t.Error(err)
+	}
+	msg, err := sub.Fetch(1)
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Len(t, msg, 1)
+	var e M
+	if err = jsoniter.Unmarshal(msg[0].Data, &e); err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, expected, e["action"])
 }

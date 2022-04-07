@@ -21,7 +21,7 @@ func ExtendValidation() {
 			matched, _ := regexp.MatchString(`^[a-z_]+$`, fl.Field().String())
 			return matched
 		})
-		v.RegisterValidation("order", func(fl validator.FieldLevel) bool {
+		v.RegisterValidation("sort", func(fl validator.FieldLevel) bool {
 			matched, _ := regexp.MatchString(`^[a-z_]+\.(1|-1)$`, fl.Field().String())
 			return matched
 		})
