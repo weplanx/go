@@ -5,7 +5,7 @@ import (
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
-	"github.com/weplanx/go/password"
+	"github.com/weplanx/go/helper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -245,7 +245,7 @@ func (x *Service) Format(data M, rules []string) (err error) {
 
 		case "password":
 			// 密码类型，转换为 Argon2id
-			if cursor[key], err = password.Create(cursor[key].(string)); err != nil {
+			if cursor[key], err = helper.PasswordHash(cursor[key].(string)); err != nil {
 				return
 			}
 			break

@@ -18,6 +18,18 @@ func TestUuid(t *testing.T) {
 	t.Log(u)
 }
 
+func TestPassword(t *testing.T) {
+	hash, err := PasswordHash("pass@VAN1234")
+	assert.Nil(t, err)
+	t.Log(hash)
+	err = PasswordVerify("pass@VAN1234", "asdaqweqwexcxzcqweqw")
+	assert.Error(t, err)
+	err = PasswordVerify("pass@VAN1235", hash)
+	assert.Equal(t, NotMatch, err)
+	err = PasswordVerify("pass@VAN1234", hash)
+	assert.Nil(t, err)
+}
+
 type Example struct{}
 
 func (x *Example) ObjectIdValidate(c *gin.Context) interface{} {
@@ -40,7 +52,7 @@ func (x *Example) KeyValidate(c *gin.Context) interface{} {
 	return nil
 }
 
-func (x *Example) OrderValidate(c *gin.Context) interface{} {
+func (x *Example) SortValidate(c *gin.Context) interface{} {
 	var query struct {
 		Sort string `form:"sort" binding:"sort"`
 	}
@@ -52,18 +64,18 @@ func (x *Example) OrderValidate(c *gin.Context) interface{} {
 
 var r *gin.Engine
 
-func BeforeServe() {
+func SetTestServe() {
 	gin.SetMode(gin.TestMode)
 	r = gin.Default()
 	ExtendValidation()
 	example := new(Example)
 	r.GET("/xxx/:id", route.Use(example.ObjectIdValidate))
 	r.GET("/xxx/exists", route.Use(example.KeyValidate))
-	r.GET("/xxx", route.Use(example.OrderValidate))
+	r.GET("/xxx", route.Use(example.SortValidate))
 }
 
 func TestObjectIdValidate(t *testing.T) {
-	BeforeServe()
+	SetTestServe()
 	res1 := httptest.NewRecorder()
 	req1, _ := http.NewRequest("GET", "/xxx/abcd", nil)
 	r.ServeHTTP(res1, req1)
@@ -75,7 +87,7 @@ func TestObjectIdValidate(t *testing.T) {
 }
 
 func TestKeyValidate(t *testing.T) {
-	BeforeServe()
+	SetTestServe()
 	res1 := httptest.NewRecorder()
 	req1, _ := http.NewRequest("GET", "/xxx/exists?key=xas32", nil)
 	r.ServeHTTP(res1, req1)
@@ -91,7 +103,7 @@ func TestKeyValidate(t *testing.T) {
 }
 
 func TestSortValidate(t *testing.T) {
-	BeforeServe()
+	SetTestServe()
 	res1 := httptest.NewRecorder()
 	req1, _ := http.NewRequest("GET", "/xxx?sort=age.1", nil)
 	r.ServeHTTP(res1, req1)

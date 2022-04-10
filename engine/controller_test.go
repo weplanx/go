@@ -6,7 +6,7 @@ import (
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/go/password"
+	"github.com/weplanx/go/helper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -90,7 +90,7 @@ func TestActionsCreate(t *testing.T) {
 	assert.Equal(t, "alpha", data["name"])
 	batch, _ := primitive.ObjectIDFromHex("624a8facb4e5d150793d6353")
 	assert.Equal(t, batch, data["batch"])
-	assert.NoError(t, password.Verify("5auBnD$L", data["code"].(string)))
+	assert.NoError(t, helper.PasswordVerify("5auBnD$L", data["code"].(string)))
 
 	Event(t, "create")
 }
@@ -1033,7 +1033,7 @@ func TestPut(t *testing.T) {
 	assert.Equal(t, "beta", data["name"])
 	batch, _ := primitive.ObjectIDFromHex("624eace416ae8713b57adbcf")
 	assert.Equal(t, batch, data["batch"])
-	assert.NoError(t, password.Verify("gjcOSPLc", data["code"].(string)))
+	assert.NoError(t, helper.PasswordVerify("gjcOSPLc", data["code"].(string)))
 
 	Event(t, "update")
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestIdx(t *testing.T) {
+func TestHid(t *testing.T) {
 	idx, err := NewIDx("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK", hashids.DefaultAlphabet)
 	assert.Nil(t, err)
 	hash, err := idx.EncodeId([]int{651})
