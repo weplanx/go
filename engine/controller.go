@@ -137,7 +137,7 @@ func (x *Controller) Exists(c *gin.Context) interface{} {
 		return err
 	}
 	var query struct {
-		Filter M `form:"filter" binding:"required"`
+		Filter M `form:"filter" binding:"required,gt=0"`
 	}
 	if err = c.ShouldBindQuery(&query); err != nil {
 		return err
@@ -158,7 +158,7 @@ func (x *Controller) Get(c *gin.Context) interface{} {
 	}
 	params := x.Params(ctx)
 	var query struct {
-		Filter M        `form:"filter" binding:"omitempty,gt=0"`
+		Filter M        `form:"filter"`
 		Sort   []string `form:"sort" binding:"omitempty,gt=0,dive,sort"`
 		Field  []string `form:"field" binding:"omitempty,gt=0,dive,key"`
 	}
@@ -211,7 +211,7 @@ func (x *Controller) Patch(c *gin.Context) interface{} {
 		return err
 	}
 	var query struct {
-		Filter M `form:"filter" binding:"required"`
+		Filter M `form:"filter" binding:"required,gt=0"`
 	}
 	if err = c.ShouldBindQuery(&query); err != nil {
 		return err

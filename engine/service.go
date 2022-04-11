@@ -26,7 +26,8 @@ func (x *Service) Params(ctx context.Context) *Params {
 
 func (x *Service) InsertOne(ctx context.Context, doc M) (_ interface{}, err error) {
 	params := x.Params(ctx)
-	if err = x.Format(doc, params.FormatDoc); err != nil {
+	fmt.Println(len(params.FormatDoc))
+	if err = x.Format(doc, strings.Split(params.FormatDoc, ",")); err != nil {
 		return
 	}
 	doc["create_time"], doc["update_time"] = time.Now(), time.Now()
@@ -37,7 +38,7 @@ func (x *Service) InsertMany(ctx context.Context, docs []M) (_ interface{}, err 
 	params := x.Params(ctx)
 	data := make([]interface{}, len(docs))
 	for i, doc := range docs {
-		if err = x.Format(doc, params.FormatDoc); err != nil {
+		if err = x.Format(doc, strings.Split(params.FormatDoc, ",")); err != nil {
 			return
 		}
 		doc["create_time"], doc["update_time"] = time.Now(), time.Now()
@@ -77,7 +78,7 @@ func (x *Service) Find(
 	if params.Skip != 0 {
 		option.SetSkip(params.Skip)
 	}
-	if err = x.Format(filter, params.FormatFilter); err != nil {
+	if err = x.Format(filter, strings.Split(params.FormatFilter, ",")); err != nil {
 		return
 	}
 	var cursor *mongo.Cursor
@@ -112,7 +113,7 @@ func (x *Service) FindByPage(
 
 func (x *Service) FindOne(ctx context.Context, filter M, fields []string) (data M, err error) {
 	params := ctx.Value("params").(*Params)
-	if err = x.Format(filter, params.FormatFilter); err != nil {
+	if err = x.Format(filter, strings.Split(params.FormatFilter, ",")); err != nil {
 		return
 	}
 	option := options.FindOne().
@@ -133,11 +134,11 @@ func (x *Service) FindOneById(ctx context.Context, fields []string) (M, error) {
 
 func (x *Service) UpdateMany(ctx context.Context, filter M, update M) (_ interface{}, err error) {
 	params := x.Params(ctx)
-	if err = x.Format(filter, params.FormatFilter); err != nil {
+	if err = x.Format(filter, strings.Split(params.FormatFilter, ",")); err != nil {
 		return
 	}
 	if update["$set"] != nil {
-		if err = x.Format(update["$set"].(M), params.FormatDoc); err != nil {
+		if err = x.Format(update["$set"].(M), strings.Split(params.FormatDoc, ",")); err != nil {
 			return
 		}
 		update["$set"].(M)["update_time"] = time.Now()
@@ -148,7 +149,7 @@ func (x *Service) UpdateMany(ctx context.Context, filter M, update M) (_ interfa
 func (x *Service) UpdateOneById(ctx context.Context, update M) (_ interface{}, err error) {
 	params := x.Params(ctx)
 	if update["$set"] != nil {
-		if err = x.Format(update["$set"].(M), params.FormatDoc); err != nil {
+		if err = x.Format(update["$set"].(M), strings.Split(params.FormatDoc, ",")); err != nil {
 			return
 		}
 		update["$set"].(M)["update_time"] = time.Now()
@@ -160,7 +161,7 @@ func (x *Service) UpdateOneById(ctx context.Context, update M) (_ interface{}, e
 func (x *Service) ReplaceOneById(ctx context.Context, doc M) (_ interface{}, err error) {
 	params := x.Params(ctx)
 	oid, _ := primitive.ObjectIDFromHex(params.Id)
-	if err = x.Format(doc, params.FormatDoc); err != nil {
+	if err = x.Format(doc, strings.Split(params.FormatDoc, ",")); err != nil {
 		return
 	}
 	doc["create_time"], doc["update_time"] = time.Now(), time.Now()
@@ -170,7 +171,7 @@ func (x *Service) ReplaceOneById(ctx context.Context, doc M) (_ interface{}, err
 func (x *Service) DeleteMany(ctx context.Context, filter M) (_ interface{}, err error) {
 	params := x.Params(ctx)
 	// 格式化定义
-	if err = x.Format(filter, params.FormatFilter); err != nil {
+	if err = x.Format(filter, strings.Split(params.FormatFilter, ",")); err != nil {
 		return
 	}
 	return x.Db.Collection(params.Model).DeleteMany(ctx, filter)

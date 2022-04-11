@@ -99,7 +99,7 @@ type Headers struct {
 	// 总数
 	Total int64 `header:"wpx-total"`
 	// 格式化过滤
-	FormatFilter []string `header:"wpx-format-filter" binding:"omitempty,gt=0"`
+	FormatFilter string `header:"wpx-format-filter" binding:"omitempty,gt=0"`
 	// 格式化文档
-	FormatDoc []string `header:"wpx-format-doc" binding:"omitempty,gt=0"`
+	FormatDoc string `header:"wpx-format-doc" binding:"omitempty,gt=0"`
 }
