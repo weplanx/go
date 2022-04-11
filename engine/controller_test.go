@@ -53,7 +53,7 @@ func TestActionsCreateFormatDocErr(t *testing.T) {
 	}
 	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(body))
 	req.Header.Set("wpx-action", "create")
-	req.Header.Add("wpx-format-doc", "batch:oid")
+	req.Header.Set("wpx-format-doc", "batch:oid")
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 400, res.Code)
 }
@@ -70,8 +70,7 @@ func TestActionsCreate(t *testing.T) {
 	}
 	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(body))
 	req.Header.Set("wpx-action", "create")
-	req.Header.Add("wpx-format-doc", "batch:oid")
-	req.Header.Add("wpx-format-doc", "code:password")
+	req.Header.Set("wpx-format-doc", "batch:oid,code:password")
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 201, res.Code)
 
@@ -124,7 +123,7 @@ func TestActionsBulkCreateFormatDocErr(t *testing.T) {
 	}
 	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(body))
 	req.Header.Set("wpx-action", "bulk-create")
-	req.Header.Add("wpx-format-doc", "batch:oid")
+	req.Header.Set("wpx-format-doc", "batch:oid")
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 400, res.Code)
 }
@@ -191,7 +190,7 @@ func TestActionsBulkDeleteFormatFilterErr(t *testing.T) {
 	}
 	req, _ := http.NewRequest("POST", "/services", bytes.NewBuffer(body))
 	req.Header.Set("wpx-action", "bulk-delete")
-	req.Header.Add("wpx-format-filter", "_id.$in:oids")
+	req.Header.Set("wpx-format-filter", "_id.$in:oids")
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 400, res.Code)
 }
@@ -223,7 +222,7 @@ func TestActionsBulkDelete(t *testing.T) {
 	}
 	req, _ := http.NewRequest("POST", "/services", bytes.NewBuffer(body))
 	req.Header.Set("wpx-action", "bulk-delete")
-	req.Header.Add("wpx-format-filter", "_id.$in:oids")
+	req.Header.Set("wpx-format-filter", "_id.$in:oids")
 
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 200, res.Code)
@@ -395,7 +394,7 @@ func TestGetWithFormatFilter(t *testing.T) {
 	var err error
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/users", nil)
-	req.Header.Add("wpx-format-filter", "batch:oid")
+	req.Header.Set("wpx-format-filter", "batch:oid")
 	query := req.URL.Query()
 	query.Set("filter", `{"batch":"624a8facb4e5d150793d6353"}`)
 	req.URL.RawQuery = query.Encode()
@@ -412,7 +411,7 @@ func TestGetWithFormatFilter(t *testing.T) {
 func TestGetWithFormatFilterErr(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/users", nil)
-	req.Header.Add("wpx-format-filter", "batch:oid")
+	req.Header.Set("wpx-format-filter", "batch:oid")
 	query := req.URL.Query()
 	query.Set("filter", `{"batch":"xxx"}`)
 	req.URL.RawQuery = query.Encode()
@@ -490,7 +489,7 @@ func TestGetFindOneWithFormatFilterErr(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/users", nil)
 	req.Header.Set("wpx-type", "find-one")
-	req.Header.Add("wpx-format-filter", "batch:oid")
+	req.Header.Set("wpx-format-filter", "batch:oid")
 	query := req.URL.Query()
 	query.Set("filter", `{"batch":"xxx"}`)
 	req.URL.RawQuery = query.Encode()
@@ -503,7 +502,7 @@ func TestGetFindOneWithFormatFilter(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/users", nil)
 	req.Header.Set("wpx-type", "find-one")
-	req.Header.Add("wpx-format-filter", "batch:oid")
+	req.Header.Set("wpx-format-filter", "batch:oid")
 	query := req.URL.Query()
 	query.Set("filter", `{"batch":"624a8facb4e5d150793d6353"}`)
 	req.URL.RawQuery = query.Encode()
@@ -563,7 +562,7 @@ func TestGetFindByPageWithFormatFilterErr(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/users", nil)
 	req.Header.Set("wpx-type", "find-by-page")
-	req.Header.Add("wpx-format-filter", "batch:oid")
+	req.Header.Set("wpx-format-filter", "batch:oid")
 	query := req.URL.Query()
 	query.Set("filter", `{"batch":"xxx"}`)
 	req.URL.RawQuery = query.Encode()
@@ -1017,8 +1016,7 @@ func TestPut(t *testing.T) {
 	}
 	url := fmt.Sprintf(`/users/%s`, UserId.Hex())
 	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(body))
-	req.Header.Add("wpx-format-doc", "batch:oid")
-	req.Header.Add("wpx-format-doc", "code:password")
+	req.Header.Set("wpx-format-doc", "batch:oid,code:password")
 	r.ServeHTTP(res, req)
 	assert.Equal(t, 200, res.Code)
 
