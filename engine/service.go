@@ -211,6 +211,18 @@ func (x *Service) ExistDocument(ctx context.Context, filter M) (result bool, err
 	return
 }
 
+func (x *Service) Sort(ctx context.Context, sort []primitive.ObjectID) (*mongo.BulkWriteResult, error) {
+	params := x.Params(ctx)
+	var models []mongo.WriteModel
+	for i, oid := range sort {
+		models = append(models, mongo.NewUpdateOneModel().
+			SetFilter(bson.M{"_id": oid}).
+			SetUpdate(bson.M{"$set": bson.M{"sort": i}}),
+		)
+	}
+	return x.Db.Collection(params.Model).BulkWrite(ctx, models)
+}
+
 // Format 针对 filter 或 document 字段格式化
 func (x *Service) Format(data M, rules []string) (err error) {
 	for _, rule := range rules {

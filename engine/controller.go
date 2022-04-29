@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/weplanx/go/route"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strconv"
 )
@@ -103,6 +104,17 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 			return err
 		}
 		if err = x.Event(ctx, "delete", result); err != nil {
+			return err
+		}
+		return result
+	case "sort":
+		// 通用排序
+		var body []primitive.ObjectID
+		if err := c.ShouldBindJSON(&body); err != nil {
+			return err
+		}
+		result, err := x.Service.Sort(ctx, body)
+		if err != nil {
 			return err
 		}
 		return result
