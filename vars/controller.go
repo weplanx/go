@@ -9,8 +9,8 @@ type Controller struct {
 	Vars *Service
 }
 
-// Gets 获取多个指定变量
-func (x *Controller) Gets(c *gin.Context) interface{} {
+// Get 获取指定变量
+func (x *Controller) Get(c *gin.Context) interface{} {
 	var query struct {
 		Keys []string `form:"keys" binding:"required"`
 	}
@@ -32,25 +32,6 @@ func (x *Controller) Gets(c *gin.Context) interface{} {
 		}
 	}
 	return values
-}
-
-// Get 获取变量
-func (x *Controller) Get(c *gin.Context) interface{} {
-	var uri struct {
-		Key string `uri:"key" binding:"required"`
-	}
-	if err := c.ShouldBindUri(&uri); err != nil {
-		return err
-	}
-	ctx := c.Request.Context()
-	value, err := x.Vars.Get(ctx, uri.Key)
-	if err != nil {
-		return err
-	}
-	if SecretText(uri.Key) {
-		value = "***"
-	}
-	return value
 }
 
 // Set 设置变量

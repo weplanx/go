@@ -34,7 +34,7 @@ func (x *Service) Refresh(ctx context.Context) (err error) {
 	if err = cursor.All(ctx, &vars); err != nil {
 		return
 	}
-	var values map[string]interface{}
+	values := make(map[string]interface{})
 	for _, data := range vars {
 		switch value := data.Value.(type) {
 		case primitive.A:
