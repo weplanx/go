@@ -128,7 +128,6 @@ func (x *Controller) Options(c *gin.Context) interface{} {
 				"redirect": redirect,
 				"app_id":   id,
 			}
-
 		}
 	}
 	return nil
