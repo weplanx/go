@@ -3,7 +3,7 @@ package vars
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	"github.com/vmihailenco/msgpack/v5"
+	jsoniter "github.com/json-iterator/go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -38,11 +38,11 @@ func (x *Service) Refresh(ctx context.Context) (err error) {
 	for _, data := range vars {
 		switch value := data.Value.(type) {
 		case primitive.A:
-			b, _ := msgpack.Marshal(value)
+			b, _ := jsoniter.Marshal(value)
 			values[data.Key] = b
 			break
 		case primitive.M:
-			b, _ := msgpack.Marshal(value)
+			b, _ := jsoniter.Marshal(value)
 			values[data.Key] = b
 			break
 		default:
@@ -119,7 +119,7 @@ func (x *Service) Unmarshal(ctx context.Context, key string, v interface{}) (err
 	if value, err = x.Get(ctx, key); err != nil {
 		return
 	}
-	return msgpack.Unmarshal([]byte(value), v)
+	return jsoniter.Unmarshal([]byte(value), v)
 }
 
 func (x *Service) GetUserSessionExpire(ctx context.Context) (time.Duration, error) {
