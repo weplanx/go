@@ -85,7 +85,7 @@ type Uri struct {
 
 type Headers struct {
 	// 方法
-	Action string `header:"wpx-action" binding:"omitempty,oneof=create bulk-create bulk-delete"`
+	Action string `header:"wpx-action" binding:"omitempty,oneof=create bulk-create bulk-delete sort"`
 	// 查询类型
 	Type string `header:"wpx-type" binding:"omitempty"`
 	// 最大返回数量
