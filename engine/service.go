@@ -132,7 +132,7 @@ func (x *Service) FindOneById(ctx context.Context, fields []string) (M, error) {
 	return x.FindOne(ctx, M{"_id": oid}, fields)
 }
 
-func (x *Service) UpdateMany(ctx context.Context, filter M, update M) (_ interface{}, err error) {
+func (x *Service) UpdateMany(ctx context.Context, filter M, update M, opts QueryOptions) (_ interface{}, err error) {
 	params := x.Params(ctx)
 	if err = x.Format(filter, strings.Split(params.FormatFilter, ",")); err != nil {
 		return
@@ -143,10 +143,14 @@ func (x *Service) UpdateMany(ctx context.Context, filter M, update M) (_ interfa
 		}
 		update["$set"].(M)["update_time"] = time.Now()
 	}
-	return x.Db.Collection(params.Model).UpdateMany(ctx, filter, update)
+	option := options.Update()
+	if opts.ArrayFilters != nil {
+		option = option.SetArrayFilters(options.ArrayFilters{Filters: opts.ArrayFilters})
+	}
+	return x.Db.Collection(params.Model).UpdateMany(ctx, filter, update, option)
 }
 
-func (x *Service) UpdateOneById(ctx context.Context, update M) (_ interface{}, err error) {
+func (x *Service) UpdateOneById(ctx context.Context, update M, opts QueryOptions) (_ interface{}, err error) {
 	params := x.Params(ctx)
 	if update["$set"] != nil {
 		if err = x.Format(update["$set"].(M), strings.Split(params.FormatDoc, ",")); err != nil {
@@ -155,7 +159,11 @@ func (x *Service) UpdateOneById(ctx context.Context, update M) (_ interface{}, e
 		update["$set"].(M)["update_time"] = time.Now()
 	}
 	oid, _ := primitive.ObjectIDFromHex(params.Id)
-	return x.Db.Collection(params.Model).UpdateOne(ctx, M{"_id": oid}, update)
+	option := options.Update()
+	if opts.ArrayFilters != nil {
+		option = option.SetArrayFilters(options.ArrayFilters{Filters: opts.ArrayFilters})
+	}
+	return x.Db.Collection(params.Model).UpdateOne(ctx, M{"_id": oid}, update, option)
 }
 
 func (x *Service) ReplaceOneById(ctx context.Context, doc M) (_ interface{}, err error) {

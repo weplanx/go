@@ -223,7 +223,8 @@ func (x *Controller) Patch(c *gin.Context) interface{} {
 		return err
 	}
 	var query struct {
-		Filter M `form:"filter" binding:"required,gt=0"`
+		Filter  M            `form:"filter" binding:"required,gt=0"`
+		Options QueryOptions `form:"options"`
 	}
 	if err = c.ShouldBindQuery(&query); err != nil {
 		return err
@@ -236,7 +237,7 @@ func (x *Controller) Patch(c *gin.Context) interface{} {
 		return BodyEmpty
 	}
 	var result interface{}
-	if result, err = x.UpdateMany(ctx, query.Filter, body); err != nil {
+	if result, err = x.UpdateMany(ctx, query.Filter, body, query.Options); err != nil {
 		return err
 	}
 	if err = x.Event(ctx, "update", result); err != nil {
@@ -251,6 +252,12 @@ func (x *Controller) PatchById(c *gin.Context) interface{} {
 	if err != nil {
 		return err
 	}
+	var query struct {
+		Options QueryOptions `form:"options"`
+	}
+	if err = c.ShouldBindQuery(&query); err != nil {
+		return err
+	}
 	var body M
 	if err = c.ShouldBindJSON(&body); err != nil {
 		return err
@@ -259,7 +266,7 @@ func (x *Controller) PatchById(c *gin.Context) interface{} {
 		return BodyEmpty
 	}
 	var result interface{}
-	if result, err = x.UpdateOneById(ctx, body); err != nil {
+	if result, err = x.UpdateOneById(ctx, body, query.Options); err != nil {
 		return err
 	}
 	if err = x.Event(ctx, "update", result); err != nil {

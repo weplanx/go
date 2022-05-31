@@ -103,3 +103,7 @@ type Headers struct {
 	// 格式化文档
 	FormatDoc string `header:"wpx-format-doc" binding:"omitempty,gt=0"`
 }
+
+type QueryOptions struct {
+	ArrayFilters []interface{} `json:"array_filters"`
+}
