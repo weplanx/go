@@ -55,6 +55,7 @@ func (x *Controller) Set(c *gin.Context) interface{} {
 	return nil
 }
 
+// Options 返回通用配置
 func (x *Controller) Options(c *gin.Context) interface{} {
 	var query struct {
 		Type string `form:"type" binding:"required"`
