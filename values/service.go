@@ -46,9 +46,7 @@ func (x *Service) Get(keys []string) (data map[string]interface{}, err error) {
 	for _, key := range keys {
 		if x.IsSecret(key) {
 			value := values[key]
-			if value == nil || value == "" {
-				data[key] = "-"
-			} else {
+			if value != nil || value != "" {
 				data[key] = "*"
 			}
 		} else {
