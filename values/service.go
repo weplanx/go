@@ -1,6 +1,7 @@
 package values
 
 import (
+	"context"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 	"github.com/thoas/go-funk"
@@ -10,10 +11,38 @@ type Service struct {
 	Object nats.ObjectStore
 }
 
-// Set 分发配置
-func (x *Service) Set(data map[string]interface{}) (err error) {
+// Get 获取配置
+func (x *Service) Get(ctx context.Context, keys []string) (data map[string]interface{}, err error) {
 	var b []byte
-	if b, err = x.Object.GetBytes("values"); err != nil {
+	if b, err = x.Object.GetBytes("values", nats.Context(ctx)); err != nil {
+		return
+	}
+	values := make(map[string]interface{})
+	if err = jsoniter.Unmarshal(b, &values); err != nil {
+		return
+	}
+	data = make(map[string]interface{})
+	for k, v := range values {
+		if x.IsSecret(k) {
+			// 存在数值
+			if v != nil || v != "" {
+				data[k] = "*"
+			}
+		} else {
+			data[k] = v
+		}
+		// 存在过滤键名
+		if len(keys) != 0 && !funk.Contains(keys, k) {
+			delete(data, k)
+		}
+	}
+	return
+}
+
+// Set 分发配置
+func (x *Service) Set(ctx context.Context, data map[string]interface{}) (err error) {
+	var b []byte
+	if b, err = x.Object.GetBytes("values", nats.Context(ctx)); err != nil {
 		return
 	}
 	var values map[string]interface{}
@@ -26,32 +55,28 @@ func (x *Service) Set(data map[string]interface{}) (err error) {
 	if b, err = jsoniter.Marshal(values); err != nil {
 		return
 	}
-	if _, err = x.Object.PutBytes("values", b); err != nil {
+	if _, err = x.Object.PutBytes("values", b, nats.Context(ctx)); err != nil {
 		return
 	}
 	return
 }
 
-// Get 获取配置
-func (x *Service) Get(keys []string) (data map[string]interface{}, err error) {
+// Del 删除配置
+func (x *Service) Del(ctx context.Context, key string) (err error) {
 	var b []byte
-	if b, err = x.Object.GetBytes("values"); err != nil {
+	if b, err = x.Object.GetBytes("values", nats.Context(ctx)); err != nil {
 		return
 	}
-	values := make(map[string]interface{})
+	var values map[string]interface{}
 	if err = jsoniter.Unmarshal(b, &values); err != nil {
 		return
 	}
-	data = make(map[string]interface{})
-	for _, key := range keys {
-		if x.IsSecret(key) {
-			value := values[key]
-			if value != nil || value != "" {
-				data[key] = "*"
-			}
-		} else {
-			data[key] = values[key]
-		}
+	delete(values, key)
+	if b, err = jsoniter.Marshal(values); err != nil {
+		return
+	}
+	if _, err = x.Object.PutBytes("values", b, nats.Context(ctx)); err != nil {
+		return
 	}
 	return
 }
