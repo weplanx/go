@@ -127,7 +127,7 @@ func Comparison(t *testing.T, exptcted []M, actual []M) {
 	}
 }
 
-func Event(t *testing.T, expected string) {
+func CheckPublish(t *testing.T, expected string) {
 	sub, err := js.PullSubscribe("example.events.users", "example:events:users")
 	if err != nil {
 		t.Error(err)
@@ -141,7 +141,7 @@ func Event(t *testing.T, expected string) {
 	if err = jsoniter.Unmarshal(msg[0].Data, &e); err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, expected, e["action"])
+	assert.Equal(t, expected, e["event"])
 }
 
 var services = []M{

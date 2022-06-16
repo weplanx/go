@@ -91,7 +91,7 @@ func TestActionsCreate(t *testing.T) {
 	assert.Equal(t, batch, data["batch"])
 	assert.NoError(t, helper.PasswordVerify("5auBnD$L", data["code"].(string)))
 
-	Event(t, "create")
+	CheckPublish(t, "create")
 }
 
 func TestActionsBulkCreateBodyErr(t *testing.T) {
@@ -844,7 +844,7 @@ func TestPatchWithFormat(t *testing.T) {
 	assert.NotEmpty(t, value)
 	assert.Equal(t, value["batch"], batch)
 
-	Event(t, "update")
+	CheckPublish(t, "update")
 }
 
 func TestPatchByIdUriErr(t *testing.T) {
@@ -961,7 +961,7 @@ func TestPatchByIdFormatDoc(t *testing.T) {
 	assert.NotEmpty(t, value)
 	assert.Equal(t, value["batch"], batch)
 
-	Event(t, "update")
+	CheckPublish(t, "update")
 }
 
 func TestPutUriErr(t *testing.T) {
@@ -1033,7 +1033,7 @@ func TestPut(t *testing.T) {
 	assert.Equal(t, batch, data["batch"])
 	assert.NoError(t, helper.PasswordVerify("gjcOSPLc", data["code"].(string)))
 
-	Event(t, "update")
+	CheckPublish(t, "update")
 }
 
 func TestDeleteUriErr(t *testing.T) {
@@ -1056,5 +1056,5 @@ func TestDelete(t *testing.T) {
 	}
 	assert.Equal(t, int64(0), count)
 
-	Event(t, "delete")
+	CheckPublish(t, "delete")
 }
