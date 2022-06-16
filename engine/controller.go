@@ -14,7 +14,7 @@ type Controller struct {
 	*Service
 }
 
-func (x *Controller) DefaultRouters(r *gin.RouterGroup) {
+func (x *Controller) SetRouters(r *gin.RouterGroup) {
 	r.POST("/:model", route.Use(x.Actions))
 	r.HEAD("/:model/_count", route.Use(x.Count))
 	r.HEAD("/:model/_exists", route.Use(x.Exists))

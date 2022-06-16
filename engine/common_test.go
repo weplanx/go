@@ -52,10 +52,11 @@ func TestMain(m *testing.M) {
 		Service: &service,
 	}
 	helper.ExtendValidation()
-	api := r.Group("")
+	dsl := r.Group("")
 	{
-		controller.DefaultRouters(api)
-		api.GET("svc/:id", route.Use(controller.GetById, route.SetModel("services")))
+		controller.SetRouters(dsl)
+		// 别名设置
+		dsl.GET("svc/:id", route.Use(controller.GetById, route.SetModel("services")))
 	}
 
 	os.Exit(m.Run())
