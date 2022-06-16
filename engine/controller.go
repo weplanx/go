@@ -68,7 +68,11 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 			return err
 		}
 		c.Set("status_code", http.StatusCreated)
-		if err = x.Event(ctx, "create", result); err != nil {
+		if err = x.Publish(ctx, PublishDto{
+			Event:  "create",
+			Body:   body,
+			Result: result,
+		}); err != nil {
 			return err
 		}
 		return result
@@ -86,7 +90,11 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 			return err
 		}
 		c.Set("status_code", http.StatusCreated)
-		if err = x.Event(ctx, "bulk-create", result); err != nil {
+		if err = x.Publish(ctx, PublishDto{
+			Event:  "bulk-create",
+			Body:   body,
+			Result: result,
+		}); err != nil {
 			return err
 		}
 		return result
@@ -103,7 +111,11 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 		if result, err = x.DeleteMany(ctx, body); err != nil {
 			return err
 		}
-		if err = x.Event(ctx, "delete", result); err != nil {
+		if err = x.Publish(ctx, PublishDto{
+			Event:  "bulk-delete",
+			Body:   body,
+			Result: result,
+		}); err != nil {
 			return err
 		}
 		return result
@@ -115,6 +127,13 @@ func (x *Controller) Actions(c *gin.Context) interface{} {
 		}
 		result, err := x.Service.Sort(ctx, body)
 		if err != nil {
+			return err
+		}
+		if err = x.Publish(ctx, PublishDto{
+			Event:  "sort",
+			Body:   body,
+			Result: result,
+		}); err != nil {
 			return err
 		}
 		return result
@@ -223,8 +242,8 @@ func (x *Controller) Patch(c *gin.Context) interface{} {
 		return err
 	}
 	var query struct {
-		Filter  M            `form:"filter" binding:"required,gt=0"`
-		Options QueryOptions `form:"options"`
+		Filter  M            `form:"filter" binding:"required,gt=0" json:"filter"`
+		Options QueryOptions `form:"options" json:"options"`
 	}
 	if err = c.ShouldBindQuery(&query); err != nil {
 		return err
@@ -240,7 +259,12 @@ func (x *Controller) Patch(c *gin.Context) interface{} {
 	if result, err = x.UpdateMany(ctx, query.Filter, body, query.Options); err != nil {
 		return err
 	}
-	if err = x.Event(ctx, "update", result); err != nil {
+	if err = x.Publish(ctx, PublishDto{
+		Event:  "update",
+		Query:  query,
+		Body:   body,
+		Result: result,
+	}); err != nil {
 		return err
 	}
 	return result
@@ -253,7 +277,7 @@ func (x *Controller) PatchById(c *gin.Context) interface{} {
 		return err
 	}
 	var query struct {
-		Options QueryOptions `form:"options"`
+		Options QueryOptions `form:"options" json:"options"`
 	}
 	if err = c.ShouldBindQuery(&query); err != nil {
 		return err
@@ -269,7 +293,12 @@ func (x *Controller) PatchById(c *gin.Context) interface{} {
 	if result, err = x.UpdateOneById(ctx, body, query.Options); err != nil {
 		return err
 	}
-	if err = x.Event(ctx, "update", result); err != nil {
+	if err = x.Publish(ctx, PublishDto{
+		Event:  "update",
+		Query:  query,
+		Body:   body,
+		Result: result,
+	}); err != nil {
 		return err
 	}
 	return result
@@ -292,7 +321,11 @@ func (x *Controller) Put(c *gin.Context) interface{} {
 	if result, err = x.ReplaceOneById(ctx, body); err != nil {
 		return err
 	}
-	if err = x.Event(ctx, "update", result); err != nil {
+	if err = x.Publish(ctx, PublishDto{
+		Event:  "update",
+		Body:   body,
+		Result: result,
+	}); err != nil {
 		return err
 	}
 	return result
@@ -308,7 +341,10 @@ func (x *Controller) Delete(c *gin.Context) interface{} {
 	if result, err = x.DeleteOneById(ctx); err != nil {
 		return err
 	}
-	if err = x.Event(ctx, "delete", result); err != nil {
+	if err = x.Publish(ctx, PublishDto{
+		Event:  "delete",
+		Result: result,
+	}); err != nil {
 		return err
 	}
 	return result

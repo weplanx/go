@@ -306,18 +306,25 @@ func (x *Service) Project(model string, fields []string) bson.M {
 	return project
 }
 
-// Event 发送事件
-func (x *Service) Event(ctx context.Context, action string, data interface{}) (err error) {
+type PublishDto struct {
+	Event  string      `json:"event"`
+	Id     string      `json:"id,omitempty"`
+	Query  interface{} `json:"query,omitempty"`
+	Body   interface{} `json:"body,omitempty"`
+	Result interface{} `json:"result"`
+}
+
+func (x *Service) Publish(ctx context.Context, dto PublishDto) (err error) {
 	params := x.Params(ctx)
 	if option, ok := x.Engine.Options[params.Model]; ok {
 		if !option.Event {
 			return
 		}
 		var payload []byte
-		if payload, err = jsoniter.Marshal(M{
-			"action": action,
-			"data":   data,
-		}); err != nil {
+		if params.Id != "" {
+			dto.Id = params.Id
+		}
+		if payload, err = jsoniter.Marshal(dto); err != nil {
 			return
 		}
 		subject := fmt.Sprintf(`%s.events.%s`, x.Engine.App, params.Model)
