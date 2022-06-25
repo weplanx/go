@@ -1,9 +1,16 @@
 package passport
 
 import (
+	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"time"
+)
+
+var (
+	ErrAuthExpired  = errors.New("Authentication token has expired")
+	ErrAuthConflict = errors.New("Authentication already taken by new client")
 )
 
 type Passport struct {
@@ -68,4 +75,23 @@ func (x *Passport) Verify(tokenString string) (claims jwt.MapClaims, err error) 
 		return
 	}
 	return token.Claims.(jwt.MapClaims), nil
+}
+
+type Claims struct {
+	jwt.MapClaims
+	Context map[string]interface{}
+}
+
+func (x *Passport) GetClaims(c *gin.Context, key string) (*Claims, error) {
+	value, exists := c.Get(key)
+	if !exists {
+		c.Set("status_code", 401)
+		c.Set("code", "AUTH_EXPIRED")
+		return nil, ErrAuthExpired
+	}
+	claims := value.(jwt.MapClaims)
+	return &Claims{
+		MapClaims: claims,
+		Context:   claims["context"].(map[string]interface{}),
+	}, nil
 }
