@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/support/captcha"
+	"github.com/weplanx/support/utlis/captcha"
 	"os"
 	"testing"
 	"time"

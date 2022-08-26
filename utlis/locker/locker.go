@@ -4,24 +4,18 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/weplanx/support/common"
 	"time"
 )
 
 type Locker struct {
-	Namespace string
-	Redis     *redis.Client
-}
-
-func New(namespace string, r *redis.Client) *Locker {
-	return &Locker{
-		Namespace: namespace,
-		Redis:     r,
-	}
+	Values common.Values
+	Redis  *redis.Client
 }
 
 // Key 锁定命名
 func (x *Locker) Key(name string) string {
-	return fmt.Sprintf(`%s:locker:%s`, x.Namespace, name)
+	return fmt.Sprintf(`%s:locker:%s`, x.Values.GetApp().Namespace, name)
 }
 
 // Update 更新锁定
