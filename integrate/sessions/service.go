@@ -2,19 +2,18 @@ package sessions
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-redis/redis/v8"
-	"github.com/weplanx/support/common"
+	"github.com/weplanx/support"
 	"strings"
 )
 
 type Service struct {
-	Values common.Values
+	Values *support.Values
 	Redis  *redis.Client
 }
 
 func (x *Service) Key(uid string) string {
-	return fmt.Sprintf(`%s:sessions:%s`, x.Values.GetApp().Namespace, uid)
+	return x.Values.Name("session", uid)
 }
 
 // Lists 列出所有会话用户 ID

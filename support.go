@@ -1,43 +1,29 @@
-package common
+package support
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
-type Values interface {
-	GetApp() *App
-	GetCors() *Cors
-	GetDatabase() *Database
-	GetRedis() *Redis
-	GetNats() *Nats
-	SetDynamicValues(v DynamicValues)
-	GetDynamicValues() DynamicValues
-	GetSessionTTL() time.Duration
-	GetLoginTTL() time.Duration
-	GetLoginFailures() int64
-	GetIpLoginFailures() int64
-	GetIpWhitelist() []string
-	GetIpBlacklist() []string
-	GetPwdStrategy() int64
-	GetPwdTTL() time.Duration
-	GetCloud() string
-	GetTencentSecretId() string
-	GetTencentSecretKey() string
-	GetTencentCosBucket() string
-	GetTencentCosRegion() string
-	GetTencentCosExpired() time.Duration
-	GetTencentCosLimit() int64
-	GetOffice() string
-	GetFeishuAppId() string
-	GetFeishuAppSecret() string
-	GetFeishuEncryptKey() string
-	GetFeishuVerificationToken() string
-	GetRedirectUrl() string
-	GetEmailHost() string
-	GetEmailPort() string
-	GetEmailUsername() string
-	GetEmailPassword() string
-	GetOpenapiUrl() string
-	GetOpenapiKey() string
-	GetOpenapiSecret() string
+type Values struct {
+	// 应用设置
+	App `yaml:"app"`
+
+	// 跨域设置
+	Cors `yaml:"cors"`
+
+	// MongoDB 配置
+	Database `yaml:"database"`
+
+	// Redis 配置
+	Redis `yaml:"redis"`
+
+	// NATS 配置
+	Nats `yaml:"nats"`
+
+	// 动态配置
+	DynamicValues `yaml:"-"`
 }
 
 type App struct {
@@ -45,6 +31,21 @@ type App struct {
 	Namespace string `yaml:"namespace"`
 	// 密钥
 	Key string `yaml:"key"`
+}
+
+// Name 生成空间名称
+func (x App) Name(v ...string) string {
+	return fmt.Sprintf(`%s:%s`, x.Namespace, strings.Join(v, ":"))
+}
+
+// Subject 生成主题名称
+func (x App) Subject(v string) string {
+	return fmt.Sprintf(`%s.events.%s`, x.Namespace, v)
+}
+
+// Queue 生成队列名称
+func (x App) Queue(v string) string {
+	return fmt.Sprintf(`%s:events:%s`, x.Namespace, v)
 }
 
 type Cors struct {

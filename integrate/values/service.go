@@ -6,18 +6,18 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
-	"github.com/weplanx/support/common"
+	"github.com/weplanx/support"
 )
 
 type Service struct {
-	Values common.Values
+	Values *support.Values
 	Redis  *redis.Client
 	Nats   *nats.Conn
 }
 
 // Key 命名
 func (x *Service) Key() string {
-	return fmt.Sprintf("%s:values", x.Values.GetApp().Namespace)
+	return x.Values.Name("values")
 }
 
 // Load 载入配置
@@ -29,7 +29,7 @@ func (x *Service) Load(ctx context.Context) (err error) {
 	var b []byte
 	// 不存在配置则初始化
 	if count == 0 {
-		x.Values.SetDynamicValues(common.DynamicValues{
+		x.Values.DynamicValues = support.DynamicValues{
 			"session_ttl":               float64(3600),
 			"login_ttl":                 float64(900),
 			"login_failures":            float64(5),
@@ -58,9 +58,9 @@ func (x *Service) Load(ctx context.Context) (err error) {
 			"openapi_url":               "",
 			"openapi_key":               "",
 			"openapi_secret":            "",
-		})
+		}
 
-		if b, err = sonic.Marshal(x.Values.GetDynamicValues()); err != nil {
+		if b, err = sonic.Marshal(x.Values.DynamicValues); err != nil {
 			return
 		}
 
@@ -75,8 +75,7 @@ func (x *Service) Load(ctx context.Context) (err error) {
 		return
 	}
 
-	values := x.Values.GetDynamicValues()
-	if err = sonic.Unmarshal(b, &values); err != nil {
+	if err = sonic.Unmarshal(b, &x.Values.DynamicValues); err != nil {
 		return
 	}
 
@@ -111,7 +110,7 @@ func (x *Service) Get(keys ...string) (data map[string]interface{}) {
 	}
 	isAll := len(sets) == 0
 	data = make(map[string]interface{})
-	for k, v := range x.Values.GetDynamicValues() {
+	for k, v := range x.Values.DynamicValues {
 		if !isAll && !sets[k] {
 			continue
 		}
@@ -133,25 +132,22 @@ func (x *Service) Get(keys ...string) (data map[string]interface{}) {
 // Set 设置动态配置
 func (x *Service) Set(ctx context.Context, data map[string]interface{}) (err error) {
 	// 合并覆盖
-	values := x.Values.GetDynamicValues()
 	for k, v := range data {
-		values[k] = v
+		x.Values.DynamicValues[k] = v
 	}
 	return x.Update(ctx)
 }
 
 // Remove 移除动态配置
 func (x *Service) Remove(ctx context.Context, key string) (err error) {
-	values := x.Values.GetDynamicValues()
-	delete(values, key)
+	delete(x.Values.DynamicValues, key)
 	return x.Update(ctx)
 }
 
 // Update 更新配置
 func (x *Service) Update(ctx context.Context) (err error) {
 	var b []byte
-	values := x.Values.GetDynamicValues()
-	if b, err = sonic.Marshal(values); err != nil {
+	if b, err = sonic.Marshal(x.Values.DynamicValues); err != nil {
 		return
 	}
 	if err = x.Redis.Set(ctx, x.Key(), b, 0).Err(); err != nil {
@@ -163,14 +159,5 @@ func (x *Service) Update(ctx context.Context) (err error) {
 		return
 	}
 
-	// 记录历史
-	//if _, err = x.Db.Collection("values_logs").
-	//	InsertOne(ctx, model.ValuesLog{
-	//		Time:     time.Now(),
-	//		Uid:      ctx.Value("uid"),
-	//		Snapshot: x.Values.DynamicValues,
-	//	}); err != nil {
-	//	return
-	//}
 	return
 }
