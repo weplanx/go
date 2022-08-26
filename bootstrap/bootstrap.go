@@ -118,7 +118,7 @@ func UseTransfer(values *common.Values, js nats.JetStreamContext) (*transfer.Tra
 // 配置文档 https://www.cloudwego.io/zh/docs/hertz/reference/config
 func UseHertz(values *common.Values) (h *server.Hertz, err error) {
 	opts := []config.Option{
-		server.WithHostPorts(":3000"),
+		server.WithHostPorts(values.Address),
 	}
 
 	if os.Getenv("MODE") != "release" {

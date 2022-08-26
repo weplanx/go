@@ -28,6 +28,8 @@ type Values struct {
 }
 
 type App struct {
+	// 地址
+	Address string `yaml:"address"`
 	// 命名空间
 	Namespace string `yaml:"namespace"`
 	// 密钥

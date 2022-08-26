@@ -58,69 +58,59 @@ type API struct {
 	UsersService      *users.Service
 }
 
-func (x *API) Routes() (h *server.Hertz, err error) {
+func (x *API) Run() (h *server.Hertz, err error) {
 	h = x.Hertz
 	h.Use(x.AccessLog())
 	h.Use(x.ErrHandler())
+	return
+}
 
-	var auth *jwt.HertzJWTMiddleware
+func (x *API) Routes(h *server.Hertz) (auth *jwt.HertzJWTMiddleware, err error) {
 	if auth, err = x.Auth(); err != nil {
 		return
 	}
 
 	h.GET("", x.IndexController.Index)
 	h.POST("login", auth.LoginHandler)
+	h.GET("code", auth.MiddlewareFunc(), x.IndexController.GetRefreshCode)
+	h.POST("refresh_token", auth.MiddlewareFunc(), x.IndexController.VerifyRefreshCode, auth.RefreshHandler)
 
-	api := h.Group("", auth.MiddlewareFunc())
+	h.GET("navs", auth.MiddlewareFunc(), x.IndexController.GetNavs)
+	h.GET("options", auth.MiddlewareFunc(), x.IndexController.GetOptions)
+
+	h.GET("user", auth.MiddlewareFunc(), x.IndexController.GetUser)
+	h.PATCH("user", auth.MiddlewareFunc(), x.IndexController.SetUser)
+	h.POST("unset-user", auth.MiddlewareFunc(), x.IndexController.UnsetUser)
+	h.DELETE("user", auth.MiddlewareFunc(), auth.LogoutHandler)
+
+	_values := h.Group("values", auth.MiddlewareFunc())
 	{
-		api.GET("code", x.IndexController.GetRefreshCode)
-		api.POST("refresh_token", x.IndexController.VerifyRefreshCode, auth.RefreshHandler)
+		_values.GET("", x.ValuesController.Get)
+		_values.PATCH("", x.ValuesController.Set)
+		_values.DELETE(":key", x.ValuesController.Remove)
+	}
 
-		api.GET("navs", x.IndexController.GetNavs)
-		api.GET("options", x.IndexController.GetOptions)
+	_sessions := h.Group("sessions", auth.MiddlewareFunc())
+	{
+		_sessions.GET("", x.SessionController.Lists)
+		_sessions.DELETE(":uid", x.SessionController.Remove)
+		_sessions.DELETE("", x.SessionController.Clear)
+	}
 
-		api.GET("user", x.IndexController.GetUser)
-		api.PATCH("user", x.IndexController.SetUser)
-		api.POST("unset-user", x.IndexController.UnsetUser)
-		api.DELETE("user", auth.LogoutHandler)
-
-		_values := api.Group("values")
-		{
-			_values.GET("", x.ValuesController.Get)
-			_values.PATCH("", x.ValuesController.Set)
-			_values.DELETE(":key", x.ValuesController.Remove)
-		}
-
-		_sessions := api.Group("sessions")
-		{
-			_sessions.GET("", x.SessionController.Lists)
-			_sessions.DELETE(":uid", x.SessionController.Remove)
-			_sessions.DELETE("", x.SessionController.Clear)
-		}
-
-		//_pages := api.Group("pages")
-		//{
-		//	_pages.GET(":id", x.PagesController.GetOne)
-		//	_pages.GET(":id/indexes", x.PagesController.GetIndexes)
-		//	_pages.PUT(":id/indexes/:index", x.PagesController.SetIndex)
-		//	_pages.DELETE(":id/indexes/:index", x.PagesController.DeleteIndex)
-		//}
-
-		_dsl := api.Group("dsl/:model")
-		{
-			_dsl.POST("", x.DslController.Create)
-			_dsl.POST("bulk-create", x.DslController.BulkCreate)
-			_dsl.GET("_size", x.DslController.Size)
-			_dsl.GET("", x.DslController.Find)
-			_dsl.GET("_one", x.DslController.FindOne)
-			_dsl.GET(":id", x.DslController.FindById)
-			_dsl.PATCH("", x.DslController.Update)
-			_dsl.PATCH(":id", x.DslController.UpdateById)
-			_dsl.PUT(":id", x.DslController.Replace)
-			_dsl.DELETE(":id", x.DslController.Delete)
-			_dsl.POST("bulk-delete", x.DslController.BulkDelete)
-			_dsl.POST("sort", x.DslController.Sort)
-		}
+	_dsl := h.Group("dsl/:model", auth.MiddlewareFunc())
+	{
+		_dsl.POST("", x.DslController.Create)
+		_dsl.POST("bulk-create", x.DslController.BulkCreate)
+		_dsl.GET("_size", x.DslController.Size)
+		_dsl.GET("", x.DslController.Find)
+		_dsl.GET("_one", x.DslController.FindOne)
+		_dsl.GET(":id", x.DslController.FindById)
+		_dsl.PATCH("", x.DslController.Update)
+		_dsl.PATCH(":id", x.DslController.UpdateById)
+		_dsl.PUT(":id", x.DslController.Replace)
+		_dsl.DELETE(":id", x.DslController.Delete)
+		_dsl.POST("bulk-delete", x.DslController.BulkDelete)
+		_dsl.POST("sort", x.DslController.Sort)
 	}
 
 	return
