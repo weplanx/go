@@ -4,12 +4,12 @@ import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/go-redis/redis/v8"
-	"github.com/weplanx/support"
+	"github.com/weplanx/server/common"
 	"time"
 )
 
 type Captcha struct {
-	Values *support.Values
+	Values *common.Values
 	Redis  *redis.Client
 }
 

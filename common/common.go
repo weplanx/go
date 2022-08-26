@@ -1,7 +1,8 @@
-package support
+package common
 
 import (
 	"fmt"
+	"github.com/cloudwego/hertz/pkg/app"
 	"strings"
 	"time"
 )
@@ -230,4 +231,22 @@ func (x DynamicValues) GetOpenapiKey() string {
 // GetOpenapiSecret 开放服务应用认证密钥
 func (x DynamicValues) GetOpenapiSecret() string {
 	return x["openapi_secret"].(string)
+}
+
+// Active 授权用户标识
+type Active struct {
+	// Token ID
+	JTI string
+
+	// User ID
+	UID string
+}
+
+// GetActive 获取授权用户标识
+func GetActive(c *app.RequestContext) (data Active) {
+	value, ok := c.Get("identity")
+	if !ok {
+		return
+	}
+	return value.(Active)
 }

@@ -1,20 +1,14 @@
-# Weplanx Support
+# Weplanx Server
 
-[![Github Actions](https://img.shields.io/github/workflow/status/weplanx/support/testing?style=flat-square)](https://github.com/weplanx/support/actions)
-[![Coveralls github](https://img.shields.io/coveralls/github/weplanx/support.svg?style=flat-square)](https://coveralls.io/github/weplanx/support)
-[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/weplanx/support?style=flat-square)](https://github.com/weplanx/support)
-[![Go Report Card](https://goreportcard.com/badge/github.com/weplanx/support?style=flat-square)](https://goreportcard.com/report/github.com/weplanx/support)
-[![Release](https://img.shields.io/github/v/release/weplanx/support.svg?style=flat-square)](https://github.com/weplanx/support)
-[![GitHub license](https://img.shields.io/github/license/weplanx/support?style=flat-square)](https://raw.githubusercontent.com/weplanx/support/master/LICENSE)
+[![Github Actions](https://img.shields.io/github/workflow/status/weplanx/server/testing?style=flat-square)](https://github.com/weplanx/server/actions)
+[![Coveralls github](https://img.shields.io/coveralls/github/weplanx/server.svg?style=flat-square)](https://coveralls.io/github/weplanx/server)
+[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/weplanx/server?style=flat-square)](https://github.com/weplanx/server)
+[![Go Report Card](https://goreportcard.com/badge/github.com/weplanx/server?style=flat-square)](https://goreportcard.com/report/github.com/weplanx/server)
+[![Release](https://img.shields.io/github/v/release/weplanx/server.svg?style=flat-square)](https://github.com/weplanx/server)
+[![GitHub license](https://img.shields.io/github/license/weplanx/server?style=flat-square)](https://raw.githubusercontent.com/weplanx/server/main/LICENSE)
 
-工具集成库
-
-## 安装
-
-```shell
-go get github.com/weplanx/support
-```
+基于 Hertz 设计的后端服务
 
 ## License
 
-[BSD-3-Clause License](https://github.com/weplanx/support/blob/main/LICENSE)
+[BSD-3-Clause License](https://github.com/weplanx/server/blob/main/LICENSE)

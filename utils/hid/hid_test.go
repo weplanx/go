@@ -3,7 +3,7 @@ package hid_test
 import (
 	"github.com/speps/go-hashids/v2"
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/support/utils/hid"
+	"github.com/weplanx/server/utils/hid"
 	"testing"
 )
 

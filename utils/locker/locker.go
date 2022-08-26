@@ -3,12 +3,12 @@ package locker
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	"github.com/weplanx/support"
+	"github.com/weplanx/server/common"
 	"time"
 )
 
 type Locker struct {
-	Values *support.Values
+	Values *common.Values
 	Redis  *redis.Client
 }
 

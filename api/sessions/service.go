@@ -3,12 +3,12 @@ package sessions
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	"github.com/weplanx/support"
+	"github.com/weplanx/server/common"
 	"strings"
 )
 
 type Service struct {
-	Values *support.Values
+	Values *common.Values
 	Redis  *redis.Client
 }
 

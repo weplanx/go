@@ -6,11 +6,11 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
-	"github.com/weplanx/support"
+	"github.com/weplanx/server/common"
 )
 
 type Service struct {
-	Values *support.Values
+	Values *common.Values
 	Redis  *redis.Client
 	Nats   *nats.Conn
 }
@@ -29,7 +29,7 @@ func (x *Service) Load(ctx context.Context) (err error) {
 	var b []byte
 	// 不存在配置则初始化
 	if count == 0 {
-		x.Values.DynamicValues = support.DynamicValues{
+		x.Values.DynamicValues = common.DynamicValues{
 			"session_ttl":               float64(3600),
 			"login_ttl":                 float64(900),
 			"login_failures":            float64(5),
