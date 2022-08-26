@@ -20,3 +20,8 @@
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+/vendor
+config.yml
+config-map.yml
+deployment.yml
