@@ -16,6 +16,7 @@ import (
 	"github.com/weplanx/server/api/departments"
 	"github.com/weplanx/server/api/dsl"
 	"github.com/weplanx/server/api/index"
+	"github.com/weplanx/server/api/pages"
 	"github.com/weplanx/server/api/roles"
 	"github.com/weplanx/server/api/sessions"
 	"github.com/weplanx/server/api/users"
@@ -34,6 +35,7 @@ var Provides = wire.NewSet(
 	values.Provides,
 	sessions.Provides,
 	dsl.Provides,
+	pages.Provides,
 	users.Provides,
 	roles.Provides,
 	departments.Provides,
@@ -54,6 +56,8 @@ type API struct {
 	SessionService    *sessions.Service
 	DslController     *dsl.Controller
 	DslService        *dsl.Service
+	PagesController   *pages.Controller
+	PagesService      *pages.Service
 	UsersController   *users.Controller
 	UsersService      *users.Service
 }
@@ -111,6 +115,11 @@ func (x *API) Routes(h *server.Hertz) (auth *jwt.HertzJWTMiddleware, err error) 
 		_dsl.DELETE(":id", x.DslController.Delete)
 		_dsl.POST("bulk-delete", x.DslController.BulkDelete)
 		_dsl.POST("sort", x.DslController.Sort)
+	}
+
+	_pages := h.Group("pages", auth.MiddlewareFunc())
+	{
+		_pages.GET(":id", x.PagesController.GetOne)
 	}
 
 	return

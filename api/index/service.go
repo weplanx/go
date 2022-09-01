@@ -7,6 +7,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	gonanoid "github.com/matoous/go-nanoid"
 	"github.com/weplanx/server/api/departments"
+	"github.com/weplanx/server/api/pages"
 	"github.com/weplanx/server/api/roles"
 	"github.com/weplanx/server/api/sessions"
 	"github.com/weplanx/server/api/users"
@@ -27,6 +28,7 @@ type Service struct {
 	UsersService       *users.Service
 	RolesService       *roles.Service
 	DepartmentsService *departments.Service
+	PagesService       *pages.Service
 
 	Captcha *captcha.Captcha
 	Locker  *locker.Locker
@@ -104,16 +106,15 @@ func (x *Service) LogoutSession(ctx context.Context, uid string) (err error) {
 	return x.SessionService.Remove(ctx, uid)
 }
 
-//// GetNavs 导航数据
-//func (x *Service) GetNavs(ctx context.Context, uid string) (_ []pages.Nav, err error) {
-//	// TODO: 权限过滤...
-//	//var user model.User
-//	//if user, err = x.UsersService.GetActived(ctx, uid); err != nil {
-//	//	return
-//	//}
-//
-//	return x.PagesService.GetNavs(ctx)
-//}
+// GetNavs 导航数据
+func (x *Service) GetNavs(ctx context.Context, uid string) (_ []pages.Nav, err error) {
+	// TODO: 权限过滤...
+	//var user model.User
+	//if user, err = x.UsersService.GetActived(ctx, uid); err != nil {
+	//	return
+	//}
+	return x.PagesService.GetNavs(ctx)
+}
 
 // GetRefreshCode 获取刷新令牌验证码
 func (x *Service) GetRefreshCode(ctx context.Context, uid string) (code string, err error) {

@@ -62,14 +62,14 @@ func (x *Controller) VerifyRefreshCode(ctx context.Context, c *app.RequestContex
 // GetNavs 导航数据
 // @router /navs [GET]
 func (x *Controller) GetNavs(ctx context.Context, c *app.RequestContext) {
-	//active := common.GetActive(c)
-	//
-	//data, err := x.IndexService.GetNavs(ctx, active.UID)
-	//if err != nil {
-	//	return
-	//}
-	//
-	//c.JSON(http.StatusOK, data)
+	active := common.GetActive(c)
+
+	data, err := x.IndexService.GetNavs(ctx, active.UID)
+	if err != nil {
+		return
+	}
+
+	c.JSON(http.StatusOK, data)
 }
 
 // GetOptions 返回通用配置
