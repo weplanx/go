@@ -10,11 +10,12 @@ import (
 	"github.com/weplanx/utils/passlib"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"net/url"
 	"testing"
 	"time"
 )
 
-func TestController_Create(t *testing.T) {
+func TestCreate(t *testing.T) {
 	roles := []string{"635797539db7928aaebbe6e5", "635797c19db7928aaebbe6e6"}
 	body, _ := sonic.Marshal(M{
 		"data": M{
@@ -59,15 +60,18 @@ func TestController_Create(t *testing.T) {
 }
 
 type Order struct {
-	No       string    `json:"no" faker:"cc_number,unique"`
-	Customer string    `json:"customer" faker:"name"`
-	Phone    string    `json:"phone" faker:"phone_number"`
-	Cost     float64   `json:"cost" faker:"amount"`
-	Time     string    `json:"time" faker:"timestamp"`
-	TmpTime  time.Time `json:"-" faker:"-"`
+	No       string             `json:"no" faker:"cc_number,unique"`
+	Customer string             `json:"customer" faker:"name"`
+	Phone    string             `json:"phone" faker:"phone_number"`
+	Cost     float64            `json:"cost" faker:"amount"`
+	Time     string             `json:"time" faker:"timestamp"`
+	TmpTime  time.Time          `json:"-" faker:"-"`
+	TmpId    primitive.ObjectID `json:"-" faker:"-"`
 }
 
-func TestController_BulkCreate(t *testing.T) {
+var orderIds []string
+
+func TestBulkCreate(t *testing.T) {
 	orders := make([]Order, 10)
 	hmap := make(map[string]Order)
 	for i := 0; i < 10; i++ {
@@ -99,6 +103,7 @@ func TestController_BulkCreate(t *testing.T) {
 	assert.Equal(t, 10, len(ids))
 	oids := make([]primitive.ObjectID, 10)
 	for i := 0; i < 10; i++ {
+		orderIds = append(orderIds, ids[i].(string))
 		oids[i], _ = primitive.ObjectIDFromHex(ids[i].(string))
 	}
 
@@ -117,3 +122,73 @@ func TestController_BulkCreate(t *testing.T) {
 		assert.Equal(t, primitive.NewDateTimeFromTime(order.TmpTime), v["time"])
 	}
 }
+
+func TestSize(t *testing.T) {
+	w := ut.PerformRequest(r, "GET", "/orders/_size",
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Empty(t, resp.Body())
+	assert.Equal(t, "10", resp.Header.Get("x-total"))
+	assert.Equal(t, 204, resp.StatusCode())
+}
+
+func TestSizeWithFilterAndFormat(t *testing.T) {
+	u := url.URL{Path: "/orders/_size"}
+	oids := orderIds[:5]
+	filter, _ := sonic.MarshalString(M{
+		"_id": M{"$in": oids},
+	})
+	query := u.Query()
+	query.Set("filter", filter)
+	format, _ := sonic.MarshalString(M{
+		"_id.$in": "oids",
+	})
+	query.Set("format", format)
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(r, "GET", u.RequestURI(),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Empty(t, resp.Body())
+	assert.Equal(t, "5", resp.Header.Get("x-total"))
+	assert.Equal(t, 204, resp.StatusCode())
+}
+
+//func TestController_Find(t *testing.T) {
+//
+//}
+//
+//func TestController_FindOne(t *testing.T) {
+//
+//}
+//
+//func TestController_FindById(t *testing.T) {
+//
+//}
+//
+//func TestController_Update(t *testing.T) {
+//
+//}
+//
+//func TestController_UpdateById(t *testing.T) {
+//
+//}
+//
+//func TestController_Replace(t *testing.T) {
+//
+//}
+//
+//func TestController_Delete(t *testing.T) {
+//
+//}
+//
+//func TestController_BulkDelete(t *testing.T) {
+//
+//}
+//
+//func TestController_Sort(t *testing.T) {
+//
+//}
