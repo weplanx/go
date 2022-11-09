@@ -15,9 +15,9 @@ func TestUseCipher(t *testing.T) {
 	assert.Error(t, err)
 	// 必须是32位的密钥
 	x1, err = cipher.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	x2, err = cipher.New("74rILbVooYLirHrQJcslHEAvKZI7PKF9")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var text = "Gophers, gophers, gophers everywhere!"
@@ -32,7 +32,7 @@ func TestCipher_Encode(t *testing.T) {
 
 func TestCipher_Decode(t *testing.T) {
 	decryptedText, err := x1.Decode(encryptedText)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, text, string(decryptedText))
 	// 不同密钥发生错误
 	_, err = x2.Decode(encryptedText)

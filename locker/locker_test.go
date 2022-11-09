@@ -13,7 +13,7 @@ import (
 var x *locker.Locker
 
 func TestMain(m *testing.M) {
-	opts, err := redis.ParseURL(os.Getenv("REDIS_URI"))
+	opts, err := redis.ParseURL(os.Getenv("DATABASE_REDIS"))
 	if err != nil {
 		return
 	}

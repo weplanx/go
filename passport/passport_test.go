@@ -18,13 +18,11 @@ func TestMain(m *testing.M) {
 func TestPassport(t *testing.T) {
 	jti, _ := gonanoid.Nanoid()
 	tokenString, err := x.Create("xs1fp", jti)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, tokenString)
-	assert.Nil(t, err)
-	t.Log(tokenString)
 	var clamis passport.Claims
 	clamis, err = x.Verify(tokenString)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, clamis.ID, jti)
 	assert.Equal(t, clamis.UserId, "xs1fp")
 	assert.Equal(t, clamis.Issuer, x.Namespace)

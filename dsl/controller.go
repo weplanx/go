@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,16 +16,16 @@ import (
 )
 
 type Controller struct {
-	CollectionService *Service
+	DSLService *Service
 }
 
 type CreateDto struct {
 	// 集合命名
-	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
+	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'" json:"-"`
 	// 文档数据
 	Data M `json:"data,required" vd:"len($)>0;msg:'文档不能为空数据'"`
 	// Body.data 格式转换
-	Format M `json:"format"`
+	Format M `json:"format,omitempty"`
 }
 
 // Create 新增文档
@@ -36,6 +37,8 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	log.Println(dto)
+
 	// 数据转换
 	if err := x.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
@@ -44,13 +47,13 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 	dto.Data["create_time"] = time.Now()
 	dto.Data["update_time"] = time.Now()
 
-	r, err := x.CollectionService.Create(ctx, dto.Collection, dto.Data)
+	r, err := x.DSLService.Create(ctx, dto.Collection, dto.Data)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, r)
+	c.JSON(201, r)
 }
 
 type BulkCreateDto struct {
@@ -83,7 +86,7 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 		docs[i] = doc
 	}
 
-	r, err := x.CollectionService.BulkCreate(ctx, dto.Collection, docs)
+	r, err := x.DSLService.BulkCreate(ctx, dto.Collection, docs)
 	if err != nil {
 		c.Error(err)
 		return
@@ -116,7 +119,7 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	size, err := x.CollectionService.Size(ctx, dto.Collection, dto.Filter)
+	size, err := x.DSLService.Size(ctx, dto.Collection, dto.Filter)
 	if err != nil {
 		c.Error(err)
 		return
@@ -158,7 +161,7 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	size, err := x.CollectionService.Size(ctx, dto.Collection, dto.Filter)
+	size, err := x.DSLService.Size(ctx, dto.Collection, dto.Filter)
 	if err != nil {
 		c.Error(err)
 		return
@@ -191,7 +194,7 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 		SetSort(sort).
 		SetAllowDiskUse(true)
 
-	data, err := x.CollectionService.Find(ctx, dto.Collection, dto.Filter, option)
+	data, err := x.DSLService.Find(ctx, dto.Collection, dto.Filter, option)
 	if err != nil {
 		c.Error(err)
 		return
@@ -229,7 +232,7 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 
 	option := options.FindOne().
 		SetProjection(dto.Keys)
-	data, err := x.CollectionService.FindOne(ctx, dto.Collection, dto.Filter, option)
+	data, err := x.DSLService.FindOne(ctx, dto.Collection, dto.Filter, option)
 	if err != nil {
 		c.Error(err)
 		return
@@ -259,7 +262,7 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 	option := options.FindOne().
 		SetProjection(dto.Keys)
-	data, err := x.CollectionService.FindOne(ctx, dto.Collection, M{"_id": id}, option)
+	data, err := x.DSLService.FindOne(ctx, dto.Collection, M{"_id": id}, option)
 	if err != nil {
 		c.Error(err)
 		return
@@ -304,7 +307,7 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 	}
 	dto.Data["$set"].(M)["update_time"] = time.Now()
 
-	r, err := x.CollectionService.Update(ctx, dto.Collection, dto.Filter, dto.Data)
+	r, err := x.DSLService.Update(ctx, dto.Collection, dto.Filter, dto.Data)
 	if err != nil {
 		c.Error(err)
 		return
@@ -344,7 +347,7 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	dto.Data["$set"].(M)["update_time"] = time.Now()
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
-	r, err := x.CollectionService.UpdateById(ctx, dto.Collection, id, dto.Data)
+	r, err := x.DSLService.UpdateById(ctx, dto.Collection, id, dto.Data)
 	if err != nil {
 		c.Error(err)
 		return
@@ -382,7 +385,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 	dto.Data["update_time"] = time.Now()
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
-	r, err := x.CollectionService.Replace(ctx, dto.Collection, id, dto.Data)
+	r, err := x.DSLService.Replace(ctx, dto.Collection, id, dto.Data)
 	if err != nil {
 		c.Error(err)
 		return
@@ -408,7 +411,7 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 	}
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
-	r, err := x.CollectionService.Delete(ctx, dto.Collection, id)
+	r, err := x.DSLService.Delete(ctx, dto.Collection, id)
 	if err != nil {
 		c.Error(err)
 		return
@@ -441,7 +444,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	r, err := x.CollectionService.BulkDelete(ctx, dto.Collection, dto.Data)
+	r, err := x.DSLService.BulkDelete(ctx, dto.Collection, dto.Data)
 	if err != nil {
 		c.Error(err)
 		return
@@ -466,7 +469,7 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	_, err := x.CollectionService.Sort(ctx, dto.Collection, dto.Data)
+	_, err := x.DSLService.Sort(ctx, dto.Collection, dto.Data)
 	if err != nil {
 		c.Error(err)
 		return
