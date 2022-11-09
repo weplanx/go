@@ -59,11 +59,12 @@ func TestController_Create(t *testing.T) {
 }
 
 type Order struct {
-	No       string  `json:"no" faker:"cc_number,unique"`
-	Customer string  `json:"customer" faker:"name"`
-	Phone    string  `json:"phone" faker:"phone_number"`
-	Cost     float64 `json:"cost" faker:"amount"`
-	Time     string  `json:"time" faker:"timestamp"`
+	No       string    `json:"no" faker:"cc_number,unique"`
+	Customer string    `json:"customer" faker:"name"`
+	Phone    string    `json:"phone" faker:"phone_number"`
+	Cost     float64   `json:"cost" faker:"amount"`
+	Time     string    `json:"time" faker:"timestamp"`
+	TmpTime  time.Time `json:"-" faker:"-"`
 }
 
 func TestController_BulkCreate(t *testing.T) {
@@ -72,9 +73,9 @@ func TestController_BulkCreate(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		err := faker.FakeData(&orders[i])
 		assert.NoError(t, err)
-		date, err := time.Parse(`2006-01-02 15:04:05`, orders[i].Time)
+		orders[i].TmpTime, err = time.Parse(`2006-01-02 15:04:05`, orders[i].Time)
 		assert.NoError(t, err)
-		orders[i].Time = date.Format(time.RFC3339)
+		orders[i].Time = orders[i].TmpTime.Format(time.RFC3339)
 		hmap[orders[i].No] = orders[i]
 	}
 	body, _ := sonic.Marshal(M{
@@ -113,5 +114,6 @@ func TestController_BulkCreate(t *testing.T) {
 		assert.Equal(t, order.Customer, v["customer"])
 		assert.Equal(t, order.Phone, v["phone"])
 		assert.Equal(t, order.Cost, v["cost"])
+		assert.Equal(t, primitive.NewDateTimeFromTime(order.TmpTime), v["time"])
 	}
 }
