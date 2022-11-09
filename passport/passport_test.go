@@ -11,7 +11,7 @@ import (
 var x *passport.Passport
 
 func TestMain(m *testing.M) {
-	x = passport.NewPassport("dev", "hZXD^@K9%wydDC3Z@cyDvE%5bz9SP7gy")
+	x = passport.New("dev", "hZXD^@K9%wydDC3Z@cyDvE%5bz9SP7gy")
 	os.Exit(m.Run())
 }
 

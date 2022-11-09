@@ -11,12 +11,12 @@ var x2 *cipher.Cipher
 
 func TestUseCipher(t *testing.T) {
 	var err error
-	_, err = cipher.NewCipher("123456")
+	_, err = cipher.New("123456")
 	assert.Error(t, err)
 	// 必须是32位的密钥
-	x1, err = cipher.NewCipher("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
+	x1, err = cipher.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
 	assert.Nil(t, err)
-	x2, err = cipher.NewCipher("74rILbVooYLirHrQJcslHEAvKZI7PKF9")
+	x2, err = cipher.New("74rILbVooYLirHrQJcslHEAvKZI7PKF9")
 	assert.Nil(t, err)
 }
 

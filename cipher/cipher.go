@@ -11,8 +11,8 @@ type Cipher struct {
 	AEAD cipher.AEAD
 }
 
-// NewCipher 创建加密
-func NewCipher(key string) (x *Cipher, err error) {
+// New 创建加密
+func New(key string) (x *Cipher, err error) {
 	x = new(Cipher)
 	if x.AEAD, err = chacha20poly1305.NewX([]byte(key)); err != nil {
 		return

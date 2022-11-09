@@ -11,7 +11,7 @@ var x *hid.HID
 
 func TestNewHID(t *testing.T) {
 	var err error
-	x, err = hid.NewHID("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK", hashids.DefaultAlphabet)
+	x, err = hid.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK", hashids.DefaultAlphabet)
 	assert.Nil(t, err)
 }
 

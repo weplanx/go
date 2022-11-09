@@ -12,7 +12,7 @@ type Locker struct {
 	Redis     *redis.Client
 }
 
-func NewLocker(namespace string, client *redis.Client) *Locker {
+func New(namespace string, client *redis.Client) *Locker {
 	return &Locker{
 		Namespace: namespace,
 		Redis:     client,

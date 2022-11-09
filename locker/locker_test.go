@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		return
 	}
-	x = locker.NewLocker("dev", redis.NewClient(opts))
+	x = locker.New("dev", redis.NewClient(opts))
 	os.Exit(m.Run())
 }
 

@@ -12,7 +12,7 @@ type Passport struct {
 	Key       string
 }
 
-func NewPassport(namespace string, key string) *Passport {
+func New(namespace string, key string) *Passport {
 	return &Passport{
 		Namespace: namespace,
 		Key:       key,

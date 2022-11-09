@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		return
 	}
-	x = captcha.NewCaptcha("dev", redis.NewClient(opts))
+	x = captcha.New("dev", redis.NewClient(opts))
 	os.Exit(m.Run())
 }
 

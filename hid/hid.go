@@ -6,8 +6,8 @@ type HID struct {
 	HashID *hashids.HashID
 }
 
-// NewHID 创建 ID 加密
-func NewHID(key string, alphabet string) (x *HID, err error) {
+// New 创建 ID 加密
+func New(key string, alphabet string) (x *HID, err error) {
 	x = new(HID)
 	if x.HashID, err = hashids.NewWithData(&hashids.HashIDData{
 		Alphabet: alphabet,

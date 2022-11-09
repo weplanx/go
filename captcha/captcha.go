@@ -13,7 +13,7 @@ type Captcha struct {
 	Redis     *redis.Client
 }
 
-func NewCaptcha(namespace string, client *redis.Client) *Captcha {
+func New(namespace string, client *redis.Client) *Captcha {
 	return &Captcha{
 		Namespace: namespace,
 		Redis:     client,
