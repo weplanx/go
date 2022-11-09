@@ -6,6 +6,7 @@ require (
 	github.com/alexedwards/argon2id v0.0.0-20211130144151-3585854a6387
 	github.com/bytedance/sonic v1.5.0
 	github.com/cloudwego/hertz v0.4.0
+	github.com/go-faker/faker/v4 v4.0.0-beta.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/wire v0.5.0

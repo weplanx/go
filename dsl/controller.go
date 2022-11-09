@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,11 +20,11 @@ type Controller struct {
 
 type CreateDto struct {
 	// 集合命名
-	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'" json:"-"`
+	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
 	// 文档数据
 	Data M `json:"data,required" vd:"len($)>0;msg:'文档不能为空数据'"`
 	// Body.data 格式转换
-	Format M `json:"format,omitempty"`
+	Format M `json:"format"`
 }
 
 // Create 新增文档
@@ -36,8 +35,6 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 		c.Error(err)
 		return
 	}
-
-	log.Println(dto)
 
 	// 数据转换
 	if err := x.Transform(dto.Data, dto.Format); err != nil {
@@ -515,13 +512,6 @@ func (x *Controller) Transform(data M, format M) (err error) {
 				return
 			}
 			break
-
-		//case "date":
-		//	// 转换为 ISODate
-		//	if cursor[key], err = time.Parse(time.RFC1123, cursor[key].(string)); err != nil {
-		//		return
-		//	}
-		//	break
 
 		case "password":
 			// 密码类型，转换为 Argon2id
