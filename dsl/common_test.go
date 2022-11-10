@@ -8,6 +8,7 @@ import (
 	"github.com/nats-io/nkeys"
 	"github.com/weplanx/utils/dsl"
 	"github.com/weplanx/utils/helper"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
@@ -34,10 +35,15 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	service := &dsl.Service{
-		DSL: dsl.New(db, dsl.SetNamespace("dev"), dsl.SetEvent(js)),
+		DSL: dsl.New(db,
+			dsl.SetNamespace("dev"),
+			dsl.SetEvent(js),
+			dsl.SetValues(map[string]dsl.Value{}),
+		),
 	}
-	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	helper.RegValidate()
+	r = route.NewEngine(config.NewOptions([]config.Option{}))
+	r.Use(helper.ErrHandler())
 	helper.BindDSL(r.Group("/:collection"), &dsl.Controller{DSLService: service})
 	os.Exit(m.Run())
 }
@@ -52,6 +58,51 @@ func UseMongoDB() (err error) {
 		options.Database().SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
 	)
 	if err = db.Drop(context.TODO()); err != nil {
+		return
+	}
+	usersOption := options.CreateCollection().
+		SetValidator(bson.D{
+			{"$jsonSchema", bson.D{
+				{"title", "users"},
+				{"required", bson.A{"_id", "name", "password", "department", "roles", "create_time", "update_time"}},
+				{"properties", bson.D{
+					{"_id", bson.M{"bsonType": "objectId"}},
+					{"name", bson.M{"bsonType": "string"}},
+					{"password", bson.M{"bsonType": "string"}},
+					{"department", bson.M{"bsonType": []string{"null", "objectId"}}},
+					{"roles", bson.M{
+						"bsonType": "array",
+						"items":    bson.M{"bsonType": "objectId"},
+					}},
+					{"create_time", bson.M{"bsonType": "date"}},
+					{"update_time", bson.M{"bsonType": "date"}},
+				}},
+				{"additionalProperties", false},
+			}},
+		})
+	if err = db.CreateCollection(context.TODO(), "users", usersOption); err != nil {
+		return
+	}
+	ordersOption := options.CreateCollection().
+		SetValidator(bson.D{
+			{"$jsonSchema", bson.D{
+				{"title", "orders"},
+				{"required", bson.A{"_id", "no", "customer", "phone", "cost", "time", "create_time", "update_time"}},
+				{"properties", bson.D{
+					{"_id", bson.M{"bsonType": "objectId"}},
+					{"no", bson.M{"bsonType": "string"}},
+					{"customer", bson.M{"bsonType": "string"}},
+					{"phone", bson.M{"bsonType": "string"}},
+					{"cost", bson.M{"bsonType": "number"}},
+					{"time", bson.M{"bsonType": "date"}},
+					{"sort", bson.M{"bsonType": []string{"null", "number"}}},
+					{"create_time", bson.M{"bsonType": "date"}},
+					{"update_time", bson.M{"bsonType": "date"}},
+				}},
+				{"additionalProperties", false},
+			}},
+		})
+	if err = db.CreateCollection(context.TODO(), "orders", ordersOption); err != nil {
 		return
 	}
 	return

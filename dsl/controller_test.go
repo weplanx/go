@@ -21,6 +21,33 @@ import (
 var roles = []string{"635797539db7928aaebbe6e5", "635797c19db7928aaebbe6e6"}
 var userId string
 
+func TestCreateBadValidate(t *testing.T) {
+	body, _ := sonic.Marshal(M{})
+	w := ut.PerformRequest(r, "POST", "/users",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestCreateBadTransform(t *testing.T) {
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"department": "123",
+		},
+		"format": M{
+			"department": "oid",
+		},
+	})
+	w := ut.PerformRequest(r, "POST", "/users",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestCreate(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{
@@ -65,6 +92,20 @@ func TestCreate(t *testing.T) {
 	assert.ElementsMatch(t, roleIds, data["roles"])
 }
 
+func TestCreatePanics(t *testing.T) {
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name": "weplanx",
+		},
+	})
+	w := ut.PerformRequest(r, "POST", "/users",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+}
+
 type Order struct {
 	No       string             `json:"no" faker:"cc_number,unique"`
 	Customer string             `json:"customer" faker:"name"`
@@ -73,6 +114,39 @@ type Order struct {
 	Time     string             `json:"time" faker:"timestamp"`
 	TmpTime  time.Time          `json:"-" faker:"-"`
 	TmpId    primitive.ObjectID `json:"-" faker:"-"`
+}
+
+func TestBulkCreateBadValidate(t *testing.T) {
+	body, _ := sonic.Marshal(M{})
+	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestBulkCreateBadTransform(t *testing.T) {
+	body, _ := sonic.Marshal(M{
+		"data": []Order{
+			{
+				No:       "123456",
+				Customer: "Joe",
+				Phone:    "11225566",
+				Cost:     66.00,
+				Time:     "bad-time",
+			},
+		},
+		"format": M{
+			"time": "date",
+		},
+	})
+	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
 }
 
 var orderIds []string
@@ -130,6 +204,58 @@ func TestBulkCreate(t *testing.T) {
 	}
 }
 
+func TestBulkCreatePanics(t *testing.T) {
+	body, _ := sonic.Marshal(M{
+		"data": []Order{
+			{
+				No:       "123456",
+				Customer: "Joe",
+				Phone:    "11225566",
+				Cost:     66.00,
+			},
+		},
+	})
+	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+}
+
+func TestSizeBadValidate(t *testing.T) {
+	u := url.URL{Path: "/orders/_size"}
+	query := u.Query()
+	query.Set("filter", "$$$$")
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(r, "GET", u.RequestURI(),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestSizeBadTransform(t *testing.T) {
+	u := url.URL{Path: "/orders/_size"}
+	filter, _ := sonic.MarshalString(M{
+		"_id": M{"$in": []string{"123456"}},
+	})
+	query := u.Query()
+	query.Set("filter", filter)
+	format, _ := sonic.MarshalString(M{
+		"_id.$in": "oids",
+	})
+	query.Set("format", format)
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(r, "GET", u.RequestURI(),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestSize(t *testing.T) {
 	w := ut.PerformRequest(r, "GET", "/orders/_size",
 		&ut.Body{},
@@ -164,7 +290,53 @@ func TestSizeWithFilterAndFormat(t *testing.T) {
 	assert.Equal(t, 204, resp.StatusCode())
 }
 
-func TestController_Find(t *testing.T) {
+func TestSizePanics(t *testing.T) {
+	u := url.URL{Path: "/orders/_size"}
+	query := u.Query()
+	query.Set("filter", `{"abc":{"$":"v"}}`)
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(r, "GET", u.RequestURI(),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+}
+
+func TestFindBadValidate(t *testing.T) {
+	u := url.URL{Path: "/orders"}
+	query := u.Query()
+	query.Set("filter", "$$$$")
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(r, "GET", u.RequestURI(),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestFindBadTransform(t *testing.T) {
+	u := url.URL{Path: "/orders"}
+	filter, _ := sonic.MarshalString(M{
+		"_id": M{"$in": []string{"123456"}},
+	})
+	query := u.Query()
+	query.Set("filter", filter)
+	format, _ := sonic.MarshalString(M{
+		"_id.$in": "oids",
+	})
+	query.Set("format", format)
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(r, "GET", u.RequestURI(),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestFind(t *testing.T) {
 	w := ut.PerformRequest(r, "GET", "/orders",
 		&ut.Body{},
 		ut.Header{Key: "content-type", Value: "application/json"},
@@ -186,7 +358,7 @@ func TestController_Find(t *testing.T) {
 	}
 }
 
-func TestController_FindOne(t *testing.T) {
+func TestFindOne(t *testing.T) {
 	u := url.URL{Path: "/users/_one"}
 	filter, _ := sonic.MarshalString(M{"name": "weplanx"})
 	query := u.Query()
@@ -209,7 +381,7 @@ func TestController_FindOne(t *testing.T) {
 	assert.ElementsMatch(t, roles, result["roles"])
 }
 
-func TestController_FindById(t *testing.T) {
+func TestFindById(t *testing.T) {
 	w := ut.PerformRequest(r, "GET", fmt.Sprintf(`/users/%s`, userId),
 		&ut.Body{},
 		ut.Header{Key: "content-type", Value: "application/json"},
@@ -227,7 +399,7 @@ func TestController_FindById(t *testing.T) {
 	assert.ElementsMatch(t, roles, result["roles"])
 }
 
-func TestController_Update(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	u := url.URL{Path: fmt.Sprintf(`/users`)}
 	filter, _ := sonic.MarshalString(M{"name": "weplanx"})
 	query := u.Query()
@@ -272,7 +444,7 @@ func TestController_Update(t *testing.T) {
 	assert.ElementsMatch(t, roleIds, data["roles"])
 }
 
-func TestController_UpdateById(t *testing.T) {
+func TestUpdateById(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{
 			"$set": M{
@@ -312,7 +484,7 @@ func TestController_UpdateById(t *testing.T) {
 	assert.ElementsMatch(t, roleIds, data["roles"])
 }
 
-func TestController_Replace(t *testing.T) {
+func TestReplace(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{
 			"name":       "kain",
@@ -350,7 +522,7 @@ func TestController_Replace(t *testing.T) {
 	assert.Equal(t, primitive.A{}, data["roles"])
 }
 
-func TestController_Delete(t *testing.T) {
+func TestDelete(t *testing.T) {
 	w := ut.PerformRequest(r, "DELETE", fmt.Sprintf(`/users/%s`, userId),
 		&ut.Body{},
 		ut.Header{Key: "content-type", Value: "application/json"},
@@ -371,7 +543,7 @@ func TestController_Delete(t *testing.T) {
 	assert.Equal(t, err, mongo.ErrNoDocuments)
 }
 
-func TestController_BulkDelete(t *testing.T) {
+func TestBulkDelete(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{
 			"_id": M{"$in": orderIds[5:]},
@@ -401,7 +573,7 @@ func TestController_BulkDelete(t *testing.T) {
 	assert.Equal(t, int64(0), n)
 }
 
-func TestController_Sort(t *testing.T) {
+func TestSort(t *testing.T) {
 	sources := orderIds[:5]
 	sources = funk.Reverse(sources).([]string)
 	body, _ := sonic.Marshal(M{
