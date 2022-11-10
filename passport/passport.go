@@ -2,7 +2,6 @@ package passport
 
 import (
 	"fmt"
-	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/golang-jwt/jwt/v4"
 	"time"
 )
@@ -50,13 +49,4 @@ func (x *Passport) Verify(tokenString string) (claims Claims, err error) {
 		return
 	}
 	return
-}
-
-// GetClaims 获取授权标识
-func GetClaims(c *app.RequestContext) (claims Claims) {
-	value, ok := c.Get("identity")
-	if !ok {
-		return
-	}
-	return value.(Claims)
 }

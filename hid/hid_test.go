@@ -13,6 +13,8 @@ func TestNewHID(t *testing.T) {
 	var err error
 	x, err = hid.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK", hashids.DefaultAlphabet)
 	assert.NoError(t, err)
+	_, err = hid.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK", "123")
+	assert.Error(t, err)
 }
 
 var hash string
