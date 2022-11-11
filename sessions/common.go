@@ -3,7 +3,7 @@ package sessions
 import (
 	"github.com/go-redis/redis/v8"
 	"github.com/google/wire"
-	"time"
+	"github.com/weplanx/utils/kv"
 )
 
 var Provides = wire.NewSet(
@@ -12,15 +12,9 @@ var Provides = wire.NewSet(
 )
 
 type Sessions struct {
-	Namespace string
-	Redis     *redis.Client
-	Values    *Values
-}
-
-type Values struct {
-	// 会话周期（秒）
-	// 用户在 1 小时 内没有操作，将结束会话。
-	SessionTTL time.Duration `json:"session_ttl"`
+	Namespace     string
+	Redis         *redis.Client
+	DynamicValues *kv.DynamicValues
 }
 
 func New(options ...Option) *Sessions {
@@ -45,8 +39,8 @@ func SetRedis(v *redis.Client) Option {
 	}
 }
 
-func SetValues(v *Values) Option {
+func SetDynamicValues(v *kv.DynamicValues) Option {
 	return func(x *Sessions) {
-		x.Values = v
+		x.DynamicValues = v
 	}
 }

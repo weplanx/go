@@ -47,14 +47,14 @@ func (x *Service) Verify(ctx context.Context, name string, jti string) (result b
 // Set 设置会话
 func (x *Service) Set(ctx context.Context, name string, jti string) error {
 	return x.Redis.
-		Set(ctx, x.Key(name), jti, x.Values.SessionTTL).
+		Set(ctx, x.Key(name), jti, x.DynamicValues.SessionTTL).
 		Err()
 }
 
 // Renew 续约会话
 func (x *Service) Renew(ctx context.Context, userId string) error {
 	return x.Redis.
-		Expire(ctx, x.Key(userId), x.Values.SessionTTL).
+		Expire(ctx, x.Key(userId), x.DynamicValues.SessionTTL).
 		Err()
 }
 

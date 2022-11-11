@@ -5,6 +5,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server/binding"
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/weplanx/utils/dsl"
+	"github.com/weplanx/utils/kv"
 	"github.com/weplanx/utils/sessions"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -20,6 +21,12 @@ func RegValidate() {
 		}
 		return nil
 	})
+}
+
+func BindKV(r *route.RouterGroup, kv *kv.Controller) {
+	r.GET("", kv.Get)
+	r.PATCH("", kv.Set)
+	r.DELETE(":key", kv.Remove)
 }
 
 func BindSessions(r *route.RouterGroup, sessions *sessions.Controller) {
