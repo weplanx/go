@@ -64,6 +64,22 @@ func (x *Service) Sync() (err error) {
 	return
 }
 
+// Set 设置动态配置
+func (x *Service) Set(update map[string]interface{}) (err error) {
+	var entry nats.KeyValueEntry
+	if entry, err = x.KeyValue.Get("values"); err != nil {
+		return
+	}
+	var values map[string]interface{}
+	if err = sonic.Unmarshal(entry.Value(), &values); err != nil {
+		return
+	}
+	for k, v := range update {
+		values[k] = v
+	}
+	return x.Update(values)
+}
+
 var SECRET = map[string]bool{
 	"tencent_secret_key":        true,
 	"feishu_app_secret":         true,
@@ -103,22 +119,6 @@ func (x *Service) Get(keys ...string) (values map[string]interface{}, err error)
 		}
 	}
 	return
-}
-
-// Set 设置动态配置
-func (x *Service) Set(update map[string]interface{}) (err error) {
-	var entry nats.KeyValueEntry
-	if entry, err = x.KeyValue.Get("values"); err != nil {
-		return
-	}
-	var values map[string]interface{}
-	if err = sonic.Unmarshal(entry.Value(), &values); err != nil {
-		return
-	}
-	for k, v := range update {
-		values[k] = v
-	}
-	return x.Update(values)
 }
 
 // Remove 移除动态配置

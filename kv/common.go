@@ -99,6 +99,13 @@ type DynamicValues struct {
 	OpenapiKey string `json:"openapi_key"`
 	// 开放服务应用认证密钥
 	OpenapiSecret string `json:"openapi_secret,omitempty"`
+	// DSL 字段控制
+	Feilds map[string]Feild `json:"feilds"`
+}
+
+type Feild struct {
+	Event bool
+	Keys  map[string]int64
 }
 
 func New(options ...Option) *KV {

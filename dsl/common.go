@@ -3,6 +3,7 @@ package dsl
 import (
 	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
+	"github.com/weplanx/utils/kv"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -14,15 +15,10 @@ var Provides = wire.NewSet(
 type M = map[string]interface{}
 
 type DSL struct {
-	Namespace string
-	Db        *mongo.Database
-	Js        nats.JetStreamContext
-	Values    map[string]Value
-}
-
-type Value struct {
-	Event   bool
-	Project M
+	Namespace     string
+	Db            *mongo.Database
+	DynamicValues *kv.DynamicValues
+	Js            nats.JetStreamContext
 }
 
 func New(options ...Option) *DSL {
@@ -47,14 +43,14 @@ func SetDatabase(v *mongo.Database) Option {
 	}
 }
 
-func SetEvent(v nats.JetStreamContext) Option {
+func SetJetStream(v nats.JetStreamContext) Option {
 	return func(x *DSL) {
 		x.Js = v
 	}
 }
 
-func SetValues(v map[string]Value) Option {
+func SetDynamicValues(v *kv.DynamicValues) Option {
 	return func(x *DSL) {
-		x.Values = v
+		x.DynamicValues = v
 	}
 }

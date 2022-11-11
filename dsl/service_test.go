@@ -110,10 +110,10 @@ func UseNats() (err error) {
 		nats.ReconnectJitter(500*time.Millisecond, 2*time.Second),
 		auth,
 	); err != nil {
-		panic(err)
+		return
 	}
 	if js, err = nc.JetStream(nats.PublishAsyncMaxPending(256)); err != nil {
-		panic(err)
+		return
 	}
 	return
 }

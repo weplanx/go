@@ -6,6 +6,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/weplanx/utils/dsl"
 	"github.com/weplanx/utils/helper"
+	"github.com/weplanx/utils/kv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"testing"
@@ -32,8 +33,8 @@ func TestMain(m *testing.M) {
 		DSL: dsl.New(
 			dsl.SetNamespace("dev"),
 			dsl.SetDatabase(db),
-			dsl.SetEvent(js),
-			dsl.SetValues(map[string]dsl.Value{}),
+			dsl.SetDynamicValues(&kv.DynamicValues{}),
+			dsl.SetJetStream(js),
 		),
 	}
 	helper.RegValidate()
