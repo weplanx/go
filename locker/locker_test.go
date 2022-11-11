@@ -5,6 +5,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/weplanx/utils/locker"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -15,7 +16,7 @@ var x *locker.Locker
 func TestMain(m *testing.M) {
 	opts, err := redis.ParseURL(os.Getenv("DATABASE_REDIS"))
 	if err != nil {
-		return
+		log.Fatalln(err)
 	}
 	x = locker.New("dev", redis.NewClient(opts))
 	os.Exit(m.Run())

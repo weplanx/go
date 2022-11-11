@@ -5,6 +5,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/weplanx/utils/captcha"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -13,9 +14,9 @@ import (
 var x *captcha.Captcha
 
 func TestMain(m *testing.M) {
-	opts, err := redis.ParseURL(os.Getenv("REDIS_URI"))
+	opts, err := redis.ParseURL(os.Getenv("DATABASE_REDIS"))
 	if err != nil {
-		return
+		log.Fatalln(err)
 	}
 	x = captcha.New("dev", redis.NewClient(opts))
 	os.Exit(m.Run())

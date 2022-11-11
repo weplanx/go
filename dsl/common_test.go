@@ -29,8 +29,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	service := &dsl.Service{
-		DSL: dsl.New(db,
+		DSL: dsl.New(
 			dsl.SetNamespace("dev"),
+			dsl.SetDatabase(db),
 			dsl.SetEvent(js),
 			dsl.SetValues(map[string]dsl.Value{}),
 		),

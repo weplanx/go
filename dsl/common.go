@@ -25,8 +25,8 @@ type Value struct {
 	Project M
 }
 
-func New(db *mongo.Database, options ...Option) *DSL {
-	x := &DSL{Db: db}
+func New(options ...Option) *DSL {
+	x := new(DSL)
 	for _, v := range options {
 		v(x)
 	}
@@ -38,6 +38,12 @@ type Option func(x *DSL)
 func SetNamespace(v string) Option {
 	return func(x *DSL) {
 		x.Namespace = v
+	}
+}
+
+func SetDatabase(v *mongo.Database) Option {
+	return func(x *DSL) {
+		x.Db = v
 	}
 }
 

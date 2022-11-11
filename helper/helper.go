@@ -5,6 +5,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server/binding"
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/weplanx/utils/dsl"
+	"github.com/weplanx/utils/sessions"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -19,6 +20,12 @@ func RegValidate() {
 		}
 		return nil
 	})
+}
+
+func BindSessions(r *route.RouterGroup, sessions *sessions.Controller) {
+	r.GET("", sessions.Lists)
+	r.DELETE(":uid", sessions.Remove)
+	r.DELETE("", sessions.Clear)
 }
 
 func BindDSL(r *route.RouterGroup, dsl *dsl.Controller) {
