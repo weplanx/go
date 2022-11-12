@@ -16,14 +16,11 @@ func (x *Service) Load() (err error) {
 	var b []byte
 	var entry nats.KeyValueEntry
 	if entry, err = x.KeyValue.Get("values"); err != nil {
-		if errors.Is(err, nats.ErrKeyNotFound) {
-			if b, err = sonic.Marshal(x.DynamicValues); err != nil {
-				return
-			}
-			if _, err = x.KeyValue.Put("values", b); err != nil {
-				return
-			}
-		} else {
+		if !errors.Is(err, nats.ErrKeyNotFound) {
+			return
+		}
+		b, _ = sonic.Marshal(x.DynamicValues)
+		if _, err = x.KeyValue.Put("values", b); err != nil {
 			return
 		}
 	}
@@ -39,25 +36,33 @@ func (x *Service) Load() (err error) {
 	return
 }
 
+type SyncOption struct {
+	Updated chan *DynamicValues
+	Err     chan error
+}
+
 // Sync 同步节点动态配置
-func (x *Service) Sync() (err error) {
+func (x *Service) Sync(option *SyncOption) (err error) {
 	if err = x.Load(); err != nil {
 		return
 	}
 
-	var watch nats.KeyWatcher
-	if watch, err = x.KeyValue.Watch("values"); err != nil {
-		return
-	}
-
 	current := time.Now()
+	watch, _ := x.KeyValue.Watch("values")
+
 	for entry := range watch.Updates() {
 		if entry == nil || entry.Created().Unix() < current.Unix() {
 			continue
 		}
 		// 同步动态配置
-		if err = sonic.Unmarshal(entry.Value(), &x.DynamicValues); err != nil {
+		if err = sonic.Unmarshal(entry.Value(), x.DynamicValues); err != nil {
+			if option != nil && option.Err != nil {
+				option.Err <- err
+			}
 			return
+		}
+		if option != nil && option.Updated != nil {
+			option.Updated <- x.DynamicValues
 		}
 	}
 

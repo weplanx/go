@@ -1,104 +1,117 @@
 package kv_test
 
 import (
-	"context"
-	"github.com/bytedance/go-tagexpr/v2/binding"
-	"github.com/bytedance/go-tagexpr/v2/validator"
-	"github.com/bytedance/gopkg/util/logger"
-	"github.com/bytedance/sonic/decoder"
-	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/common/errors"
-	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nkeys"
-	"net/http"
-	"os"
+	"github.com/stretchr/testify/assert"
+	"github.com/weplanx/utils/kv"
+	"sync"
+	"testing"
 	"time"
 )
 
-func UseNats(namespace string) (err error) {
-	var auth nats.Option
-	if os.Getenv("NATS_TOKEN") != "" {
-		auth = nats.Token(os.Getenv("NATS_TOKEN"))
-	}
-	if os.Getenv("NATS_NKEY") != "" {
-		var kp nkeys.KeyPair
-		if kp, err = nkeys.FromSeed([]byte(os.Getenv("NATS_NKEY"))); err != nil {
-			return
-		}
-		defer kp.Wipe()
-		var pub string
-		if pub, err = kp.PublicKey(); err != nil {
-			return
-		}
-		if !nkeys.IsValidPublicUserKey(pub) {
-			panic("nkey 验证失败")
-		}
-		auth = nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
-			sig, _ := kp.Sign(nonce)
-			return sig, nil
-		})
-	}
-	if nc, err = nats.Connect(
-		os.Getenv("NATS_HOSTS"),
-		nats.MaxReconnects(5),
-		nats.ReconnectWait(2*time.Second),
-		nats.ReconnectJitter(500*time.Millisecond, 2*time.Second),
-		auth,
-	); err != nil {
-		return
-	}
-	if js, err = nc.JetStream(nats.PublishAsyncMaxPending(256)); err != nil {
-		return
-	}
-	if keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{Bucket: namespace}); err != nil {
-		return
-	}
-	return
+func TestLoadExistsValues(t *testing.T) {
+	err := service.Load()
+	assert.NoError(t, err)
+	err = service.Load()
+	assert.NoError(t, err)
 }
 
-func ErrHandler() app.HandlerFunc {
-	return func(ctx context.Context, c *app.RequestContext) {
-		c.Next(ctx)
-		err := c.Errors.Last()
-		if err == nil {
-			return
-		}
+func TestLoadBadValues(t *testing.T) {
+	_, err := keyvalue.Put("values", []byte("abc"))
+	assert.NoError(t, err)
+	err = service.Load()
+	assert.Error(t, err)
+}
 
-		if err.IsType(errors.ErrorTypePublic) {
-			statusCode := http.StatusBadRequest
-			result := utils.H{"message": err.Error()}
-			if meta, ok := err.Meta.(map[string]interface{}); ok {
-				if meta["statusCode"] != nil {
-					statusCode = meta["statusCode"].(int)
-				}
-				if meta["code"] != nil {
-					result["code"] = meta["code"]
-				}
-			}
-			c.JSON(statusCode, result)
-			return
-		}
+func TestLoadBucketCleared(t *testing.T) {
+	err := keyvalue.Delete("values")
+	assert.NoError(t, err)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		err := service.Load()
+		assert.Error(t, err)
+		wg.Done()
+	}()
+	go func() {
+		// 误执行
+		err := js.DeleteKeyValue("dev")
+		assert.NoError(t, err)
+	}()
+	wg.Wait()
+	err = service.Load()
+	assert.Error(t, err)
+}
 
-		switch e := err.Err.(type) {
-		case decoder.SyntaxError:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Description(),
-			})
-			break
-		case *binding.Error:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Error(),
-			})
-			break
-		case *validator.Error:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Error(),
-			})
-			break
-		default:
-			logger.Error(err)
-			c.Status(http.StatusInternalServerError)
-		}
+func TestSyncBucketCleared(t *testing.T) {
+	err := service.Sync(nil)
+	assert.Error(t, err)
+}
+
+func TestSync(t *testing.T) {
+	var err error
+	keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{Bucket: "dev"})
+	assert.NoError(t, err)
+
+	option := kv.SyncOption{
+		Updated: make(chan *kv.DynamicValues),
+		Err:     make(chan error),
 	}
+	go func() {
+		err := service.Sync(&option)
+		assert.NoError(t, err)
+	}()
+	time.Sleep(time.Millisecond * 500)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		times := 0
+		for {
+			if times == 2 {
+				break
+			}
+			select {
+			case x := <-option.Updated:
+				if times == 0 {
+					assert.Equal(t, kv.DEFAULT.LoginTTL, x.LoginTTL)
+					assert.Equal(t, kv.DEFAULT.LoginFailures, x.LoginFailures)
+					assert.Equal(t, kv.DEFAULT.IpLoginFailures, x.IpLoginFailures)
+					assert.Equal(t, kv.DEFAULT.PwdStrategy, x.PwdStrategy)
+					assert.Equal(t, kv.DEFAULT.PwdTTL, x.PwdTTL)
+					assert.Equal(t, "", x.Office)
+				}
+				if times == 1 {
+					assert.Equal(t, kv.DEFAULT.LoginTTL, x.LoginTTL)
+					assert.Equal(t, kv.DEFAULT.LoginFailures, x.LoginFailures)
+					assert.Equal(t, kv.DEFAULT.IpLoginFailures, x.IpLoginFailures)
+					assert.Equal(t, kv.DEFAULT.PwdStrategy, x.PwdStrategy)
+					assert.Equal(t, kv.DEFAULT.PwdTTL, x.PwdTTL)
+					assert.Equal(t, "feishu", x.Office)
+				}
+				times++
+			case e := <-option.Err:
+				assert.Error(t, e)
+				times++
+			}
+		}
+		wg.Done()
+	}()
+
+	err = service.Set(M{
+		"office": "feishu",
+	})
+	assert.NoError(t, err)
+
+	_, err = keyvalue.Put("values", []byte("abc"))
+	assert.NoError(t, err)
+
+	wg.Wait()
+}
+
+func TestSetBadValues(t *testing.T) {
+	_, err := keyvalue.Put("values", []byte("abc"))
+	assert.NoError(t, err)
+
+	err = service.Set(M{})
+	assert.Error(t, err)
 }
