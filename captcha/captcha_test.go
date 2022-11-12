@@ -42,7 +42,7 @@ func TestVerify(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(time.Nanosecond)
 	err = x.Verify(context.TODO(), "dev2", "abcd")
-	assert.ErrorIs(t, err, captcha.ErrCaptchaNotExists)
+	assert.Error(t, err)
 }
 
 func TestDelete(t *testing.T) {
