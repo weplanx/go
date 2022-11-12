@@ -18,6 +18,7 @@ type KV struct {
 }
 
 var DEFAULT = DynamicValues{
+	SessionTTL:      time.Hour,
 	LoginTTL:        time.Minute * 15,
 	LoginFailures:   5,
 	IpLoginFailures: 10,

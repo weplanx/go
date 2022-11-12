@@ -17,20 +17,29 @@ func (x *Service) Key(name string) string {
 // Lists 列出所有会话用户 ID
 func (x *Service) Lists(ctx context.Context) (data []string, err error) {
 	var cursor uint64
+	var keys []string
+	var names []string
+	if keys, cursor, err = x.Scan(ctx, cursor); err != nil {
+		return
+	}
+	names = append(names, keys...)
 	for cursor != 0 {
-		var keys []string
-		if keys, cursor, err = x.Redis.
-			Scan(ctx, cursor, x.Key("*"), 1000).
-			Result(); err != nil {
+		if keys, cursor, err = x.Scan(ctx, cursor); err != nil {
 			return
 		}
-		names := make([]string, len(keys))
-		for k, v := range keys {
-			names[k] = strings.Replace(v, x.Key(""), "", -1)
-		}
-		data = append(data, names...)
+		names = append(names, keys...)
 	}
+	for k, v := range names {
+		names[k] = strings.Replace(v, x.Key(""), "", -1)
+	}
+	data = append(data, names...)
 	return
+}
+
+func (x *Service) Scan(ctx context.Context, cursor uint64) ([]string, uint64, error) {
+	return x.Redis.
+		Scan(ctx, cursor, x.Key("*"), 1000).
+		Result()
 }
 
 // Verify 验证会话一致性
@@ -47,8 +56,7 @@ func (x *Service) Verify(ctx context.Context, name string, jti string) (result b
 // Set 设置会话
 func (x *Service) Set(ctx context.Context, name string, jti string) error {
 	return x.Redis.
-		Set(ctx, x.Key(name), jti, x.DynamicValues.SessionTTL).
-		Err()
+		Set(ctx, x.Key(name), jti, x.DynamicValues.SessionTTL).Err()
 }
 
 // Renew 续约会话
@@ -67,19 +75,18 @@ func (x *Service) Remove(ctx context.Context, name string) error {
 
 // Clear 清除所有会话
 func (x *Service) Clear(ctx context.Context) (err error) {
-	pipe := x.Redis.TxPipeline()
 	var cursor uint64
-	for cursor != 0 {
-		var keys []string
-		if keys, cursor, err = x.Redis.
-			Scan(ctx, cursor, x.Key("*"), 1000).
-			Result(); err != nil {
-			return
-		}
-		pipe.Del(ctx, keys...)
-	}
-	if _, err = pipe.Exec(ctx); err != nil {
+	var keys []string
+	var matchd []string
+	if keys, cursor, err = x.Scan(ctx, cursor); err != nil {
 		return
 	}
-	return
+	matchd = append(matchd, keys...)
+	for cursor != 0 {
+		if keys, cursor, err = x.Scan(ctx, cursor); err != nil {
+			return
+		}
+		matchd = append(matchd, keys...)
+	}
+	return x.Redis.Del(ctx, matchd...).Err()
 }

@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestCaptcha_Create(t *testing.T) {
+func TestCreate(t *testing.T) {
 	var err error
 	err = x.Create(context.TODO(), "dev1", "abcd", time.Second*60)
 	assert.NoError(t, err)
@@ -34,7 +34,7 @@ func TestCaptcha_Create(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCaptcha_Verify(t *testing.T) {
+func TestVerify(t *testing.T) {
 	var err error
 	err = x.Verify(context.TODO(), "dev1", "abc")
 	assert.ErrorIs(t, err, captcha.ErrCaptchaInconsistent)
@@ -45,7 +45,7 @@ func TestCaptcha_Verify(t *testing.T) {
 	assert.ErrorIs(t, err, captcha.ErrCaptchaNotExists)
 }
 
-func TestCaptcha_Delete(t *testing.T) {
+func TestDelete(t *testing.T) {
 	var err error
 	var exists bool
 	exists, err = x.Exists(context.TODO(), "dev1")

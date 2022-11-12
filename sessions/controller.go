@@ -25,15 +25,7 @@ func (x *Controller) Lists(ctx context.Context, c *app.RequestContext) {
 // Remove 移除会话
 // @router /sessions/:uid [DELETE]
 func (x *Controller) Remove(ctx context.Context, c *app.RequestContext) {
-	var dto struct {
-		Uid string `path:"uid,required"`
-	}
-	if err := c.BindAndValidate(&dto); err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err := x.SessionsService.Remove(ctx, dto.Uid); err != nil {
+	if err := x.SessionsService.Remove(ctx, c.Param("uid")); err != nil {
 		c.Error(err)
 		return
 	}
