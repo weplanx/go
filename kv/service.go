@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
+	"github.com/thoas/go-funk"
 	"time"
 )
 
@@ -95,7 +96,7 @@ var SECRET = map[string]bool{
 }
 
 // Get 获取动态配置
-func (x *Service) Get(keys ...string) (values map[string]interface{}, err error) {
+func (x *Service) Get(keys map[string]int64) (values map[string]interface{}, err error) {
 	var entry nats.KeyValueEntry
 	if entry, err = x.KeyValue.Get("values"); err != nil {
 		return
@@ -103,24 +104,17 @@ func (x *Service) Get(keys ...string) (values map[string]interface{}, err error)
 	if err = sonic.Unmarshal(entry.Value(), &values); err != nil {
 		return
 	}
-	sets := make(map[string]bool)
-	for _, key := range keys {
-		sets[key] = true
-	}
-	all := len(sets) == 0
 	for k, v := range values {
-		if !all && !sets[k] {
+		if len(keys) != 0 && keys[k] != 1 {
+			delete(values, k)
 			continue
 		}
 		if SECRET[k] {
-			// 密文
-			if v != nil || v != "" {
-				values[k] = "*"
-			} else {
+			if funk.IsEmpty(v) {
 				values[k] = "-"
+			} else {
+				values[k] = "*"
 			}
-		} else {
-			values[k] = v
 		}
 	}
 	return
@@ -142,10 +136,7 @@ func (x *Service) Remove(key string) (err error) {
 
 // Update 更新配置
 func (x *Service) Update(values map[string]interface{}) (err error) {
-	var b []byte
-	if b, err = sonic.Marshal(values); err != nil {
-		return
-	}
+	b, _ := sonic.Marshal(values)
 	if _, err = x.KeyValue.Put("values", b); err != nil {
 		return
 	}

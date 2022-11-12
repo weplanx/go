@@ -33,7 +33,7 @@ func (x *Controller) Set(_ context.Context, c *app.RequestContext) {
 
 type GetDto struct {
 	// 动态配置键
-	Keys []string `query:"keys" vd:"len($)==0 || range($,regexp('^[a-z_]+$',#k));msg:'key 必须是小写字母与下划线'"`
+	Keys map[string]int64 `query:"keys" vd:"len($)==0 || range($,regexp('^[a-z_]+$',#k));msg:'key 必须是小写字母与下划线'"`
 }
 
 // Get 获取动态配置
@@ -45,7 +45,7 @@ func (x *Controller) Get(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	data, err := x.KVService.Get(dto.Keys...)
+	data, err := x.KVService.Get(dto.Keys)
 	if err != nil {
 		c.Error(err)
 		return

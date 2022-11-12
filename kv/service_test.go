@@ -115,3 +115,43 @@ func TestSetBadValues(t *testing.T) {
 	err = service.Set(M{})
 	assert.Error(t, err)
 }
+
+func TestGetBadValues(t *testing.T) {
+	_, err := service.Get(map[string]int64{})
+	assert.Error(t, err)
+}
+
+func TestGetSECRETValues(t *testing.T) {
+	err := keyvalue.Delete("values")
+	assert.NoError(t, err)
+	err = service.Load()
+	assert.NoError(t, err)
+
+	err = service.Set(M{
+		"tencent_secret_id":  "123456",
+		"tencent_secret_key": "abc",
+		"feishu_app_secret":  "",
+	})
+	assert.NoError(t, err)
+
+	values, err := service.Get(map[string]int64{
+		"tencent_secret_id":  1,
+		"tencent_secret_key": 1,
+		"feishu_app_secret":  1,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(values))
+	assert.Equal(t, "123456", values["tencent_secret_id"])
+	assert.Equal(t, "*", values["tencent_secret_key"])
+	assert.Equal(t, "-", values["feishu_app_secret"])
+}
+
+func TestUpdateBucketCleared(t *testing.T) {
+	err := js.DeleteKeyValue("dev")
+	assert.NoError(t, err)
+
+	err = service.Update(map[string]interface{}{
+		"tencent_secret_id": "654321",
+	})
+	assert.Error(t, err)
+}
