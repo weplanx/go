@@ -11,8 +11,14 @@ var x1 *passport.Passport
 var x2 *passport.Passport
 
 func TestMain(m *testing.M) {
-	x1 = passport.New("dev", "hZXD^@K9%wydDC3Z@cyDvE%5bz9SP7gy")
-	x2 = passport.New("beta", "eK4qpn7yCBLo0u5mlAFFRCRsCmf2NQ76")
+	x1 = passport.New(
+		passport.SetNamespace("dev"),
+		passport.SetKey("hZXD^@K9%wydDC3Z@cyDvE%5bz9SP7gy"),
+	)
+	x2 = passport.New(
+		passport.SetNamespace("beta"),
+		passport.SetKey("eK4qpn7yCBLo0u5mlAFFRCRsCmf2NQ76"),
+	)
 	os.Exit(m.Run())
 }
 

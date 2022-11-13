@@ -11,10 +11,25 @@ type Passport struct {
 	Key       string
 }
 
-func New(namespace string, key string) *Passport {
-	return &Passport{
-		Namespace: namespace,
-		Key:       key,
+func New(options ...Option) *Passport {
+	x := new(Passport)
+	for _, v := range options {
+		v(x)
+	}
+	return x
+}
+
+type Option func(x *Passport)
+
+func SetNamespace(v string) Option {
+	return func(x *Passport) {
+		x.Namespace = v
+	}
+}
+
+func SetKey(v string) Option {
+	return func(x *Passport) {
+		x.Key = v
 	}
 }
 

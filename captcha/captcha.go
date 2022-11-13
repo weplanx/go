@@ -13,10 +13,25 @@ type Captcha struct {
 	Redis     *redis.Client
 }
 
-func New(namespace string, client *redis.Client) *Captcha {
-	return &Captcha{
-		Namespace: namespace,
-		Redis:     client,
+func New(options ...Option) *Captcha {
+	x := new(Captcha)
+	for _, v := range options {
+		v(x)
+	}
+	return x
+}
+
+type Option func(x *Captcha)
+
+func SetNamespace(v string) Option {
+	return func(x *Captcha) {
+		x.Namespace = v
+	}
+}
+
+func SetRedis(v *redis.Client) Option {
+	return func(x *Captcha) {
+		x.Redis = v
 	}
 }
 

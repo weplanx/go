@@ -12,10 +12,25 @@ type Locker struct {
 	Redis     *redis.Client
 }
 
-func New(namespace string, client *redis.Client) *Locker {
-	return &Locker{
-		Namespace: namespace,
-		Redis:     client,
+func New(options ...Option) *Locker {
+	x := new(Locker)
+	for _, v := range options {
+		v(x)
+	}
+	return x
+}
+
+type Option func(x *Locker)
+
+func SetNamespace(v string) Option {
+	return func(x *Locker) {
+		x.Namespace = v
+	}
+}
+
+func SetRedis(v *redis.Client) Option {
+	return func(x *Locker) {
+		x.Redis = v
 	}
 }
 
