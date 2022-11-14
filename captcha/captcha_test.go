@@ -43,7 +43,7 @@ func TestVerify(t *testing.T) {
 	assert.ErrorIs(t, err, captcha.ErrCaptchaInconsistent)
 	err = x.Verify(context.TODO(), "dev1", "abcd")
 	assert.NoError(t, err)
-	time.Sleep(time.Nanosecond)
+	time.Sleep(time.Second)
 	err = x.Verify(context.TODO(), "dev2", "abcd")
 	assert.Error(t, err)
 }
