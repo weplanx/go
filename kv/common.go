@@ -100,11 +100,11 @@ type DynamicValues struct {
 	OpenapiKey string `json:"openapi_key"`
 	// 开放服务应用认证密钥
 	OpenapiSecret string `json:"openapi_secret,omitempty"`
-	// DSL 字段控制
-	Feilds map[string]Feild `json:"feilds"`
+	// DSL 集合控制
+	DSL map[string]DSLOption `json:"dsl,omitempty"`
 }
 
-type Feild struct {
+type DSLOption struct {
 	Event bool
 	Keys  map[string]int64
 }

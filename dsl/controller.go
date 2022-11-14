@@ -50,7 +50,17 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(201, r)
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:      "create",
+		Data:       dto.Data,
+		DataFormat: dto.Format,
+		Result:     r,
+	}); err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, r)
 }
 
 type BulkCreateDto struct {
@@ -85,6 +95,16 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 
 	r, err := x.DSLService.BulkCreate(ctx, dto.Collection, docs)
 	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:      "bulk-create",
+		Data:       dto.Data,
+		DataFormat: dto.Format,
+		Result:     r,
+	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -310,6 +330,18 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:        "update",
+		Filter:       dto.Filter,
+		FilterFormat: dto.FFormat,
+		Data:         dto.Data,
+		DataFormat:   dto.DFormat,
+		Result:       r,
+	}); err != nil {
+		c.Error(err)
+		return
+	}
+
 	c.JSON(http.StatusOK, r)
 }
 
@@ -346,6 +378,17 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 	r, err := x.DSLService.UpdateById(ctx, dto.Collection, id, dto.Data)
 	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:      "update",
+		Id:         dto.Id,
+		Data:       dto.Data,
+		DataFormat: dto.Format,
+		Result:     r,
+	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -388,6 +431,17 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:      "replace",
+		Id:         dto.Id,
+		Data:       dto.Data,
+		DataFormat: dto.Format,
+		Result:     r,
+	}); err != nil {
+		c.Error(err)
+		return
+	}
+
 	c.JSON(http.StatusOK, r)
 }
 
@@ -410,6 +464,15 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 	r, err := x.DSLService.Delete(ctx, dto.Collection, id)
 	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:  "delete",
+		Id:     dto.Id,
+		Result: r,
+	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -447,6 +510,16 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:      "bulk-delete",
+		Data:       dto.Data,
+		DataFormat: dto.Format,
+		Result:     r,
+	}); err != nil {
+		c.Error(err)
+		return
+	}
+
 	c.JSON(http.StatusOK, r)
 }
 
@@ -466,8 +539,17 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	_, err := x.DSLService.Sort(ctx, dto.Collection, dto.Data)
+	r, err := x.DSLService.Sort(ctx, dto.Collection, dto.Data)
 	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
+		Event:  "sort",
+		Data:   dto.Data,
+		Result: r,
+	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -508,6 +590,7 @@ func (x *Controller) Transform(data M, format M) (err error) {
 			break
 
 		case "date":
+			// 转换为 Time
 			if cursor[key], err = time.Parse(time.RFC3339, cursor[key].(string)); err != nil {
 				return
 			}
@@ -515,7 +598,7 @@ func (x *Controller) Transform(data M, format M) (err error) {
 
 		case "password":
 			// 密码类型，转换为 Argon2id
-			if cursor[key], err = passlib.Hash(cursor[key].(string)); err != nil {
+			if cursor[key], _ = passlib.Hash(cursor[key].(string)); err != nil {
 				return
 			}
 			break

@@ -2,6 +2,9 @@ package dsl
 
 import (
 	"context"
+	"fmt"
+	"github.com/bytedance/sonic"
+	"github.com/nats-io/nats.go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -95,4 +98,30 @@ func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectI
 		)
 	}
 	return x.Db.Collection(name).BulkWrite(ctx, wms)
+}
+
+type PublishDto struct {
+	Event        string      `json:"event"`
+	Id           string      `json:"id,omitempty"`
+	Filter       M           `json:"filter,omitempty"`
+	FilterFormat M           `json:"filter_format,omitempty"`
+	Data         interface{} `json:"data,omitempty"`
+	DataFormat   M           `json:"data_format,omitempty"`
+	Result       interface{} `json:"result"`
+}
+
+// Publish 发送消息补偿
+func (x *Service) Publish(ctx context.Context, coll string, dto PublishDto) (err error) {
+	if option, ok := x.DynamicValues.DSL[coll]; ok {
+		if !option.Event {
+			return
+		}
+
+		b, _ := sonic.Marshal(dto)
+		subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, coll)
+		if _, err = x.Js.Publish(subject, b, nats.Context(ctx)); err != nil {
+			return
+		}
+	}
+	return
 }
