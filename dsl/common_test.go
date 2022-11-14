@@ -20,6 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -38,32 +39,35 @@ type M = map[string]interface{}
 
 func TestMain(m *testing.M) {
 	if err := UseMongoDB(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	if err := UseNats(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
-	service := &dsl.Service{
-		DSL: dsl.New(
-			dsl.SetNamespace("dev"),
-			dsl.SetDatabase(db),
-			dsl.SetDynamicValues(&kv.DynamicValues{
-				DSL: map[string]kv.DSLOption{
-					"users": {
-						Event: true,
-						Keys: map[string]int64{
-							"name":        1,
-							"department":  1,
-							"roles":       1,
-							"create_time": 1,
-							"update_time": 1,
-						},
+	x, err := dsl.New(
+		dsl.SetNamespace("dev"),
+		dsl.SetDatabase(db),
+		dsl.SetDynamicValues(&kv.DynamicValues{
+			DSL: map[string]kv.DSLOption{
+				"users": {
+					Event: true,
+					Keys: map[string]int64{
+						"name":        1,
+						"department":  1,
+						"roles":       1,
+						"create_time": 1,
+						"update_time": 1,
 					},
 				},
-			}),
-			dsl.SetJetStream(js),
-		),
+			},
+		}),
+		dsl.SetJetStream(js),
+	)
+	if err != nil {
+		log.Fatalln(err)
 	}
+
+	service := &dsl.Service{DSL: x}
 	helper.RegValidate()
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
