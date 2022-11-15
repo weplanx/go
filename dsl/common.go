@@ -1,7 +1,6 @@
 package dsl
 
 import (
-	"fmt"
 	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
 	"github.com/weplanx/utils/kv"
@@ -26,19 +25,6 @@ func New(options ...Option) (x *DSL, err error) {
 	x = new(DSL)
 	for _, v := range options {
 		v(x)
-	}
-	for k, v := range x.DynamicValues.DSL {
-		if v.Event {
-			name := fmt.Sprintf(`%s:events:%s`, x.Namespace, k)
-			subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, k)
-			if _, err = x.Js.AddStream(&nats.StreamConfig{
-				Name:      name,
-				Subjects:  []string{subject},
-				Retention: nats.WorkQueuePolicy,
-			}); err != nil {
-				return
-			}
-		}
 	}
 	return
 }

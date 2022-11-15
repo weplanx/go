@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/errors"
-	"github.com/weplanx/utils/passlib"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -37,7 +36,7 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -84,7 +83,7 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 	// 数据转换
 	docs := make([]interface{}, len(dto.Data))
 	for i, doc := range dto.Data {
-		if err := x.Transform(doc, dto.Format); err != nil {
+		if err := x.DSLService.Transform(doc, dto.Format); err != nil {
 			c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 			return
 		}
@@ -131,7 +130,7 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Filter, dto.Format); err != nil {
+	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -158,9 +157,9 @@ type FindDto struct {
 	// Query.filter 格式转换
 	Format M `query:"format"`
 	// 排序规则
-	Sort M `query:"sort" vd:"range($,in(#v,-1,1));msg:'排序规则不规范'"`
+	Sort []string `query:"sort" vd:"range($,regexp('^[a-z_]+:(-1|1)$',#v)));msg:'排序规则不规范'"`
 	// 投影规则
-	Keys M `query:"keys" vd:"range($,in(#v,0,1));msg:'投影规则不规范'"`
+	Keys []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'投影规则不规范'"`
 }
 
 // Find 获取匹配文档
@@ -173,7 +172,7 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Filter, dto.Format); err != nil {
+	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -194,9 +193,11 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 		dto.Page = 1
 	}
 
-	var sort bson.D
-	for key, value := range dto.Sort {
-		sort = append(sort, bson.E{Key: key, Value: value})
+	sort := make(bson.D, len(dto.Sort))
+	for i, v := range dto.Sort {
+		rule := strings.Split(v, ":")
+		order, _ := strconv.Atoi(rule[1])
+		sort[i] = bson.E{Key: rule[0], Value: order}
 	}
 
 	// 默认倒序 ID
@@ -205,9 +206,9 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	}
 
 	option := options.Find().
+		SetProjection(x.DSLService.Projection(dto.Keys)).
 		SetLimit(dto.Pagesize).
 		SetSkip((dto.Page - 1) * dto.Pagesize).
-		SetProjection(dto.Keys).
 		SetSort(sort).
 		SetAllowDiskUse(true)
 
@@ -229,7 +230,7 @@ type FindOneDto struct {
 	// Query.filter 格式转换
 	Format M `query:"format"`
 	// 投影规则
-	Keys M `query:"keys" vd:"range($,in(#v,0,1));msg:'投影规则不规范'"`
+	Keys []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'投影规则不规范'"`
 }
 
 // FindOne 获取单个文档
@@ -242,13 +243,14 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Filter, dto.Format); err != nil {
+	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
 
 	option := options.FindOne().
-		SetProjection(dto.Keys)
+		SetProjection(x.DSLService.Projection(dto.Keys))
+
 	data, err := x.DSLService.FindOne(ctx, dto.Collection, dto.Filter, option)
 	if err != nil {
 		c.Error(err)
@@ -264,7 +266,7 @@ type FindByIdDto struct {
 	// 文档 ID
 	Id string `path:"id,required" vd:"mongoId($);msg:'文档 ID 不规范'"`
 	// 投影规则
-	Keys M `query:"keys" vd:"range($,in(#v,0,1));msg:'投影规则不规范'"`
+	Keys []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'投影规则不规范'"`
 }
 
 // FindById 获取指定 ID 的文档
@@ -278,7 +280,8 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 	option := options.FindOne().
-		SetProjection(dto.Keys)
+		SetProjection(x.DSLService.Projection(dto.Keys))
+
 	data, err := x.DSLService.FindOne(ctx, dto.Collection, M{"_id": id}, option)
 	if err != nil {
 		c.Error(err)
@@ -311,11 +314,11 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Filter, dto.FFormat); err != nil {
+	if err := x.DSLService.Transform(dto.Filter, dto.FFormat); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
-	if err := x.Transform(dto.Data, dto.DFormat); err != nil {
+	if err := x.DSLService.Transform(dto.Data, dto.DFormat); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -366,7 +369,7 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -417,7 +420,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -499,7 +502,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -555,54 +558,4 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.Status(http.StatusNoContent)
-}
-
-// Transform 格式转换
-func (x *Controller) Transform(data M, format M) (err error) {
-	for path, spec := range format {
-		keys, cursor := strings.Split(path, "."), data
-		n := len(keys) - 1
-		for _, key := range keys[:n] {
-			if v, ok := cursor[key].(M); ok {
-				cursor = v
-			}
-		}
-		key := keys[n]
-		if cursor[key] == nil {
-			continue
-		}
-		switch spec {
-		case "oid":
-			// 转换为 ObjectId
-			if cursor[key], err = primitive.ObjectIDFromHex(cursor[key].(string)); err != nil {
-				return
-			}
-			break
-
-		case "oids":
-			// 转换为 ObjectId 数组
-			oids := cursor[key].([]interface{})
-			for i, id := range oids {
-				if oids[i], err = primitive.ObjectIDFromHex(id.(string)); err != nil {
-					return
-				}
-			}
-			break
-
-		case "date":
-			// 转换为 Time
-			if cursor[key], err = time.Parse(time.RFC3339, cursor[key].(string)); err != nil {
-				return
-			}
-			break
-
-		case "password":
-			// 密码类型，转换为 Argon2id
-			if cursor[key], _ = passlib.Hash(cursor[key].(string)); err != nil {
-				return
-			}
-			break
-		}
-	}
-	return
 }

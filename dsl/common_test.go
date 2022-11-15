@@ -77,6 +77,9 @@ func TestMain(m *testing.M) {
 	}
 
 	service := &dsl.Service{DSL: x}
+	if err = service.Load(context.TODO()); err != nil {
+		log.Fatalln(err)
+	}
 	helper.RegValidate()
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())

@@ -561,14 +561,14 @@ func TestFindBadFilter(t *testing.T) {
 func TestFindBadKeys(t *testing.T) {
 	u := url.URL{Path: "/orders"}
 	query := u.Query()
-	query.Set("keys", `{"$":1}`)
+	query.Add("keys", `abc1`)
 	u.RawQuery = query.Encode()
 	w := ut.PerformRequest(r, "GET", u.RequestURI(),
 		&ut.Body{},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
 	resp := w.Result()
-	assert.Equal(t, 500, resp.StatusCode())
+	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFindOneBadValidate(t *testing.T) {
@@ -674,14 +674,14 @@ func TestFindById(t *testing.T) {
 func TestFindByIdBadKeys(t *testing.T) {
 	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
 	query := u.Query()
-	query.Set("keys", `{"$":1}`)
+	query.Add("keys", `abc1`)
 	u.RawQuery = query.Encode()
 	w := ut.PerformRequest(r, "GET", u.RequestURI(),
 		&ut.Body{},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
 	resp := w.Result()
-	assert.Equal(t, 500, resp.StatusCode())
+	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestUpdateBadValidate(t *testing.T) {

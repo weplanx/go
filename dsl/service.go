@@ -5,15 +5,34 @@ import (
 	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
+	"github.com/weplanx/utils/passlib"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"strings"
 	"time"
 )
 
 type Service struct {
 	*DSL
+}
+
+func (x *Service) Load(ctx context.Context) (err error) {
+	for k, v := range x.DynamicValues.DSL {
+		if v.Event {
+			name := fmt.Sprintf(`%s:events:%s`, x.Namespace, k)
+			subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, k)
+			if _, err = x.Js.AddStream(&nats.StreamConfig{
+				Name:      name,
+				Subjects:  []string{subject},
+				Retention: nats.WorkQueuePolicy,
+			}, nats.Context(ctx)); err != nil {
+				return
+			}
+		}
+	}
+	return
 }
 
 // Create 新增文档
@@ -100,6 +119,65 @@ func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectI
 	return x.Db.Collection(name).BulkWrite(ctx, wms)
 }
 
+// Transform 格式转换
+func (x *Service) Transform(data M, format M) (err error) {
+	for path, spec := range format {
+		keys, cursor := strings.Split(path, "."), data
+		n := len(keys) - 1
+		for _, key := range keys[:n] {
+			if v, ok := cursor[key].(M); ok {
+				cursor = v
+			}
+		}
+		key := keys[n]
+		if cursor[key] == nil {
+			continue
+		}
+		switch spec {
+		case "oid":
+			// 转换为 ObjectId
+			if cursor[key], err = primitive.ObjectIDFromHex(cursor[key].(string)); err != nil {
+				return
+			}
+			break
+
+		case "oids":
+			// 转换为 ObjectId 数组
+			oids := cursor[key].([]interface{})
+			for i, id := range oids {
+				if oids[i], err = primitive.ObjectIDFromHex(id.(string)); err != nil {
+					return
+				}
+			}
+			break
+
+		case "date":
+			// 转换为 Time
+			if cursor[key], err = time.Parse(time.RFC3339, cursor[key].(string)); err != nil {
+				return
+			}
+			break
+
+		case "password":
+			// 密码类型，转换为 Argon2id
+			if cursor[key], _ = passlib.Hash(cursor[key].(string)); err != nil {
+				return
+			}
+			break
+		}
+	}
+	return
+}
+
+// Projection 字段投影
+func (x *Service) Projection(keys []string) (result bson.M) {
+	result = make(bson.M)
+	for _, key := range keys {
+		result[key] = 1
+	}
+	return
+}
+
 type PublishDto struct {
 	Event        string      `json:"event"`
 	Id           string      `json:"id,omitempty"`
@@ -110,15 +188,15 @@ type PublishDto struct {
 	Result       interface{} `json:"result"`
 }
 
-// Publish 发送消息补偿
-func (x *Service) Publish(ctx context.Context, coll string, dto PublishDto) (err error) {
-	if option, ok := x.DynamicValues.DSL[coll]; ok {
-		if !option.Event {
+// Publish 事件消息补偿
+func (x *Service) Publish(ctx context.Context, name string, dto PublishDto) (err error) {
+	if v, ok := x.DynamicValues.DSL[name]; ok {
+		if !v.Event {
 			return
 		}
 
 		b, _ := sonic.Marshal(dto)
-		subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, coll)
+		subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, name)
 		if _, err = x.Js.Publish(subject, b, nats.Context(ctx)); err != nil {
 			return
 		}
