@@ -522,11 +522,8 @@ func TestFind(t *testing.T) {
 
 func TestFindSort(t *testing.T) {
 	u := url.URL{Path: "/orders"}
-	sort, _ := sonic.MarshalString(M{
-		"cost": 1,
-	})
 	query := u.Query()
-	query.Set("sort", sort)
+	query.Add("sort", "cost:1")
 	u.RawQuery = query.Encode()
 	w := ut.PerformRequest(r, "GET", u.RequestURI(),
 		&ut.Body{},
