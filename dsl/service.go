@@ -18,6 +18,7 @@ type Service struct {
 	*DSL
 }
 
+// Load 加载动态配置
 func (x *Service) Load(ctx context.Context) (err error) {
 	for k, v := range x.DynamicValues.DSL {
 		if v.Event {
@@ -170,10 +171,22 @@ func (x *Service) Transform(data M, format M) (err error) {
 }
 
 // Projection 字段投影
-func (x *Service) Projection(keys []string) (result bson.M) {
+func (x *Service) Projection(name string, keys []string) (result bson.M) {
 	result = make(bson.M)
-	for _, key := range keys {
-		result[key] = 1
+	if x.DynamicValues.DSL != nil && x.DynamicValues.DSL[name] != nil {
+		for _, key := range x.DynamicValues.DSL[name].Keys {
+			result[key] = 1
+		}
+	}
+	if len(keys) != 0 {
+		projection := make(bson.M)
+		for _, key := range keys {
+			if _, ok := result[key]; len(result) != 0 && !ok {
+				continue
+			}
+			projection[key] = 1
+		}
+		result = projection
 	}
 	return
 }

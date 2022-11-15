@@ -206,7 +206,7 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	}
 
 	option := options.Find().
-		SetProjection(x.DSLService.Projection(dto.Keys)).
+		SetProjection(x.DSLService.Projection(dto.Collection, dto.Keys)).
 		SetLimit(dto.Pagesize).
 		SetSkip((dto.Page - 1) * dto.Pagesize).
 		SetSort(sort).
@@ -249,7 +249,7 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 	}
 
 	option := options.FindOne().
-		SetProjection(x.DSLService.Projection(dto.Keys))
+		SetProjection(x.DSLService.Projection(dto.Collection, dto.Keys))
 
 	data, err := x.DSLService.FindOne(ctx, dto.Collection, dto.Filter, option)
 	if err != nil {
@@ -280,7 +280,7 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 	option := options.FindOne().
-		SetProjection(x.DSLService.Projection(dto.Keys))
+		SetProjection(x.DSLService.Projection(dto.Collection, dto.Keys))
 
 	data, err := x.DSLService.FindOne(ctx, dto.Collection, M{"_id": id}, option)
 	if err != nil {

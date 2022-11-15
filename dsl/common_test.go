@@ -46,15 +46,9 @@ func TestMain(m *testing.M) {
 		log.Fatalln(err)
 	}
 	dv := &kv.DynamicValues{
-		DSL: map[string]kv.DSLOption{
+		DSL: map[string]*kv.DSLOption{
 			"users": {
-				Keys: map[string]int64{
-					"name":        1,
-					"department":  1,
-					"roles":       1,
-					"create_time": 1,
-					"update_time": 1,
-				},
+				Keys: []string{"name", "department", "roles", "create_time", "update_time"},
 			},
 			"projects": {
 				Event: true,

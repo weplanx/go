@@ -101,12 +101,12 @@ type DynamicValues struct {
 	// 开放服务应用认证密钥
 	OpenapiSecret string `json:"openapi_secret,omitempty"`
 	// DSL 集合控制
-	DSL map[string]DSLOption `json:"dsl,omitempty"`
+	DSL map[string]*DSLOption `json:"dsl,omitempty"`
 }
 
 type DSLOption struct {
 	Event bool
-	Keys  map[string]int64
+	Keys  []string
 }
 
 func New(options ...Option) *KV {
