@@ -2,6 +2,7 @@ package dsl_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/bytedance/go-tagexpr/v2/binding"
 	"github.com/bytedance/go-tagexpr/v2/validator"
 	"github.com/bytedance/gopkg/util/logger"
@@ -44,23 +45,31 @@ func TestMain(m *testing.M) {
 	if err := UseNats(); err != nil {
 		log.Fatalln(err)
 	}
+	dv := &kv.DynamicValues{
+		DSL: map[string]kv.DSLOption{
+			"users": {
+				Keys: map[string]int64{
+					"name":        1,
+					"department":  1,
+					"roles":       1,
+					"create_time": 1,
+					"update_time": 1,
+				},
+			},
+			"projects": {
+				Event: true,
+			},
+		},
+	}
+	for k, v := range dv.DSL {
+		if v.Event {
+			js.DeleteStream(fmt.Sprintf(`%s:events:%s`, "dev", k))
+		}
+	}
 	x, err := dsl.New(
 		dsl.SetNamespace("dev"),
 		dsl.SetDatabase(db),
-		dsl.SetDynamicValues(&kv.DynamicValues{
-			DSL: map[string]kv.DSLOption{
-				"users": {
-					Event: true,
-					Keys: map[string]int64{
-						"name":        1,
-						"department":  1,
-						"roles":       1,
-						"create_time": 1,
-						"update_time": 1,
-					},
-				},
-			},
-		}),
+		dsl.SetDynamicValues(dv),
 		dsl.SetJetStream(js),
 	)
 	if err != nil {
@@ -130,6 +139,26 @@ func UseMongoDB() (err error) {
 			}},
 		})
 	if err = db.CreateCollection(context.TODO(), "orders", ordersOption); err != nil {
+		return
+	}
+	projectsOption := options.CreateCollection().SetValidator(bson.D{
+		{"$jsonSchema", bson.D{
+			{"title", "projects"},
+			{"required", bson.A{"_id", "name", "namespace", "secret", "create_time", "update_time"}},
+			{"properties", bson.D{
+				{"_id", bson.M{"bsonType": "objectId"}},
+				{"name", bson.M{"bsonType": "string"}},
+				{"namespace", bson.M{"bsonType": "string"}},
+				{"secret", bson.M{"bsonType": "string"}},
+				{"expire_time", bson.M{"bsonType": []string{"null", "date"}}},
+				{"sort", bson.M{"bsonType": []string{"null", "number"}}},
+				{"create_time", bson.M{"bsonType": "date"}},
+				{"update_time", bson.M{"bsonType": "date"}},
+			}},
+			{"additionalProperties", false},
+		}},
+	})
+	if err = db.CreateCollection(context.TODO(), "projects", projectsOption); err != nil {
 		return
 	}
 	return

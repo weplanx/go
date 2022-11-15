@@ -9,6 +9,7 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/thoas/go-funk"
+	"github.com/weplanx/utils/dsl"
 	"github.com/weplanx/utils/passlib"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -104,6 +105,75 @@ func TestCreateBadDbValidate(t *testing.T) {
 	)
 	resp := w.Result()
 	assert.Equal(t, 500, resp.StatusCode())
+}
+
+var projectId string
+
+func TestCreateEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name":        "默认项目",
+			"namespace":   "default",
+			"secret":      "abcd",
+			"expire_time": expire,
+		},
+		"format": M{
+			"expire_time": "date",
+		},
+	})
+	w := ut.PerformRequest(r, "POST", "/projects",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 201, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, result)
+
+	projectId = result["InsertedID"].(string)
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "create", msg.Event)
+		data := msg.Data.(M)
+		assert.Equal(t, "默认项目", data["name"])
+		assert.Equal(t, "default", data["namespace"])
+		assert.Equal(t, "abcd", data["secret"])
+		assert.Equal(t, expire, data["expire_time"])
+		format := msg.DataFormat
+		assert.Equal(t, "date", format["expire_time"])
+		assert.Equal(t, result, msg.Result)
+		break
+	}
+}
+
+func TestCreateBadEvent(t *testing.T) {
+	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name":        "默认项目",
+			"namespace":   "default",
+			"secret":      "abcd",
+			"expire_time": expire,
+		},
+		"format": M{
+			"expire_time": "date",
+		},
+	})
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "POST", "/projects",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	RecoverStream(t)
 }
 
 type Order struct {
@@ -221,6 +291,96 @@ func TestBulkCreateBadDbValidate(t *testing.T) {
 	)
 	resp := w.Result()
 	assert.Equal(t, 500, resp.StatusCode())
+}
+
+var projectIds []string
+
+func TestBulkCreateEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	expire := make([]string, 10)
+	data := make([]M, 10)
+	for i := 0; i < 10; i++ {
+		expire[i] = time.Now().Add(time.Hour * time.Duration(i)).Format(time.RFC3339)
+		data[i] = M{
+			"name":        fmt.Sprintf(`测试%d`, i),
+			"namespace":   fmt.Sprintf(`test%d`, i),
+			"secret":      fmt.Sprintf(`secret%d`, i),
+			"expire_time": expire[i],
+		}
+	}
+
+	body, _ := sonic.Marshal(M{
+		"data": data,
+		"format": M{
+			"expire_time": "date",
+		},
+	})
+	w := ut.PerformRequest(r, "POST", "/projects/bulk-create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 201, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, result)
+
+	ids := result["InsertedIDs"].([]interface{})
+	for i := 0; i < 10; i++ {
+		projectIds = append(projectIds, ids[i].(string))
+	}
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "bulk-create", msg.Event)
+		assert.Equal(t, 10, len(msg.Data.([]interface{})))
+		for i, v := range msg.Data.([]interface{}) {
+			data := v.(M)
+			assert.Equal(t, fmt.Sprintf(`测试%d`, i), data["name"])
+			assert.Equal(t, fmt.Sprintf(`test%d`, i), data["namespace"])
+			assert.Equal(t, fmt.Sprintf(`secret%d`, i), data["secret"])
+			assert.Equal(t, expire[i], data["expire_time"])
+		}
+		format := msg.DataFormat
+		assert.Equal(t, "date", format["expire_time"])
+		assert.Equal(t, result, msg.Result)
+		break
+	}
+}
+
+func TestBulkCreateBadEvent(t *testing.T) {
+	expire1 := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
+	expire2 := time.Now().Add(time.Hour * 36).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": []M{
+			{
+				"name":        "测试1",
+				"namespace":   "test1",
+				"secret":      "abcd",
+				"expire_time": expire1,
+			},
+			{
+				"name":        "测试2",
+				"namespace":   "test2",
+				"secret":      "zxcv",
+				"expire_time": expire2,
+			},
+		},
+		"format": M{
+			"expire_time": "date",
+		},
+	})
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "POST", "/projects/bulk-create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	RecoverStream(t)
 }
 
 func TestSizeBadValidate(t *testing.T) {
@@ -704,6 +864,78 @@ func TestUpdateBadDbValidate(t *testing.T) {
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
+func TestUpdateEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	u := url.URL{Path: fmt.Sprintf(`/projects`)}
+	filter, _ := sonic.MarshalString(M{"namespace": "default"})
+	query := u.Query()
+	query.Set("filter", filter)
+	u.RawQuery = query.Encode()
+	expire := time.Now().Add(time.Hour * 72).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"$set": M{
+				"secret":      "qwer",
+				"expire_time": expire,
+			},
+		},
+		"format": M{
+			"$set.expire_time": "date",
+		},
+	})
+	w := ut.PerformRequest(r, "PATCH", u.RequestURI(),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 200, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "update", msg.Event)
+		assert.Equal(t, "default", msg.Filter["namespace"])
+		data := msg.Data.(M)["$set"].(M)
+		assert.Equal(t, "qwer", data["secret"])
+		assert.Equal(t, expire, data["expire_time"])
+		assert.Equal(t, "date", msg.DataFormat["$set.expire_time"])
+		assert.Equal(t, result, msg.Result)
+		break
+	}
+}
+
+func TestUpdateBadEvent(t *testing.T) {
+	u := url.URL{Path: fmt.Sprintf(`/projects`)}
+	filter, _ := sonic.MarshalString(M{"namespace": "default"})
+	query := u.Query()
+	query.Set("filter", filter)
+	u.RawQuery = query.Encode()
+	expire := time.Now().Add(time.Hour * 72).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"$set": M{
+				"secret":      "qwer",
+				"expire_time": expire,
+			},
+		},
+		"format": M{
+			"$set.expire_time": "date",
+		},
+	})
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "PATCH", u.RequestURI(),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	RecoverStream(t)
+}
+
 func TestUpdateByIdBadValidate(t *testing.T) {
 	body, _ := sonic.Marshal(M{})
 	w := ut.PerformRequest(r, "PATCH", fmt.Sprintf(`/users/%s`, userId),
@@ -832,6 +1064,66 @@ func TestUpdateByIdBadDbValidate(t *testing.T) {
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
+func TestUpdateByIdEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"$set": M{
+				"expire_time": expire,
+			},
+		},
+		"format": M{
+			"$set.expire_time": "date",
+		},
+	})
+	w := ut.PerformRequest(r, "PATCH", fmt.Sprintf(`/projects/%s`, projectId),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 200, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "update", msg.Event)
+		assert.Equal(t, projectId, msg.Id)
+		assert.Empty(t, msg.Filter)
+		data := msg.Data.(M)["$set"].(M)
+		assert.Equal(t, expire, data["expire_time"])
+		assert.Equal(t, "date", msg.DataFormat["$set.expire_time"])
+		assert.Equal(t, result, msg.Result)
+		break
+	}
+}
+
+func TestUpdateByIdBadEvent(t *testing.T) {
+	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"$set": M{
+				"expire_time": expire,
+			},
+		},
+		"format": M{
+			"$set.expire_time": "date",
+		},
+	})
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "PATCH", fmt.Sprintf(`/projects/%s`, projectId),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	RecoverStream(t)
+}
+
 func TestReplaceBadValidate(t *testing.T) {
 	body, _ := sonic.Marshal(M{})
 	w := ut.PerformRequest(r, "PUT", fmt.Sprintf(`/$$$$/%s`, userId),
@@ -918,6 +1210,70 @@ func TestReplaceBadDbValidate(t *testing.T) {
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
+func TestReplaceEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name":        "工单项目",
+			"namespace":   "orders",
+			"secret":      "123456",
+			"expire_time": expire,
+		},
+		"format": M{
+			"expire_time": "date",
+		},
+	})
+	w := ut.PerformRequest(r, "PUT", fmt.Sprintf(`/projects/%s`, projectId),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 200, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "replace", msg.Event)
+		assert.Equal(t, projectId, msg.Id)
+		data := msg.Data.(M)
+		assert.Equal(t, "工单项目", data["name"])
+		assert.Equal(t, "orders", data["namespace"])
+		assert.Equal(t, "123456", data["secret"])
+		assert.Equal(t, expire, data["expire_time"])
+		assert.Equal(t, "date", msg.DataFormat["expire_time"])
+		assert.Equal(t, result, msg.Result)
+		break
+	}
+}
+
+func TestReplaceBadEvent(t *testing.T) {
+	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name":        "工单项目",
+			"namespace":   "orders",
+			"secret":      "123456",
+			"expire_time": expire,
+		},
+		"format": M{
+			"expire_time": "date",
+		},
+	})
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "PUT", fmt.Sprintf(`/projects/%s`, projectId),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	RecoverStream(t)
+}
+
 func TestDeleteBadValidate(t *testing.T) {
 	w := ut.PerformRequest(r, "DELETE", fmt.Sprintf(`/$$$$/%s`, userId),
 		&ut.Body{},
@@ -946,6 +1302,41 @@ func TestDelete(t *testing.T) {
 		Decode(&data)
 	assert.Error(t, err)
 	assert.Equal(t, err, mongo.ErrNoDocuments)
+}
+
+func TestDeleteEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	w := ut.PerformRequest(r, "DELETE", fmt.Sprintf(`/projects/%s`, projectId),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 200, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(1), result["DeletedCount"])
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "delete", msg.Event)
+		assert.Equal(t, projectId, msg.Id)
+		assert.Equal(t, result, msg.Result)
+		break
+	}
+}
+
+func TestDeleteBadEvent(t *testing.T) {
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "DELETE", fmt.Sprintf(`/projects/%s`, projectId),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	RecoverStream(t)
 }
 
 func TestBulkDeleteBadValidate(t *testing.T) {
@@ -995,7 +1386,6 @@ func TestBulkDelete(t *testing.T) {
 	var result M
 	err := sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
-	t.Log(result)
 
 	var ids []primitive.ObjectID
 	for _, v := range orderIds[5:] {
@@ -1019,6 +1409,51 @@ func TestBulkDeleteBadFilter(t *testing.T) {
 	)
 	resp := w.Result()
 	assert.Equal(t, 500, resp.StatusCode())
+}
+
+func TestBulkDeleteEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"namespace": M{"$in": []string{"test1", "test2"}},
+		},
+	})
+	w := ut.PerformRequest(r, "POST", "/projects/bulk-delete",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 200, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "bulk-delete", msg.Event)
+		data := msg.Data.(M)
+		assert.Equal(t, M{"$in": []interface{}{"test1", "test2"}}, data["namespace"])
+		assert.Equal(t, result, msg.Result)
+		break
+	}
+}
+
+func TestBulkDeleteBadEvent(t *testing.T) {
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"namespace": M{"$in": []string{"test1", "test2"}},
+		},
+	})
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "POST", "/projects/bulk-delete",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	RecoverStream(t)
 }
 
 func TestSortBadValidate(t *testing.T) {
@@ -1062,4 +1497,49 @@ func TestSort(t *testing.T) {
 		index := v["sort"].(int)
 		assert.Equal(t, sources[index], v["_id"].(primitive.ObjectID).Hex())
 	}
+}
+
+func TestSortEvent(t *testing.T) {
+	ch := make(chan dsl.PublishDto)
+	go MockSubscribe(t, ch)
+
+	projectIds = funk.Reverse(projectIds).([]string)
+	body, _ := sonic.Marshal(M{
+		"data": projectIds,
+	})
+	w := ut.PerformRequest(r, "POST", "/projects/sort",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 204, resp.StatusCode())
+	assert.Empty(t, resp.Body())
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, "sort", msg.Event)
+		data := make([]string, 10)
+		for i, v := range msg.Data.([]interface{}) {
+			data[i] = v.(string)
+		}
+		assert.Equal(t, projectIds, data)
+		t.Log(msg.Result)
+		break
+	}
+}
+
+func TestSortBadEvent(t *testing.T) {
+	projectIds = funk.Reverse(projectIds).([]string)
+	body, _ := sonic.Marshal(M{
+		"data": projectIds,
+	})
+	RemoveStream(t)
+	w := ut.PerformRequest(r, "POST", "/projects/sort",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 500, resp.StatusCode())
+	assert.Empty(t, resp.Body())
+	RecoverStream(t)
 }
