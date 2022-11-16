@@ -617,9 +617,7 @@ func TestFindOne(t *testing.T) {
 	err := sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
-	check, err := passlib.Verify("5auBnD$L", result["password"].(string))
-	assert.NoError(t, err)
-	assert.True(t, check)
+	assert.Empty(t, result["password"])
 	assert.Equal(t, "624a8facb4e5d150793d6353", result["department"])
 	assert.ElementsMatch(t, roles, result["roles"])
 }
@@ -661,9 +659,7 @@ func TestFindById(t *testing.T) {
 	err := sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
-	check, err := passlib.Verify("5auBnD$L", result["password"].(string))
-	assert.NoError(t, err)
-	assert.True(t, check)
+	assert.Empty(t, result["password"])
 	assert.Equal(t, "624a8facb4e5d150793d6353", result["department"])
 	assert.ElementsMatch(t, roles, result["roles"])
 }
