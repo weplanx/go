@@ -620,6 +620,8 @@ func TestFindOne(t *testing.T) {
 	assert.Empty(t, result["password"])
 	assert.Equal(t, "624a8facb4e5d150793d6353", result["department"])
 	assert.ElementsMatch(t, roles, result["roles"])
+	assert.NotEmpty(t, result["create_time"])
+	assert.NotEmpty(t, result["update_time"])
 }
 
 func TestFindOneBadFilter(t *testing.T) {
@@ -649,7 +651,14 @@ func TestFindByIdBadValidate(t *testing.T) {
 }
 
 func TestFindById(t *testing.T) {
-	w := ut.PerformRequest(r, "GET", fmt.Sprintf(`/users/%s`, userId),
+	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
+	query := u.Query()
+	query.Add("keys", "name")
+	query.Add("keys", "password")
+	query.Add("keys", "department")
+	query.Add("keys", "roles")
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(r, "GET", u.RequestURI(),
 		&ut.Body{},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -662,6 +671,8 @@ func TestFindById(t *testing.T) {
 	assert.Empty(t, result["password"])
 	assert.Equal(t, "624a8facb4e5d150793d6353", result["department"])
 	assert.ElementsMatch(t, roles, result["roles"])
+	assert.Empty(t, result["create_time"])
+	assert.Empty(t, result["update_time"])
 }
 
 func TestFindByIdBadKeys(t *testing.T) {
