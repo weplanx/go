@@ -16,7 +16,7 @@ jobs:
       - name: 部署环境
         run: |
           docker-compose -f ".github/compose/docker-compose.yml" up -d
-          sudo -i -u postgres psql -c "create database example;"
+          sudo -i -u postgres psql "user=postgres dbname=postgres password=example port=5432 sslmode=disable" -c "create database example;"
 
       - name: 安装 Golang
         uses: actions/setup-go@v2
