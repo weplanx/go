@@ -16,7 +16,6 @@ jobs:
       - name: 部署环境
         run: |
           docker-compose -f ".github/compose/docker-compose.yml" up -d
-          sudo -i -u postgres psql "host=127.0.0.1 port=5432 user=postgres dbname=postgres password=example sslmode=disable" -c "create database example;"
 
       - name: 安装 Golang
         uses: actions/setup-go@v2
@@ -28,7 +27,7 @@ jobs:
         env:
           GO111MODULE: on
           DATABASE_MONGO: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
-          DATABASE_GORM: host=127.0.0.1 user=postgres password=example dbname=example port=5432 sslmode=disable
+          DATABASE_GORM: host=127.0.0.1 user=postgres password=example dbname=postgres port=5432 sslmode=disable
           DATABASE_REDIS: redis://127.0.0.1:6379
           NATS_HOSTS: nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224
           NATS_TOKEN: s3cr3t
