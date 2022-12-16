@@ -18,15 +18,12 @@ type Controller struct {
 }
 
 type CreateDto struct {
-	// 集合命名
-	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 文档数据
-	Data M `json:"data,required" vd:"len($)>0;msg:'文档不能为空数据'"`
-	// Body.data 格式转换
-	Format M `json:"format"`
+	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Data       M      `json:"data,required" vd:"len($)>0;msg:'document cannot be empty data'"`
+	Format     M      `json:"format"`
 }
 
-// Create 新增文档
+// Create
 // @router /:collection [POST]
 func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 	var dto CreateDto
@@ -35,7 +32,6 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -63,15 +59,12 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 }
 
 type BulkCreateDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 批量文档数据
-	Data []M `json:"data,required" vd:"len($)>0 && range($,len(#v)>0);msg:'批量文档不能存在空数据'"`
-	// Body.data[*] 格式转换
-	Format M `json:"format"`
+	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Data       []M    `json:"data,required" vd:"len($)>0 && range($,len(#v)>0);msg:'batch documents cannot have empty data'"`
+	Format     M      `json:"format"`
 }
 
-// BulkCreate 批量新增文档
+// BulkCreate
 // @router /:collection/bulk-create [POST]
 func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 	var dto BulkCreateDto
@@ -80,7 +73,6 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	docs := make([]interface{}, len(dto.Data))
 	for i, doc := range dto.Data {
 		if err := x.DSLService.Transform(doc, dto.Format); err != nil {
@@ -112,15 +104,12 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 }
 
 type SizeDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 筛选条件
-	Filter M `query:"filter"`
-	// Query.filter 格式转换
-	Format M `query:"format"`
+	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Filter     M      `query:"filter"`
+	Format     M      `query:"format"`
 }
 
-// Size 获取文档总数
+// Size
 // @router /:collection/_size [GET]
 func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 	var dto SizeDto
@@ -129,7 +118,6 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -146,23 +134,16 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 }
 
 type FindDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 分页大小（默认 100 自定义必须在1~1000之间 ）
-	Pagesize int64 `header:"x-pagesize" vd:"$>=0 && $<=1000;msg:'分页数量必须在 1~1000 之间'"`
-	// 分页页码
-	Page int64 `header:"x-page" vd:"$>=0;msg:'页码必须大于 0'"`
-	// 筛选条件
-	Filter M `query:"filter"`
-	// Query.filter 格式转换
-	Format M `query:"format"`
-	// 排序规则
-	Sort []string `query:"sort" vd:"range($,regexp('^[a-z_]+:(-1|1)$',#v)));msg:'排序规则不规范'"`
-	// 投影规则
-	Keys []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'投影规则不规范'"`
+	Collection string   `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Pagesize   int64    `header:"x-pagesize" vd:"$>=0 && $<=1000;msg:'the number of pages must be between 1 and 1000'"`
+	Page       int64    `header:"x-page" vd:"$>=0;msg:'the page number must be greater than 0'"`
+	Filter     M        `query:"filter"`
+	Format     M        `query:"format"`
+	Sort       []string `query:"sort" vd:"range($,regexp('^[a-z_]+:(-1|1)$',#v)));msg:'the collation is not standardized'"`
+	Keys       []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'the projection rules are not standardized'"`
 }
 
-// Find 获取匹配文档
+// Find
 // @router /:collection [GET]
 func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	var dto FindDto
@@ -171,7 +152,6 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -183,12 +163,10 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 默认分页数量 100
 	if dto.Pagesize == 0 {
 		dto.Pagesize = 100
 	}
 
-	// 默认页码 1
 	if dto.Page == 0 {
 		dto.Page = 1
 	}
@@ -200,7 +178,6 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 		sort[i] = bson.E{Key: rule[0], Value: order}
 	}
 
-	// 默认倒序 ID
 	if len(sort) == 0 {
 		sort = bson.D{{Key: "_id", Value: -1}}
 	}
@@ -223,17 +200,13 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 }
 
 type FindOneDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 筛选条件
-	Filter M `query:"filter,required" vd:"len($)>0;msg:'筛选条件不能为空'"`
-	// Query.filter 格式转换
-	Format M `query:"format"`
-	// 投影规则
-	Keys []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'投影规则不规范'"`
+	Collection string   `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Filter     M        `query:"filter,required" vd:"len($)>0;msg:'the filter cannot be empty'"`
+	Format     M        `query:"format"`
+	Keys       []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'the projection rules are not standardized'"`
 }
 
-// FindOne 获取单个文档
+// FindOne
 // @router /:collection/_one [GET]
 func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 	var dto FindOneDto
@@ -242,7 +215,6 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -261,15 +233,12 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 }
 
 type FindByIdDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 文档 ID
-	Id string `path:"id,required" vd:"mongoId($);msg:'文档 ID 不规范'"`
-	// 投影规则
-	Keys []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'投影规则不规范'"`
+	Collection string   `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Id         string   `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
+	Keys       []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'the projection rules are not standardized'"`
 }
 
-// FindById 获取指定 ID 的文档
+// FindById
 // @router /:collection/:id [GET]
 func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 	var dto FindByIdDto
@@ -292,19 +261,14 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 }
 
 type UpdateDto struct {
-	// 集合命名
-	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 筛选条件
-	Filter M `query:"filter,required" vd:"len($)>0;msg:'筛选条件不能为空'"`
-	// Query.filter 格式转换
-	FFormat M `query:"format"`
-	// 更新操作
-	Data M `json:"data,required" vd:"len($)>0;msg:'更新操作不能为空'"`
-	// Body.data 格式转换
-	DFormat M `json:"format"`
+	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Filter     M      `query:"filter,required" vd:"len($)>0;msg:'the filter cannot be empty'"`
+	FFormat    M      `query:"format"`
+	Data       M      `json:"data,required" vd:"len($)>0;msg:'the update cannot be empty'"`
+	DFormat    M      `json:"format"`
 }
 
-// Update 局部更新匹配文档
+// Update
 // @router /:collection [PATCH]
 func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 	var dto UpdateDto
@@ -313,7 +277,6 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.DSLService.Transform(dto.Filter, dto.FFormat); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -349,17 +312,13 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 }
 
 type UpdateByIdDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 文档 ID
-	Id string `path:"id,required" vd:"mongoId($);msg:'文档 ID 不规范'"`
-	// 更新操作
-	Data M `json:"data,required" vd:"len($)>0;msg:'更新操作不能为空'"`
-	// Body.data 格式转换
-	Format M `json:"format"`
+	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
+	Data       M      `json:"data,required" vd:"len($)>0;msg:'the update cannot be empty'"`
+	Format     M      `json:"format"`
 }
 
-// UpdateById 局部更新指定 ID 的文档
+// UpdateById
 // @router /:collection/:id [PATCH]
 func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	var dto UpdateByIdDto
@@ -400,17 +359,13 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 }
 
 type ReplaceDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 文档 ID
-	Id string `path:"id,required" vd:"mongoId($);msg:'文档 ID 不规范'"`
-	// 文档数据
-	Data M `json:"data,required" vd:"len($)>0;msg:'文档数据不能为空'"`
-	// Body.data 格式转换
-	Format M `json:"format"`
+	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
+	Data       M      `json:"data,required" vd:"len($)>0;msg:'document cannot be empty data'"`
+	Format     M      `json:"format"`
 }
 
-// Replace 替换指定 ID 的文档
+// Replace
 // @router /:collection/:id [PUT]
 func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 	var dto ReplaceDto
@@ -419,7 +374,6 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -449,13 +403,11 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 }
 
 type DeleteDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 文档 ID
-	Id string `path:"id,required" vd:"mongoId($);msg:'文档 ID 不规范'"`
+	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
 }
 
-// Delete 删除指定 ID 的文档
+// Delete
 // @router /:collection/:id [DELETE]
 func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 	var dto DeleteDto
@@ -484,15 +436,12 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 }
 
 type BulkDeleteDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 筛选条件
-	Data M `json:"data,required" vd:"len($)>0;msg:'筛选条件不能为空'"`
-	// Body.data 格式转换
-	Format M `json:"format"`
+	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Data       M      `json:"data,required" vd:"len($)>0;msg:'the filter cannot be empty'"`
+	Format     M      `json:"format"`
 }
 
-// BulkDelete 批量删除匹配文档
+// BulkDelete
 // @router /:collection/bulk-delete [POST]
 func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 	var dto BulkDeleteDto
@@ -501,7 +450,6 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -527,13 +475,11 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 }
 
 type SortDto struct {
-	// 集合命名
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'集合名称必须是小写字母与下划线'"`
-	// 文档 ID 数组
-	Data []primitive.ObjectID `json:"data,required" vd:"len($)>0;msg:'数组必须均为文档 ID'"`
+	Collection string               `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Data       []primitive.ObjectID `json:"data,required" vd:"len($)>0;msg:'the submission data must be an array of ObjectId'"`
 }
 
-// Sort 排序文档
+// Sort
 // @router /:collection/sort [POST]
 func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 	var dto SortDto

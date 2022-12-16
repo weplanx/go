@@ -18,7 +18,7 @@ type Service struct {
 	*DSL
 }
 
-// Load 加载动态配置
+// Load Values
 func (x *Service) Load(ctx context.Context) (err error) {
 	for k, v := range x.DynamicValues.DSL {
 		if v.Event {
@@ -36,17 +36,14 @@ func (x *Service) Load(ctx context.Context) (err error) {
 	return
 }
 
-// Create 新增文档
 func (x *Service) Create(ctx context.Context, name string, doc M) (_ interface{}, err error) {
 	return x.Db.Collection(name).InsertOne(ctx, doc)
 }
 
-// BulkCreate 批量新增文档
 func (x *Service) BulkCreate(ctx context.Context, name string, docs []interface{}) (_ interface{}, err error) {
 	return x.Db.Collection(name).InsertMany(ctx, docs)
 }
 
-// Size 获取文档总数
 func (x *Service) Size(ctx context.Context, name string, filter M) (_ int64, err error) {
 	if len(filter) == 0 {
 		return x.Db.Collection(name).EstimatedDocumentCount(ctx)
@@ -54,7 +51,6 @@ func (x *Service) Size(ctx context.Context, name string, filter M) (_ int64, err
 	return x.Db.Collection(name).CountDocuments(ctx, filter)
 }
 
-// Find 获取匹配文档
 func (x *Service) Find(ctx context.Context, name string, filter M, option *options.FindOptions) (data []M, err error) {
 	var cursor *mongo.Cursor
 	if cursor, err = x.Db.Collection(name).Find(ctx, filter, option); err != nil {
@@ -67,7 +63,6 @@ func (x *Service) Find(ctx context.Context, name string, filter M, option *optio
 	return
 }
 
-// FindOne 获取单个文档
 func (x *Service) FindOne(ctx context.Context, name string, filter M, option *options.FindOneOptions) (data M, err error) {
 	if err = x.Db.Collection(name).FindOne(ctx, filter, option).Decode(&data); err != nil {
 		return
@@ -75,33 +70,27 @@ func (x *Service) FindOne(ctx context.Context, name string, filter M, option *op
 	return
 }
 
-// Update 局部更新匹配文档
 func (x *Service) Update(ctx context.Context, name string, filter M, update M) (_ interface{}, err error) {
 	return x.Db.Collection(name).UpdateMany(ctx, filter, update)
 }
 
-// UpdateById 局部更新指定 ID 的文档
 func (x *Service) UpdateById(ctx context.Context, name string, id primitive.ObjectID, update M) (_ interface{}, err error) {
 	return x.Db.Collection(name).UpdateOne(ctx, M{"_id": id}, update)
 }
 
-// Replace 替换指定 ID 的文档
 func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectID, doc M) (_ interface{}, err error) {
 	return x.Db.Collection(name).ReplaceOne(ctx, M{"_id": id}, doc)
 }
 
-// Delete 删除指定 ID 的文档
 func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID) (_ interface{}, err error) {
 	return x.Db.Collection(name).DeleteOne(ctx, M{"_id": id, "labels.fixed": bson.M{"$exists": false}})
 }
 
-// BulkDelete 批量删除匹配文档
 func (x *Service) BulkDelete(ctx context.Context, name string, filter M) (_ interface{}, err error) {
 	filter["labels.fixed"] = bson.M{"$exists": false}
 	return x.Db.Collection(name).DeleteMany(ctx, filter)
 }
 
-// Sort 排序文档
 func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectID) (_ interface{}, err error) {
 	var wms []mongo.WriteModel
 	for i, id := range ids {
@@ -120,7 +109,6 @@ func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectI
 	return x.Db.Collection(name).BulkWrite(ctx, wms)
 }
 
-// Transform 格式转换
 func (x *Service) Transform(data M, format M) (err error) {
 	for path, spec := range format {
 		keys, cursor := strings.Split(path, "."), data
@@ -136,14 +124,12 @@ func (x *Service) Transform(data M, format M) (err error) {
 		}
 		switch spec {
 		case "oid":
-			// 转换为 ObjectId
 			if cursor[key], err = primitive.ObjectIDFromHex(cursor[key].(string)); err != nil {
 				return
 			}
 			break
 
 		case "oids":
-			// 转换为 ObjectId 数组
 			oids := cursor[key].([]interface{})
 			for i, id := range oids {
 				if oids[i], err = primitive.ObjectIDFromHex(id.(string)); err != nil {
@@ -153,14 +139,12 @@ func (x *Service) Transform(data M, format M) (err error) {
 			break
 
 		case "date":
-			// 转换为 Time
 			if cursor[key], err = time.Parse(time.RFC3339, cursor[key].(string)); err != nil {
 				return
 			}
 			break
 
 		case "password":
-			// 密码类型，转换为 Argon2id
 			if cursor[key], _ = passlib.Hash(cursor[key].(string)); err != nil {
 				return
 			}
@@ -170,7 +154,6 @@ func (x *Service) Transform(data M, format M) (err error) {
 	return
 }
 
-// Projection 字段投影
 func (x *Service) Projection(name string, keys []string) (result bson.M) {
 	result = make(bson.M)
 	if x.DynamicValues.DSL != nil && x.DynamicValues.DSL[name] != nil {
@@ -201,7 +184,6 @@ type PublishDto struct {
 	Result       interface{} `json:"result"`
 }
 
-// Publish 事件消息补偿
 func (x *Service) Publish(ctx context.Context, name string, dto PublishDto) (err error) {
 	if v, ok := x.DynamicValues.DSL[name]; ok {
 		if !v.Event {

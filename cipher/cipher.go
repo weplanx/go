@@ -11,7 +11,6 @@ type Cipher struct {
 	AEAD cipher.AEAD
 }
 
-// New 创建加密
 func New(key string) (x *Cipher, err error) {
 	x = new(Cipher)
 	if x.AEAD, err = chacha20poly1305.NewX([]byte(key)); err != nil {
@@ -20,7 +19,6 @@ func New(key string) (x *Cipher, err error) {
 	return
 }
 
-// Encode 加密
 func (x *Cipher) Encode(data []byte) (ciphertext string, err error) {
 	nonce := make([]byte, x.AEAD.NonceSize(), x.AEAD.NonceSize()+len(data)+x.AEAD.Overhead())
 	rand.Read(nonce)
@@ -29,7 +27,6 @@ func (x *Cipher) Encode(data []byte) (ciphertext string, err error) {
 	return
 }
 
-// Decode 解密
 func (x *Cipher) Decode(ciphertext string) (data []byte, err error) {
 	encrypted, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
