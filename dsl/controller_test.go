@@ -9,7 +9,7 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/thoas/go-funk"
-	"github.com/weplanx/utils/dsl"
+	_dsl "github.com/weplanx/utils/dsl"
 	"github.com/weplanx/utils/passlib"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -110,7 +110,7 @@ func TestCreateBadDbValidate(t *testing.T) {
 var projectId string
 
 func TestCreateEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
@@ -296,7 +296,7 @@ func TestBulkCreateBadDbValidate(t *testing.T) {
 var projectIds []string
 
 func TestBulkCreateEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := make([]string, 10)
@@ -869,7 +869,7 @@ func TestUpdateBadDbValidate(t *testing.T) {
 }
 
 func TestUpdateEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	u := url.URL{Path: fmt.Sprintf(`/projects`)}
@@ -1069,7 +1069,7 @@ func TestUpdateByIdBadDbValidate(t *testing.T) {
 }
 
 func TestUpdateByIdEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
@@ -1215,7 +1215,7 @@ func TestReplaceBadDbValidate(t *testing.T) {
 }
 
 func TestReplaceEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
@@ -1309,7 +1309,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	w := ut.PerformRequest(r, "DELETE", fmt.Sprintf(`/projects/%s`, projectId),
@@ -1416,7 +1416,7 @@ func TestBulkDeleteBadFilter(t *testing.T) {
 }
 
 func TestBulkDeleteEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	body, _ := sonic.Marshal(M{
@@ -1504,7 +1504,7 @@ func TestSort(t *testing.T) {
 }
 
 func TestSortEvent(t *testing.T) {
-	ch := make(chan dsl.PublishDto)
+	ch := make(chan _dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	projectIds = funk.Reverse(projectIds).([]string)
