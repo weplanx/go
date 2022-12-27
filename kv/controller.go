@@ -15,7 +15,7 @@ type SetDto struct {
 }
 
 // Set 设置动态配置
-// @router /values [PATCH]
+// @router /values [POST]
 func (x *Controller) Set(_ context.Context, c *app.RequestContext) {
 	var dto SetDto
 	if err := c.BindAndValidate(&dto); err != nil {
