@@ -14,7 +14,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
-	_dsl "github.com/weplanx/utils/dsl"
+	"github.com/weplanx/utils/dsl"
 	"github.com/weplanx/utils/helper"
 	"github.com/weplanx/utils/kv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -60,24 +60,24 @@ func TestMain(m *testing.M) {
 			js.DeleteStream(fmt.Sprintf(`%s:events:%s`, "dev", k))
 		}
 	}
-	x, err := _dsl.New(
-		_dsl.SetNamespace("dev"),
-		_dsl.SetDatabase(db),
-		_dsl.SetDynamicValues(dv),
-		_dsl.SetJetStream(js),
+	x, err := dsl.New(
+		dsl.SetNamespace("dev"),
+		dsl.SetDatabase(db),
+		dsl.SetDynamicValues(dv),
+		dsl.SetJetStream(js),
 	)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	service := &_dsl.Service{DSL: x}
+	service := &dsl.Service{DSL: x}
 	if err = service.Load(context.TODO()); err != nil {
 		log.Fatalln(err)
 	}
 	helper.RegValidate()
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
-	helper.BindDSL(r.Group("/:collection"), &_dsl.Controller{DSLService: service})
+	helper.BindDSL(r.Group("/:collection"), &dsl.Controller{DSLService: service})
 	os.Exit(m.Run())
 }
 
