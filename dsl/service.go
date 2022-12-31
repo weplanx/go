@@ -139,6 +139,12 @@ func (x *Service) Transform(data M, format M) (err error) {
 			break
 
 		case "date":
+			if cursor[key], err = time.Parse(time.RFC1123, cursor[key].(string)); err != nil {
+				return
+			}
+			break
+
+		case "timestamp":
 			if cursor[key], err = time.Parse(time.RFC3339, cursor[key].(string)); err != nil {
 				return
 			}
