@@ -9,7 +9,7 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/thoas/go-funk"
-	_dsl "github.com/weplanx/utils/dsl"
+	"github.com/weplanx/utils/dsl"
 	"github.com/weplanx/utils/passlib"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -110,7 +110,7 @@ func TestCreateBadDbValidate(t *testing.T) {
 var projectId string
 
 func TestCreateEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
@@ -122,7 +122,7 @@ func TestCreateEvent(t *testing.T) {
 			"expire_time": expire,
 		},
 		"format": M{
-			"expire_time": "date",
+			"expire_time": "timestamp",
 		},
 	})
 	w := ut.PerformRequest(r, "POST", "/projects",
@@ -147,7 +147,7 @@ func TestCreateEvent(t *testing.T) {
 		assert.Equal(t, "abcd", data["secret"])
 		assert.Equal(t, expire, data["expire_time"])
 		format := msg.DataFormat
-		assert.Equal(t, "date", format["expire_time"])
+		assert.Equal(t, "timestamp", format["expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -163,7 +163,7 @@ func TestCreateBadEvent(t *testing.T) {
 			"expire_time": expire,
 		},
 		"format": M{
-			"expire_time": "date",
+			"expire_time": "timestamp",
 		},
 	})
 	RemoveStream(t)
@@ -208,7 +208,7 @@ func TestBulkCreateBadTransform(t *testing.T) {
 			},
 		},
 		"format": M{
-			"time": "date",
+			"time": "timestamp",
 		},
 	})
 	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
@@ -236,7 +236,7 @@ func TestBulkCreate(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": orders,
 		"format": M{
-			"time": "date",
+			"time": "timestamp",
 		},
 	})
 	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
@@ -296,7 +296,7 @@ func TestBulkCreateBadDbValidate(t *testing.T) {
 var projectIds []string
 
 func TestBulkCreateEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := make([]string, 10)
@@ -314,7 +314,7 @@ func TestBulkCreateEvent(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": data,
 		"format": M{
-			"expire_time": "date",
+			"expire_time": "timestamp",
 		},
 	})
 	w := ut.PerformRequest(r, "POST", "/projects/bulk-create",
@@ -345,7 +345,7 @@ func TestBulkCreateEvent(t *testing.T) {
 			assert.Equal(t, expire[i], data["expire_time"])
 		}
 		format := msg.DataFormat
-		assert.Equal(t, "date", format["expire_time"])
+		assert.Equal(t, "timestamp", format["expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -370,7 +370,7 @@ func TestBulkCreateBadEvent(t *testing.T) {
 			},
 		},
 		"format": M{
-			"expire_time": "date",
+			"expire_time": "timestamp",
 		},
 	})
 	RemoveStream(t)
@@ -869,7 +869,7 @@ func TestUpdateBadDbValidate(t *testing.T) {
 }
 
 func TestUpdateEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	u := url.URL{Path: fmt.Sprintf(`/projects`)}
@@ -886,7 +886,7 @@ func TestUpdateEvent(t *testing.T) {
 			},
 		},
 		"format": M{
-			"$set.expire_time": "date",
+			"$set.expire_time": "timestamp",
 		},
 	})
 	w := ut.PerformRequest(r, "PATCH", u.RequestURI(),
@@ -906,7 +906,7 @@ func TestUpdateEvent(t *testing.T) {
 		data := msg.Data.(M)["$set"].(M)
 		assert.Equal(t, "qwer", data["secret"])
 		assert.Equal(t, expire, data["expire_time"])
-		assert.Equal(t, "date", msg.DataFormat["$set.expire_time"])
+		assert.Equal(t, "timestamp", msg.DataFormat["$set.expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -927,7 +927,7 @@ func TestUpdateBadEvent(t *testing.T) {
 			},
 		},
 		"format": M{
-			"$set.expire_time": "date",
+			"$set.expire_time": "timestamp",
 		},
 	})
 	RemoveStream(t)
@@ -1069,7 +1069,7 @@ func TestUpdateByIdBadDbValidate(t *testing.T) {
 }
 
 func TestUpdateByIdEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
@@ -1080,7 +1080,7 @@ func TestUpdateByIdEvent(t *testing.T) {
 			},
 		},
 		"format": M{
-			"$set.expire_time": "date",
+			"$set.expire_time": "timestamp",
 		},
 	})
 	w := ut.PerformRequest(r, "PATCH", fmt.Sprintf(`/projects/%s`, projectId),
@@ -1100,7 +1100,7 @@ func TestUpdateByIdEvent(t *testing.T) {
 		assert.Empty(t, msg.Filter)
 		data := msg.Data.(M)["$set"].(M)
 		assert.Equal(t, expire, data["expire_time"])
-		assert.Equal(t, "date", msg.DataFormat["$set.expire_time"])
+		assert.Equal(t, "timestamp", msg.DataFormat["$set.expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -1115,7 +1115,7 @@ func TestUpdateByIdBadEvent(t *testing.T) {
 			},
 		},
 		"format": M{
-			"$set.expire_time": "date",
+			"$set.expire_time": "timestamp",
 		},
 	})
 	RemoveStream(t)
@@ -1215,7 +1215,7 @@ func TestReplaceBadDbValidate(t *testing.T) {
 }
 
 func TestReplaceEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
@@ -1227,7 +1227,7 @@ func TestReplaceEvent(t *testing.T) {
 			"expire_time": expire,
 		},
 		"format": M{
-			"expire_time": "date",
+			"expire_time": "timestamp",
 		},
 	})
 	w := ut.PerformRequest(r, "PUT", fmt.Sprintf(`/projects/%s`, projectId),
@@ -1249,7 +1249,7 @@ func TestReplaceEvent(t *testing.T) {
 		assert.Equal(t, "orders", data["namespace"])
 		assert.Equal(t, "123456", data["secret"])
 		assert.Equal(t, expire, data["expire_time"])
-		assert.Equal(t, "date", msg.DataFormat["expire_time"])
+		assert.Equal(t, "timestamp", msg.DataFormat["expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -1265,7 +1265,7 @@ func TestReplaceBadEvent(t *testing.T) {
 			"expire_time": expire,
 		},
 		"format": M{
-			"expire_time": "date",
+			"expire_time": "timestamp",
 		},
 	})
 	RemoveStream(t)
@@ -1309,7 +1309,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	w := ut.PerformRequest(r, "DELETE", fmt.Sprintf(`/projects/%s`, projectId),
@@ -1416,7 +1416,7 @@ func TestBulkDeleteBadFilter(t *testing.T) {
 }
 
 func TestBulkDeleteEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	body, _ := sonic.Marshal(M{
@@ -1504,7 +1504,7 @@ func TestSort(t *testing.T) {
 }
 
 func TestSortEvent(t *testing.T) {
-	ch := make(chan _dsl.PublishDto)
+	ch := make(chan dsl.PublishDto)
 	go MockSubscribe(t, ch)
 
 	projectIds = funk.Reverse(projectIds).([]string)
