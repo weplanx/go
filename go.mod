@@ -12,7 +12,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/wire v0.5.0
-	github.com/lib/pq v1.10.7
+	github.com/matoous/go-nanoid v1.5.0
 	github.com/nats-io/nats.go v1.16.0
 	github.com/nats-io/nkeys v0.3.0
 	github.com/speps/go-hashids/v2 v2.0.1
@@ -20,8 +20,6 @@ require (
 	github.com/thoas/go-funk v0.9.2
 	go.mongodb.org/mongo-driver v1.11.0
 	golang.org/x/crypto v0.0.0-20220824171710-5757bc0c5503
-	gorm.io/driver/postgres v1.4.5
-	gorm.io/gorm v1.24.2
 )
 
 require (
@@ -36,16 +34,6 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/henrylee2cn/ameda v1.4.10 // indirect
 	github.com/henrylee2cn/goutil v0.0.0-20210127050712-89660552f6f8 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.13.0 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
-	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.12.0 // indirect
-	github.com/jackc/pgx/v4 v4.17.2 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
@@ -69,6 +57,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220913175220-63ea55921009 // indirect
 	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
