@@ -82,7 +82,7 @@ func SetIgnoreMethods(methods []string) Option {
 func (x *Csrf) SetToken(c *app.RequestContext) {
 	salt, _ := gonanoid.Nanoid()
 	c.SetCookie(x.SaltName, salt, 86400, "/", "", protocol.CookieSameSiteStrictMode, true, true)
-	c.SetCookie(x.CookieName, x.Tokenize(salt), 86400, "/", "", protocol.CookieSameSiteLaxMode, true, false)
+	c.SetCookie(x.CookieName, x.Tokenize(salt), 86400, "/", "", protocol.CookieSameSiteStrictMode, true, false)
 }
 
 func (x *Csrf) Tokenize(salt string) string {
