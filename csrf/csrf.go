@@ -91,8 +91,13 @@ func (x *Csrf) Tokenize(salt string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (x *Csrf) VerifyToken() app.HandlerFunc {
+func (x *Csrf) VerifyToken(skip bool) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
+		if skip {
+			c.Next(ctx)
+			return
+		}
+
 		if x.IgnoreMethods[string(c.Method())] {
 			c.Next(ctx)
 			return
