@@ -78,7 +78,7 @@ func TestSync(t *testing.T) {
 					assert.Equal(t, kv.DEFAULT.IpLoginFailures, x.IpLoginFailures)
 					assert.Equal(t, kv.DEFAULT.PwdStrategy, x.PwdStrategy)
 					assert.Equal(t, kv.DEFAULT.PwdTTL, x.PwdTTL)
-					assert.Equal(t, "", x.Office)
+					assert.Equal(t, "", x.Cloud)
 				}
 				if times == 1 {
 					assert.Equal(t, kv.DEFAULT.LoginTTL, x.LoginTTL)
@@ -86,7 +86,7 @@ func TestSync(t *testing.T) {
 					assert.Equal(t, kv.DEFAULT.IpLoginFailures, x.IpLoginFailures)
 					assert.Equal(t, kv.DEFAULT.PwdStrategy, x.PwdStrategy)
 					assert.Equal(t, kv.DEFAULT.PwdTTL, x.PwdTTL)
-					assert.Equal(t, "feishu", x.Office)
+					assert.Equal(t, "tencent", x.Cloud)
 				}
 				times++
 			case e := <-option.Err:
@@ -98,7 +98,7 @@ func TestSync(t *testing.T) {
 	}()
 
 	err = service.Set(M{
-		"office": "feishu",
+		"cloud": "tencent",
 	})
 	assert.NoError(t, err)
 

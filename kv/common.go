@@ -75,8 +75,6 @@ type DynamicValues struct {
 	// Tencent Cloud COS bucket upload size limit, unit: KB
 	TencentCosLimit int64 `json:"tencent_cos_limit"`
 	// Enterprise Collaboration
-	// Supported: feishu, this is an integrated development experiment, Feishu and Lark applications are not universal
-	// Office string `json:"office"`
 	// Feishu App ID
 	FeishuAppId string `json:"feishu_app_id"`
 	// Feishu application key
