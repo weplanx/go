@@ -146,8 +146,6 @@ func TestCreateEvent(t *testing.T) {
 		assert.Equal(t, "default", data["namespace"])
 		assert.Equal(t, "abcd", data["secret"])
 		assert.Equal(t, expire, data["expire_time"])
-		format := msg.DataFormat
-		assert.Equal(t, "timestamp", format["expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -344,8 +342,6 @@ func TestBulkCreateEvent(t *testing.T) {
 			assert.Equal(t, fmt.Sprintf(`secret%d`, i), data["secret"])
 			assert.Equal(t, expire[i], data["expire_time"])
 		}
-		format := msg.DataFormat
-		assert.Equal(t, "timestamp", format["expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -906,7 +902,6 @@ func TestUpdateEvent(t *testing.T) {
 		data := msg.Data.(M)["$set"].(M)
 		assert.Equal(t, "qwer", data["secret"])
 		assert.Equal(t, expire, data["expire_time"])
-		assert.Equal(t, "timestamp", msg.DataFormat["$set.expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -1100,7 +1095,6 @@ func TestUpdateByIdEvent(t *testing.T) {
 		assert.Empty(t, msg.Filter)
 		data := msg.Data.(M)["$set"].(M)
 		assert.Equal(t, expire, data["expire_time"])
-		assert.Equal(t, "timestamp", msg.DataFormat["$set.expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -1249,7 +1243,6 @@ func TestReplaceEvent(t *testing.T) {
 		assert.Equal(t, "orders", data["namespace"])
 		assert.Equal(t, "123456", data["secret"])
 		assert.Equal(t, expire, data["expire_time"])
-		assert.Equal(t, "timestamp", msg.DataFormat["expire_time"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}

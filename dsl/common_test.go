@@ -77,7 +77,7 @@ func TestMain(m *testing.M) {
 	helper.RegValidate()
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
-	helper.BindDSL(r.Group("/:collection"), &dsl.Controller{DSLService: service})
+	helper.BindDSL(r.Group("/:collection"), &dsl.Controller{Service: service})
 	os.Exit(m.Run())
 }
 
