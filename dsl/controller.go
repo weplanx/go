@@ -14,7 +14,7 @@ import (
 )
 
 type Controller struct {
-	DSLService *Service
+	Service *Service
 }
 
 type CreateDto struct {
@@ -32,25 +32,15 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.Service.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
 	dto.Data["create_time"] = time.Now()
 	dto.Data["update_time"] = time.Now()
 
-	r, err := x.DSLService.Create(ctx, dto.Collection, dto.Data)
+	r, err := x.Service.Create(ctx, dto.Collection, dto.Data)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:      "create",
-		Data:       dto.Data,
-		DataFormat: dto.Format,
-		Result:     r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -75,7 +65,7 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 
 	docs := make([]interface{}, len(dto.Data))
 	for i, doc := range dto.Data {
-		if err := x.DSLService.Transform(doc, dto.Format); err != nil {
+		if err := x.Service.Transform(doc, dto.Format); err != nil {
 			c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 			return
 		}
@@ -84,18 +74,8 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 		docs[i] = doc
 	}
 
-	r, err := x.DSLService.BulkCreate(ctx, dto.Collection, docs)
+	r, err := x.Service.BulkCreate(ctx, dto.Collection, docs)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:      "bulk-create",
-		Data:       dto.Data,
-		DataFormat: dto.Format,
-		Result:     r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -118,12 +98,12 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
+	if err := x.Service.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
 
-	size, err := x.DSLService.Size(ctx, dto.Collection, dto.Filter)
+	size, err := x.Service.Size(ctx, dto.Collection, dto.Filter)
 	if err != nil {
 		c.Error(err)
 		return
@@ -152,12 +132,12 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
+	if err := x.Service.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
 
-	size, err := x.DSLService.Size(ctx, dto.Collection, dto.Filter)
+	size, err := x.Service.Size(ctx, dto.Collection, dto.Filter)
 	if err != nil {
 		c.Error(err)
 		return
@@ -183,13 +163,13 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	}
 
 	option := options.Find().
-		SetProjection(x.DSLService.Projection(dto.Collection, dto.Keys)).
+		SetProjection(x.Service.Projection(dto.Collection, dto.Keys)).
 		SetLimit(dto.Pagesize).
 		SetSkip((dto.Page - 1) * dto.Pagesize).
 		SetSort(sort).
 		SetAllowDiskUse(true)
 
-	data, err := x.DSLService.Find(ctx, dto.Collection, dto.Filter, option)
+	data, err := x.Service.Find(ctx, dto.Collection, dto.Filter, option)
 	if err != nil {
 		c.Error(err)
 		return
@@ -215,15 +195,15 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.DSLService.Transform(dto.Filter, dto.Format); err != nil {
+	if err := x.Service.Transform(dto.Filter, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
 
 	option := options.FindOne().
-		SetProjection(x.DSLService.Projection(dto.Collection, dto.Keys))
+		SetProjection(x.Service.Projection(dto.Collection, dto.Keys))
 
-	data, err := x.DSLService.FindOne(ctx, dto.Collection, dto.Filter, option)
+	data, err := x.Service.FindOne(ctx, dto.Collection, dto.Filter, option)
 	if err != nil {
 		c.Error(err)
 		return
@@ -249,9 +229,9 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 	option := options.FindOne().
-		SetProjection(x.DSLService.Projection(dto.Collection, dto.Keys))
+		SetProjection(x.Service.Projection(dto.Collection, dto.Keys))
 
-	data, err := x.DSLService.FindOne(ctx, dto.Collection, M{"_id": id}, option)
+	data, err := x.Service.FindOne(ctx, dto.Collection, M{"_id": id}, option)
 	if err != nil {
 		c.Error(err)
 		return
@@ -277,11 +257,11 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.DSLService.Transform(dto.Filter, dto.FFormat); err != nil {
+	if err := x.Service.Transform(dto.Filter, dto.FFormat); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
-	if err := x.DSLService.Transform(dto.Data, dto.DFormat); err != nil {
+	if err := x.Service.Transform(dto.Data, dto.DFormat); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -290,20 +270,8 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 	}
 	dto.Data["$set"].(M)["update_time"] = time.Now()
 
-	r, err := x.DSLService.Update(ctx, dto.Collection, dto.Filter, dto.Data)
+	r, err := x.Service.Update(ctx, dto.Collection, dto.Filter, dto.Data)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:        "update",
-		Filter:       dto.Filter,
-		FilterFormat: dto.FFormat,
-		Data:         dto.Data,
-		DataFormat:   dto.DFormat,
-		Result:       r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -328,7 +296,7 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 数据转换
-	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.Service.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -338,19 +306,8 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	dto.Data["$set"].(M)["update_time"] = time.Now()
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
-	r, err := x.DSLService.UpdateById(ctx, dto.Collection, id, dto.Data)
+	r, err := x.Service.UpdateById(ctx, dto.Collection, id, dto.Data)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:      "update",
-		Id:         dto.Id,
-		Data:       dto.Data,
-		DataFormat: dto.Format,
-		Result:     r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -374,7 +331,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.Service.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
@@ -382,19 +339,8 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 	dto.Data["update_time"] = time.Now()
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
-	r, err := x.DSLService.Replace(ctx, dto.Collection, id, dto.Data)
+	r, err := x.Service.Replace(ctx, dto.Collection, id, dto.Data)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:      "replace",
-		Id:         dto.Id,
-		Data:       dto.Data,
-		DataFormat: dto.Format,
-		Result:     r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -417,17 +363,8 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 	}
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
-	r, err := x.DSLService.Delete(ctx, dto.Collection, id)
+	r, err := x.Service.Delete(ctx, dto.Collection, id)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:  "delete",
-		Id:     dto.Id,
-		Result: r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -450,23 +387,13 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.DSLService.Transform(dto.Data, dto.Format); err != nil {
+	if err := x.Service.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
 	}
 
-	r, err := x.DSLService.BulkDelete(ctx, dto.Collection, dto.Data)
+	r, err := x.Service.BulkDelete(ctx, dto.Collection, dto.Data)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:      "bulk-delete",
-		Data:       dto.Data,
-		DataFormat: dto.Format,
-		Result:     r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
@@ -488,17 +415,8 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	r, err := x.DSLService.Sort(ctx, dto.Collection, dto.Data)
+	_, err := x.Service.Sort(ctx, dto.Collection, dto.Data)
 	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	if err = x.DSLService.Publish(ctx, dto.Collection, PublishDto{
-		Event:  "sort",
-		Data:   dto.Data,
-		Result: r,
-	}); err != nil {
 		c.Error(err)
 		return
 	}
