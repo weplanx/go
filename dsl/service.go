@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bytedance/sonic"
+	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/nats-io/nats.go"
 	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weplanx/utils/passlib"
@@ -11,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"strings"
 	"time"
 )
@@ -200,10 +203,10 @@ func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectI
 
 func (x *Service) Transaction(ctx context.Context, txn string) (err error) {
 	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
-	if err = x.Redis.LPush(ctx, key, time.Now()).Err(); err != nil {
+	if err = x.Redis.LPush(ctx, key, time.Now().Format(time.RFC3339)).Err(); err != nil {
 		return
 	}
-	if err = x.Redis.Expire(ctx, key, time.Minute*5).Err(); err != nil {
+	if err = x.Redis.Expire(ctx, key, time.Hour*5).Err(); err != nil {
 		return
 	}
 	return
@@ -227,15 +230,61 @@ func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err 
 	return
 }
 
-//func (x *Service) Commit(ctx context.Context, txn string) (err error) {
-//	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
-//	var dto PendingDto
-//	if err = msgpack.Unmarshal(&dto); err != nil {
-//		return
-//	}
-//
-//	return
-//}
+var ErrTxnTimeOut = errors.NewPublic("the transaction has timed out")
+
+func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err error) {
+	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	var begin time.Time
+	if begin, err = x.Redis.RPop(ctx, key).Time(); err != nil {
+		return
+	}
+	if time.Since(begin) > time.Second*30 {
+		err = ErrTxnTimeOut
+		return
+	}
+
+	var n int64
+	if n, err = x.Redis.LLen(ctx, key).Result(); err != nil {
+		return
+	}
+
+	opts := options.Session().SetDefaultReadConcern(readconcern.Majority())
+	var session mongo.Session
+	if session, err = x.MongoClient.StartSession(opts); err != nil {
+		return
+	}
+	defer session.EndSession(ctx)
+
+	txnOpts := options.Transaction().SetReadPreference(readpref.PrimaryPreferred())
+	return session.WithTransaction(ctx, func(txnCtx mongo.SessionContext) (_ interface{}, err error) {
+		var results []interface{}
+		for n > 0 {
+			var b []byte
+			if b, err = x.Redis.RPop(ctx, key).Bytes(); err != nil {
+				return
+			}
+			var dto PendingDto
+			if err = msgpack.Unmarshal(b, &dto); err != nil {
+				return
+			}
+			var r interface{}
+			if r, err = x.Invoke(txnCtx, dto); err != nil {
+				return
+			}
+			results = append(results, r)
+			n--
+		}
+		return results, nil
+	}, txnOpts)
+}
+
+func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ error) {
+	switch dto.Action {
+	case "Create":
+		return x.Create(ctx, dto.Name, dto.Data)
+	}
+	return
+}
 
 func (x *Service) Transform(data M, format M) (err error) {
 	for path, spec := range format {

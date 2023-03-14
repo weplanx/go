@@ -421,7 +421,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 type SortDto struct {
 	Collection string               `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
 	Data       []primitive.ObjectID `json:"data,required" vd:"len($)>0;msg:'the submission data must be an array of ObjectId'"`
-	TxnID      string               `json:"txn_id"`
+	Txn        string               `json:"txn"`
 }
 
 // Sort
@@ -445,13 +445,35 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 // Transaction
 // @router /transaction [POST]
 func (x *Controller) Transaction(ctx context.Context, c *app.RequestContext) {
-	txnid, _ := gonanoid.Nanoid()
-	if err := x.Service.Transaction(ctx, txnid); err != nil {
+	txn, _ := gonanoid.Nanoid()
+	if err := x.Service.Transaction(ctx, txn); err != nil {
 		c.Error(err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, utils.H{
-		"txn_id": txnid,
+		"txn": txn,
 	})
+}
+
+type CommitDto struct {
+	Txn string `json:"txn,required"`
+}
+
+// Commit
+// @router /commit [POST]
+func (x *Controller) Commit(ctx context.Context, c *app.RequestContext) {
+	var dto CommitDto
+	if err := c.BindAndValidate(&dto); err != nil {
+		c.Error(err)
+		return
+	}
+
+	r, err := x.Service.Commit(ctx, dto.Txn)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, r)
 }

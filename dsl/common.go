@@ -17,6 +17,7 @@ type M = map[string]interface{}
 
 type DSL struct {
 	Namespace     string
+	MongoClient   *mongo.Client
 	Db            *mongo.Database
 	Redis         *redis.Client
 	DynamicValues *kv.DynamicValues
@@ -36,6 +37,12 @@ type Option func(x *DSL)
 func SetNamespace(v string) Option {
 	return func(x *DSL) {
 		x.Namespace = v
+	}
+}
+
+func SetMongoClient(v *mongo.Client) Option {
+	return func(x *DSL) {
+		x.MongoClient = v
 	}
 }
 
