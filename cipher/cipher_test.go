@@ -13,7 +13,6 @@ func TestUseCipher(t *testing.T) {
 	var err error
 	_, err = cipher.New("123456")
 	assert.Error(t, err)
-	// 必须是32位的密钥
 	x1, err = cipher.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
 	assert.NoError(t, err)
 	x2, err = cipher.New("74rILbVooYLirHrQJcslHEAvKZI7PKF9")
@@ -34,10 +33,8 @@ func TestCipher_Decode(t *testing.T) {
 	decryptedText, err := x1.Decode(encryptedText)
 	assert.NoError(t, err)
 	assert.Equal(t, text, string(decryptedText))
-	// 不同密钥发生错误
 	_, err = x2.Decode(encryptedText)
 	assert.Error(t, err)
-	// 非Base64发生错误
 	_, err = x1.Decode("asdasdasd")
 	assert.Error(t, err)
 }

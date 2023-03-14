@@ -33,7 +33,7 @@ func BindKV(u *route.RouterGroup, kv *kv.Controller) {
 }
 
 func BindSessions(u *route.RouterGroup, sessions *sessions.Controller) {
-	r := u.Group("session")
+	r := u.Group("sessions")
 	{
 		r.GET("", sessions.Lists)
 		r.DELETE(":uid", sessions.Remove)
