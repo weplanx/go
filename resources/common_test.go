@@ -1,4 +1,4 @@
-package dsl_test
+package resources_test
 
 import (
 	"context"
@@ -14,9 +14,10 @@ import (
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
-	"github.com/weplanx/utils/dsl"
+	"github.com/redis/go-redis/v9"
 	"github.com/weplanx/utils/helper"
 	"github.com/weplanx/utils/kv"
+	"github.com/weplanx/utils/resources"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,6 +32,7 @@ import (
 var (
 	mgo *mongo.Client
 	db  *mongo.Database
+	rdb *redis.Client
 	nc  *nats.Conn
 	js  nats.JetStreamContext
 	r   *route.Engine
@@ -40,6 +42,9 @@ type M = map[string]interface{}
 
 func TestMain(m *testing.M) {
 	if err := UseMongoDB(); err != nil {
+		log.Fatalln(err)
+	}
+	if err := UseRedis(); err != nil {
 		log.Fatalln(err)
 	}
 	if err := UseNats(); err != nil {
@@ -60,24 +65,26 @@ func TestMain(m *testing.M) {
 			js.DeleteStream(fmt.Sprintf(`%s:events:%s`, "dev", k))
 		}
 	}
-	x, err := dsl.New(
-		dsl.SetNamespace("dev"),
-		dsl.SetDatabase(db),
-		dsl.SetDynamicValues(dv),
-		dsl.SetJetStream(js),
+	x, err := resources.New(
+		resources.SetNamespace("dev"),
+		resources.SetMongoClient(mgo),
+		resources.SetDatabase(db),
+		resources.SetRedis(rdb),
+		resources.SetDynamicValues(dv),
+		resources.SetJetStream(js),
 	)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	service := &dsl.Service{DSL: x}
+	service := &resources.Service{DSL: x}
 	if err = service.Load(context.TODO()); err != nil {
 		log.Fatalln(err)
 	}
 	helper.RegValidate()
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
-	helper.BindDSL(r.Group("/:collection"), &dsl.Controller{Service: service})
+	helper.BindDSL(r.Group("/:collection"), &resources.Controller{Service: service})
 	os.Exit(m.Run())
 }
 
@@ -158,6 +165,15 @@ func UseMongoDB() (err error) {
 	if err = db.CreateCollection(context.TODO(), "projects", projectsOption); err != nil {
 		return
 	}
+	return
+}
+
+func UseRedis() (err error) {
+	opts, err := redis.ParseURL(os.Getenv("DATABASE_REDIS"))
+	if err != nil {
+		return
+	}
+	rdb = redis.NewClient(opts)
 	return
 }
 

@@ -9,12 +9,12 @@ require (
 	github.com/bytedance/sonic v1.8.1
 	github.com/cloudwego/hertz v0.6.0
 	github.com/go-faker/faker/v4 v4.0.0-beta.3
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/wire v0.5.0
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/nats-io/nats.go v1.24.0
 	github.com/nats-io/nkeys v0.3.0
+	github.com/redis/go-redis/v9 v9.0.2
 	github.com/speps/go-hashids/v2 v2.0.1
 	github.com/stretchr/testify v1.8.1
 	github.com/thoas/go-funk v0.9.2
@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cloudwego/netpoll v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -55,7 +55,6 @@ require (
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect

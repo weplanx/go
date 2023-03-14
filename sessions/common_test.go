@@ -11,7 +11,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/route"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/weplanx/utils/helper"
 	"github.com/weplanx/utils/kv"
 	"github.com/weplanx/utils/sessions"

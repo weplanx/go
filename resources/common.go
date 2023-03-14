@@ -1,9 +1,9 @@
-package dsl
+package resources
 
 import (
-	"github.com/go-redis/redis/v8"
 	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
+	"github.com/redis/go-redis/v9"
 	"github.com/weplanx/utils/kv"
 	"go.mongodb.org/mongo-driver/mongo"
 )

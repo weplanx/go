@@ -1,8 +1,8 @@
 package sessions
 
 import (
-	"github.com/go-redis/redis/v8"
 	"github.com/google/wire"
+	"github.com/redis/go-redis/v9"
 	"github.com/weplanx/utils/kv"
 )
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/cloudwego/hertz/pkg/app/server/binding"
 	"github.com/cloudwego/hertz/pkg/route"
-	"github.com/weplanx/utils/dsl"
 	"github.com/weplanx/utils/kv"
+	"github.com/weplanx/utils/resources"
 	"github.com/weplanx/utils/sessions"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -35,17 +35,17 @@ func BindSessions(r *route.RouterGroup, sessions *sessions.Controller) {
 	r.DELETE("", sessions.Clear)
 }
 
-func BindDSL(r *route.RouterGroup, dsl *dsl.Controller) {
-	r.POST("", dsl.Create)
-	r.POST("bulk-create", dsl.BulkCreate)
-	r.GET("_size", dsl.Size)
-	r.GET("", dsl.Find)
-	r.GET("_one", dsl.FindOne)
-	r.GET(":id", dsl.FindById)
-	r.PATCH("", dsl.Update)
-	r.PATCH(":id", dsl.UpdateById)
-	r.PUT(":id", dsl.Replace)
-	r.DELETE(":id", dsl.Delete)
-	r.POST("bulk-delete", dsl.BulkDelete)
-	r.POST("sort", dsl.Sort)
+func BindDSL(r *route.RouterGroup, x *resources.Controller) {
+	r.POST("", x.Create)
+	r.POST("bulk-create", x.BulkCreate)
+	r.GET("_size", x.Size)
+	r.GET("", x.Find)
+	r.GET("_one", x.FindOne)
+	r.GET(":id", x.FindById)
+	r.PATCH("", x.Update)
+	r.PATCH(":id", x.UpdateById)
+	r.PUT(":id", x.Replace)
+	r.DELETE(":id", x.Delete)
+	r.POST("bulk-delete", x.BulkDelete)
+	r.POST("sort", x.Sort)
 }
