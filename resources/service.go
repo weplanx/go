@@ -44,7 +44,7 @@ func (x *Service) Create(ctx context.Context, name string, doc M) (r interface{}
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "create",
+		Action: "create",
 		Data:   doc,
 		Result: r,
 	}); err != nil {
@@ -58,7 +58,7 @@ func (x *Service) BulkCreate(ctx context.Context, name string, docs []interface{
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "bulk-create",
+		Action: "bulk_create",
 		Data:   docs,
 		Result: r,
 	}); err != nil {
@@ -98,7 +98,7 @@ func (x *Service) Update(ctx context.Context, name string, filter M, update M) (
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "update",
+		Action: "update",
 		Filter: filter,
 		Data:   update,
 		Result: r,
@@ -114,7 +114,7 @@ func (x *Service) UpdateById(ctx context.Context, name string, id primitive.Obje
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "update",
+		Action: "update_by_id",
 		Id:     id.Hex(),
 		Data:   update,
 		Result: r,
@@ -130,7 +130,7 @@ func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectI
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "replace",
+		Action: "replace",
 		Id:     id.Hex(),
 		Data:   doc,
 		Result: r,
@@ -149,7 +149,7 @@ func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "delete",
+		Action: "delete",
 		Id:     id.Hex(),
 		Result: r,
 	}); err != nil {
@@ -164,7 +164,7 @@ func (x *Service) BulkDelete(ctx context.Context, name string, filter M) (r inte
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "bulk-delete",
+		Action: "bulk_delete",
 		Data:   filter,
 		Result: r,
 	}); err != nil {
@@ -192,7 +192,7 @@ func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectI
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Event:  "sort",
+		Action: "sort",
 		Data:   ids,
 		Result: r,
 	}); err != nil {
@@ -280,7 +280,7 @@ func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err er
 
 func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ error) {
 	switch dto.Action {
-	case "Create":
+	case "create":
 		return x.Create(ctx, dto.Name, dto.Data)
 	}
 	return
@@ -358,7 +358,7 @@ func (x *Service) Projection(name string, keys []string) (result bson.M) {
 }
 
 type PublishDto struct {
-	Event  string      `json:"event"`
+	Action string      `json:"action"`
 	Id     string      `json:"id,omitempty"`
 	Filter M           `json:"filter,omitempty"`
 	Data   interface{} `json:"data,omitempty"`

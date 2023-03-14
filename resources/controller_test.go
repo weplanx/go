@@ -140,7 +140,7 @@ func TestCreateEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "create", msg.Event)
+		assert.Equal(t, "create", msg.Action)
 		data := msg.Data.(M)
 		assert.Equal(t, "默认项目", data["name"])
 		assert.Equal(t, "default", data["namespace"])
@@ -333,7 +333,7 @@ func TestBulkCreateEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "bulk_create", msg.Event)
+		assert.Equal(t, "bulk_create", msg.Action)
 		assert.Equal(t, 10, len(msg.Data.([]interface{})))
 		for i, v := range msg.Data.([]interface{}) {
 			data := v.(M)
@@ -897,7 +897,7 @@ func TestUpdateEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "update", msg.Event)
+		assert.Equal(t, "update", msg.Action)
 		assert.Equal(t, "default", msg.Filter["namespace"])
 		data := msg.Data.(M)["$set"].(M)
 		assert.Equal(t, "qwer", data["secret"])
@@ -1090,7 +1090,7 @@ func TestUpdateByIdEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "update", msg.Event)
+		assert.Equal(t, "update_by_id", msg.Action)
 		assert.Equal(t, projectId, msg.Id)
 		assert.Empty(t, msg.Filter)
 		data := msg.Data.(M)["$set"].(M)
@@ -1236,7 +1236,7 @@ func TestReplaceEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "replace", msg.Event)
+		assert.Equal(t, "replace", msg.Action)
 		assert.Equal(t, projectId, msg.Id)
 		data := msg.Data.(M)
 		assert.Equal(t, "工单项目", data["name"])
@@ -1318,7 +1318,7 @@ func TestDeleteEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "delete", msg.Event)
+		assert.Equal(t, "delete", msg.Action)
 		assert.Equal(t, projectId, msg.Id)
 		assert.Equal(t, result, msg.Result)
 		break
@@ -1429,7 +1429,7 @@ func TestBulkDeleteEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "bulk_delete", msg.Event)
+		assert.Equal(t, "bulk_delete", msg.Action)
 		data := msg.Data.(M)
 		assert.Equal(t, M{"$in": []interface{}{"test1", "test2"}}, data["namespace"])
 		assert.Equal(t, result, msg.Result)
@@ -1514,7 +1514,7 @@ func TestSortEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "sort", msg.Event)
+		assert.Equal(t, "sort", msg.Action)
 		data := make([]string, 10)
 		for i, v := range msg.Data.([]interface{}) {
 			data[i] = v.(string)

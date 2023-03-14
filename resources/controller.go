@@ -44,7 +44,7 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "Create",
+			Action: "create",
 			Name:   dto.Collection,
 			Data:   dto.Data,
 		}); err != nil {
