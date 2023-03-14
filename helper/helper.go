@@ -23,29 +23,40 @@ func RegValidate() {
 	})
 }
 
-func BindKV(r *route.RouterGroup, kv *kv.Controller) {
-	r.GET("", kv.Get)
-	r.PATCH("", kv.Set)
-	r.DELETE(":key", kv.Remove)
+func BindKV(u *route.RouterGroup, kv *kv.Controller) {
+	r := u.Group("values")
+	{
+		r.GET("", kv.Get)
+		r.PATCH("", kv.Set)
+		r.DELETE(":key", kv.Remove)
+	}
 }
 
-func BindSessions(r *route.RouterGroup, sessions *sessions.Controller) {
-	r.GET("", sessions.Lists)
-	r.DELETE(":uid", sessions.Remove)
-	r.DELETE("", sessions.Clear)
+func BindSessions(u *route.RouterGroup, sessions *sessions.Controller) {
+	r := u.Group("session")
+	{
+		r.GET("", sessions.Lists)
+		r.DELETE(":uid", sessions.Remove)
+		r.DELETE("", sessions.Clear)
+	}
 }
 
-func BindDSL(r *route.RouterGroup, x *resources.Controller) {
-	r.POST("", x.Create)
-	r.POST("bulk-create", x.BulkCreate)
-	r.GET("_size", x.Size)
-	r.GET("", x.Find)
-	r.GET("_one", x.FindOne)
-	r.GET(":id", x.FindById)
-	r.PATCH("", x.Update)
-	r.PATCH(":id", x.UpdateById)
-	r.PUT(":id", x.Replace)
-	r.DELETE(":id", x.Delete)
-	r.POST("bulk-delete", x.BulkDelete)
-	r.POST("sort", x.Sort)
+func BindResources(u *route.RouterGroup, x *resources.Controller) {
+	r := u.Group(":collection")
+	{
+		r.POST("", x.Create)
+		r.POST("bulk_create", x.BulkCreate)
+		r.GET("_size", x.Size)
+		r.GET("", x.Find)
+		r.GET("_one", x.FindOne)
+		r.GET(":id", x.FindById)
+		r.PATCH("", x.Update)
+		r.PATCH(":id", x.UpdateById)
+		r.PUT(":id", x.Replace)
+		r.DELETE(":id", x.Delete)
+		r.POST("bulk_delete", x.BulkDelete)
+		r.POST("sort", x.Sort)
+	}
+	r.POST("transaction", x.Transaction)
+	r.POST("commit", x.Commit)
 }

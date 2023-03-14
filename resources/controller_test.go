@@ -186,7 +186,7 @@ type Order struct {
 
 func TestBulkCreateBadValidate(t *testing.T) {
 	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_create",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -209,7 +209,7 @@ func TestBulkCreateBadTransform(t *testing.T) {
 			"time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_create",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -237,7 +237,7 @@ func TestBulkCreate(t *testing.T) {
 			"time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_create",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -283,7 +283,7 @@ func TestBulkCreateBadDbValidate(t *testing.T) {
 			},
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-create",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_create",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -315,7 +315,7 @@ func TestBulkCreateEvent(t *testing.T) {
 			"expire_time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/projects/bulk-create",
+	w := ut.PerformRequest(r, "POST", "/projects/bulk_create",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -333,7 +333,7 @@ func TestBulkCreateEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "bulk-create", msg.Event)
+		assert.Equal(t, "bulk_create", msg.Event)
 		assert.Equal(t, 10, len(msg.Data.([]interface{})))
 		for i, v := range msg.Data.([]interface{}) {
 			data := v.(M)
@@ -370,7 +370,7 @@ func TestBulkCreateBadEvent(t *testing.T) {
 		},
 	})
 	RemoveStream(t)
-	w := ut.PerformRequest(r, "POST", "/projects/bulk-create",
+	w := ut.PerformRequest(r, "POST", "/projects/bulk_create",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -1340,7 +1340,7 @@ func TestBulkDeleteBadValidate(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{},
 	})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-delete",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_delete",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -1357,7 +1357,7 @@ func TestBulkDeleteBadTransform(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-delete",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_delete",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -1374,7 +1374,7 @@ func TestBulkDelete(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-delete",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_delete",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -1400,7 +1400,7 @@ func TestBulkDeleteBadFilter(t *testing.T) {
 			"abc": M{"$": "v"},
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/orders/bulk-delete",
+	w := ut.PerformRequest(r, "POST", "/orders/bulk_delete",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -1417,7 +1417,7 @@ func TestBulkDeleteEvent(t *testing.T) {
 			"namespace": M{"$in": []string{"test1", "test2"}},
 		},
 	})
-	w := ut.PerformRequest(r, "POST", "/projects/bulk-delete",
+	w := ut.PerformRequest(r, "POST", "/projects/bulk_delete",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -1429,7 +1429,7 @@ func TestBulkDeleteEvent(t *testing.T) {
 
 	select {
 	case msg := <-ch:
-		assert.Equal(t, "bulk-delete", msg.Event)
+		assert.Equal(t, "bulk_delete", msg.Event)
 		data := msg.Data.(M)
 		assert.Equal(t, M{"$in": []interface{}{"test1", "test2"}}, data["namespace"])
 		assert.Equal(t, result, msg.Result)
@@ -1444,7 +1444,7 @@ func TestBulkDeleteBadEvent(t *testing.T) {
 		},
 	})
 	RemoveStream(t)
-	w := ut.PerformRequest(r, "POST", "/projects/bulk-delete",
+	w := ut.PerformRequest(r, "POST", "/projects/bulk_delete",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)

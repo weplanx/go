@@ -84,7 +84,7 @@ func TestMain(m *testing.M) {
 	helper.RegValidate()
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
-	helper.BindDSL(r.Group("/:collection"), &resources.Controller{Service: service})
+	helper.BindResources(r.Group(""), &resources.Controller{Service: service})
 	os.Exit(m.Run())
 }
 

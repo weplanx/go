@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 	}
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
-	helper.BindSessions(r.Group("sessions"), &sessions.Controller{SessionsService: service})
+	helper.BindSessions(r.Group(""), &sessions.Controller{SessionsService: service})
 	os.Exit(m.Run())
 }
 

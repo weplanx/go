@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 	}
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
-	helper.BindKV(r.Group("values"), &kv.Controller{KVService: service})
+	helper.BindKV(r.Group(""), &kv.Controller{KVService: service})
 	os.Exit(m.Run())
 }
 
