@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/errors"
+	"github.com/cloudwego/hertz/pkg/common/utils"
+	gonanoid "github.com/matoous/go-nanoid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,6 +23,7 @@ type CreateDto struct {
 	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
 	Data       M      `json:"data,required" vd:"len($)>0;msg:'document cannot be empty data'"`
 	Format     M      `json:"format"`
+	Txn        string `json:"txn"`
 }
 
 // Create
@@ -38,6 +41,20 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 	}
 	dto.Data["create_time"] = time.Now()
 	dto.Data["update_time"] = time.Now()
+
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "Create",
+			Name:   dto.Collection,
+			Data:   dto.Data,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusOK)
+		return
+	}
 
 	r, err := x.Service.Create(ctx, dto.Collection, dto.Data)
 	if err != nil {
@@ -404,6 +421,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 type SortDto struct {
 	Collection string               `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
 	Data       []primitive.ObjectID `json:"data,required" vd:"len($)>0;msg:'the submission data must be an array of ObjectId'"`
+	TxnID      string               `json:"txn_id"`
 }
 
 // Sort
@@ -422,4 +440,18 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// Transaction
+// @router /transaction [POST]
+func (x *Controller) Transaction(ctx context.Context, c *app.RequestContext) {
+	txnid, _ := gonanoid.Nanoid()
+	if err := x.Service.Transaction(ctx, txnid); err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, utils.H{
+		"txn_id": txnid,
+	})
 }

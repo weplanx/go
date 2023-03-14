@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"github.com/go-redis/redis/v8"
 	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
 	"github.com/weplanx/utils/kv"
@@ -17,6 +18,7 @@ type M = map[string]interface{}
 type DSL struct {
 	Namespace     string
 	Db            *mongo.Database
+	Redis         *redis.Client
 	DynamicValues *kv.DynamicValues
 	Js            nats.JetStreamContext
 }
@@ -40,6 +42,12 @@ func SetNamespace(v string) Option {
 func SetDatabase(v *mongo.Database) Option {
 	return func(x *DSL) {
 		x.Db = v
+	}
+}
+
+func SetRedis(v *redis.Client) Option {
+	return func(x *DSL) {
+		x.Redis = v
 	}
 }
 

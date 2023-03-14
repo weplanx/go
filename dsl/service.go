@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
+	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weplanx/utils/passlib"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -196,6 +197,45 @@ func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectI
 	}
 	return
 }
+
+func (x *Service) Transaction(ctx context.Context, txn string) (err error) {
+	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	if err = x.Redis.LPush(ctx, key, time.Now()).Err(); err != nil {
+		return
+	}
+	if err = x.Redis.Expire(ctx, key, time.Minute*5).Err(); err != nil {
+		return
+	}
+	return
+}
+
+type PendingDto struct {
+	Action string
+	Name   string
+	Data   map[string]interface{}
+}
+
+func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err error) {
+	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	var b []byte
+	if b, err = msgpack.Marshal(dto); err != nil {
+		return
+	}
+	if err = x.Redis.LPush(ctx, key, b).Err(); err != nil {
+		return
+	}
+	return
+}
+
+//func (x *Service) Commit(ctx context.Context, txn string) (err error) {
+//	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+//	var dto PendingDto
+//	if err = msgpack.Unmarshal(&dto); err != nil {
+//		return
+//	}
+//
+//	return
+//}
 
 func (x *Service) Transform(data M, format M) (err error) {
 	for path, spec := range format {
