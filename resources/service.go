@@ -219,9 +219,11 @@ func (x *Service) Transaction(ctx context.Context, txn string) (err error) {
 }
 
 type PendingDto struct {
-	Action string                 `json:"action"`
-	Name   string                 `json:"name"`
-	Data   map[string]interface{} `json:"data"`
+	Action string             `json:"action"`
+	Name   string             `json:"name"`
+	Id     primitive.ObjectID `json:"id,omitempty"`
+	Filter M                  `json:"filter,omitempty"`
+	Data   interface{}        `json:"data"`
 }
 
 func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err error) {
@@ -287,7 +289,21 @@ func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err er
 func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ error) {
 	switch dto.Action {
 	case "create":
-		return x.Create(ctx, dto.Name, dto.Data)
+		return x.Create(ctx, dto.Name, dto.Data.(M))
+	case "bulk_create":
+		return x.BulkCreate(ctx, dto.Name, dto.Data.([]interface{}))
+	case "update":
+		return x.Update(ctx, dto.Name, dto.Filter, dto.Data.(M))
+	case "update_by_id":
+		return x.UpdateById(ctx, dto.Name, dto.Id, dto.Data.(M))
+	case "replace":
+		return x.Replace(ctx, dto.Name, dto.Id, dto.Data.(M))
+	case "delete":
+		return x.Delete(ctx, dto.Name, dto.Id)
+	case "bulk_delete":
+		return x.BulkDelete(ctx, dto.Name, dto.Data.(M))
+	case "sort":
+		return x.Sort(ctx, dto.Name, dto.Data.([]primitive.ObjectID))
 	}
 	return
 }

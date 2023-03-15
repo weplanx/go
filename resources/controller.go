@@ -52,7 +52,7 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusOK)
+		c.Status(http.StatusNoContent)
 		return
 	}
 
@@ -69,10 +69,11 @@ type BulkCreateDto struct {
 	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
 	Data       []M    `json:"data,required" vd:"len($)>0 && range($,len(#v)>0);msg:'batch documents cannot have empty data'"`
 	Format     M      `json:"format"`
+	Txn        string `json:"txn"`
 }
 
 // BulkCreate
-// @router /:collection/bulk-create [POST]
+// @router /:collection/bulk_create [POST]
 func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 	var dto BulkCreateDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -89,6 +90,20 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 		doc["create_time"] = time.Now()
 		doc["update_time"] = time.Now()
 		docs[i] = doc
+	}
+
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "bulk_create",
+			Name:   dto.Collection,
+			Data:   dto.Data,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+		return
 	}
 
 	r, err := x.Service.BulkCreate(ctx, dto.Collection, docs)
@@ -263,6 +278,7 @@ type UpdateDto struct {
 	FFormat    M      `query:"format"`
 	Data       M      `json:"data,required" vd:"len($)>0;msg:'the update cannot be empty'"`
 	DFormat    M      `json:"format"`
+	Txn        string `json:"txn"`
 }
 
 // Update
@@ -287,6 +303,21 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 	}
 	dto.Data["$set"].(M)["update_time"] = time.Now()
 
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "update",
+			Name:   dto.Collection,
+			Filter: dto.Filter,
+			Data:   dto.Data,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+		return
+	}
+
 	r, err := x.Service.Update(ctx, dto.Collection, dto.Filter, dto.Data)
 	if err != nil {
 		c.Error(err)
@@ -301,6 +332,7 @@ type UpdateByIdDto struct {
 	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
 	Data       M      `json:"data,required" vd:"len($)>0;msg:'the update cannot be empty'"`
 	Format     M      `json:"format"`
+	Txn        string `json:"txn"`
 }
 
 // UpdateById
@@ -312,7 +344,6 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 数据转换
 	if err := x.Service.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -321,8 +352,23 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 		dto.Data["$set"] = M{}
 	}
 	dto.Data["$set"].(M)["update_time"] = time.Now()
-
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
+
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "update_by_id",
+			Name:   dto.Collection,
+			Id:     id,
+			Data:   dto.Data,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+		return
+	}
+
 	r, err := x.Service.UpdateById(ctx, dto.Collection, id, dto.Data)
 	if err != nil {
 		c.Error(err)
@@ -337,6 +383,7 @@ type ReplaceDto struct {
 	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
 	Data       M      `json:"data,required" vd:"len($)>0;msg:'document cannot be empty data'"`
 	Format     M      `json:"format"`
+	Txn        string `json:"txn"`
 }
 
 // Replace
@@ -354,8 +401,23 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 	}
 	dto.Data["create_time"] = time.Now()
 	dto.Data["update_time"] = time.Now()
-
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
+
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "replace",
+			Name:   dto.Collection,
+			Id:     id,
+			Data:   dto.Data,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+		return
+	}
+
 	r, err := x.Service.Replace(ctx, dto.Collection, id, dto.Data)
 	if err != nil {
 		c.Error(err)
@@ -368,6 +430,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 type DeleteDto struct {
 	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
 	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
+	Txn        string `json:"txn"`
 }
 
 // Delete
@@ -380,6 +443,21 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 	}
 
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
+
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "delete",
+			Name:   dto.Collection,
+			Id:     id,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+		return
+	}
+
 	r, err := x.Service.Delete(ctx, dto.Collection, id)
 	if err != nil {
 		c.Error(err)
@@ -393,10 +471,11 @@ type BulkDeleteDto struct {
 	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
 	Data       M      `json:"data,required" vd:"len($)>0;msg:'the filter cannot be empty'"`
 	Format     M      `json:"format"`
+	Txn        string `json:"txn"`
 }
 
 // BulkDelete
-// @router /:collection/bulk-delete [POST]
+// @router /:collection/bulk_delete [POST]
 func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 	var dto BulkDeleteDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -406,6 +485,20 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 
 	if err := x.Service.Transform(dto.Data, dto.Format); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
+		return
+	}
+
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "bulk_delete",
+			Name:   dto.Collection,
+			Data:   dto.Data,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
 		return
 	}
 
@@ -430,6 +523,20 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 	var dto SortDto
 	if err := c.BindAndValidate(&dto); err != nil {
 		c.Error(err)
+		return
+	}
+
+	if dto.Txn != "" {
+		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
+			Action: "sort",
+			Name:   dto.Collection,
+			Data:   dto.Data,
+		}); err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.Status(http.StatusNoContent)
 		return
 	}
 
