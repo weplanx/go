@@ -223,7 +223,7 @@ type PendingDto struct {
 	Name   string             `json:"name"`
 	Id     primitive.ObjectID `json:"id,omitempty"`
 	Filter M                  `json:"filter,omitempty"`
-	Data   interface{}        `json:"data"`
+	Data   interface{}        `json:"data,omitempty"`
 }
 
 func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err error) {

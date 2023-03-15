@@ -56,6 +56,6 @@ func BindResources(u *route.RouterGroup, x *resources.Controller) {
 		r.POST("bulk_delete", x.BulkDelete)
 		r.POST("sort", x.Sort)
 	}
-	r.POST("transaction", x.Transaction)
-	r.POST("commit", x.Commit)
+	u.POST("transaction", x.Transaction)
+	u.POST("commit", x.Commit)
 }

@@ -430,7 +430,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 type DeleteDto struct {
 	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
 	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
-	Txn        string `json:"txn"`
+	Txn        string `query:"txn"`
 }
 
 // Delete
