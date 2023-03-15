@@ -29,6 +29,7 @@ func TestLoadBucketCleared(t *testing.T) {
 	assert.NoError(t, err)
 	var wg sync.WaitGroup
 	wg.Add(1)
+	time.Sleep(time.Second)
 	go func() {
 		err := service.Load()
 		assert.Error(t, err)
