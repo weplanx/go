@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"github.com/cloudwego/hertz/pkg/app/server/binding"
 	"github.com/cloudwego/hertz/pkg/route"
-	"github.com/weplanx/utils/kv"
 	"github.com/weplanx/utils/resources"
 	"github.com/weplanx/utils/sessions"
+	"github.com/weplanx/utils/values"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// RegValidate 扩展验证
 func RegValidate() {
 	binding.MustRegValidateFunc("mongoId", func(args ...interface{}) error {
 		if len(args) != 1 {
@@ -23,21 +22,21 @@ func RegValidate() {
 	})
 }
 
-func BindKV(u *route.RouterGroup, kv *kv.Controller) {
+func BindValues(u *route.RouterGroup, x *values.Controller) {
 	r := u.Group("values")
 	{
-		r.GET("", kv.Get)
-		r.PATCH("", kv.Set)
-		r.DELETE(":key", kv.Remove)
+		r.GET("", x.Get)
+		r.PATCH("", x.Set)
+		r.DELETE(":key", x.Remove)
 	}
 }
 
-func BindSessions(u *route.RouterGroup, sessions *sessions.Controller) {
+func BindSessions(u *route.RouterGroup, x *sessions.Controller) {
 	r := u.Group("sessions")
 	{
-		r.GET("", sessions.Lists)
-		r.DELETE(":uid", sessions.Remove)
-		r.DELETE("", sessions.Clear)
+		r.GET("", x.Lists)
+		r.DELETE(":uid", x.Remove)
+		r.DELETE("", x.Clear)
 	}
 }
 

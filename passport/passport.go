@@ -38,7 +38,6 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// Create 生成令牌
 func (x *Passport) Create(userId string, jti string) (tokenString string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserId: userId,
@@ -53,7 +52,6 @@ func (x *Passport) Create(userId string, jti string) (tokenString string, err er
 	return token.SignedString([]byte(x.Key))
 }
 
-// Verify 验证令牌
 func (x *Passport) Verify(tokenString string) (claims Claims, err error) {
 	if _, err = jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

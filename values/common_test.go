@@ -1,4 +1,4 @@
-package kv_test
+package values_test
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/weplanx/utils/helper"
-	"github.com/weplanx/utils/kv"
+	"github.com/weplanx/utils/values"
 	"log"
 	"net/http"
 	"os"
@@ -26,7 +26,7 @@ var (
 	nc       *nats.Conn
 	js       nats.JetStreamContext
 	keyvalue nats.KeyValue
-	service  *kv.Service
+	service  *values.Service
 	r        *route.Engine
 )
 
@@ -36,17 +36,14 @@ func TestMain(m *testing.M) {
 	if err := UseNats("dev"); err != nil {
 		log.Fatalln(err)
 	}
-	dv := kv.DEFAULT
-	service = &kv.Service{
-		KV: kv.New(
-			kv.SetNamespace("dev"),
-			kv.SetKeyValue(keyvalue),
-			kv.SetDynamicValues(&dv),
-		),
-	}
+	service = values.New(
+		values.SetNamespace("dev"),
+		values.SetKeyValue(keyvalue),
+		values.SetDynamicValues(&values.DEFAULT),
+	)
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())
-	helper.BindKV(r.Group(""), &kv.Controller{KVService: service})
+	helper.BindKV(r.Group(""), &values.Controller{Service: service})
 	os.Exit(m.Run())
 }
 

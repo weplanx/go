@@ -16,8 +16,8 @@ import (
 	"github.com/nats-io/nkeys"
 	"github.com/redis/go-redis/v9"
 	"github.com/weplanx/utils/helper"
-	"github.com/weplanx/utils/kv"
 	"github.com/weplanx/utils/resources"
+	"github.com/weplanx/utils/values"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -50,8 +50,8 @@ func TestMain(m *testing.M) {
 	if err := UseNats(); err != nil {
 		log.Fatalln(err)
 	}
-	dv := &kv.DynamicValues{
-		DSL: map[string]*kv.DSLOption{
+	dv := &values.DynamicValues{
+		Resources: map[string]*values.ResourcesOption{
 			"users": {
 				Keys: []string{"name", "department", "roles", "create_time", "update_time"},
 			},
@@ -60,12 +60,12 @@ func TestMain(m *testing.M) {
 			},
 		},
 	}
-	for k, v := range dv.DSL {
+	for k, v := range dv.Resources {
 		if v.Event {
 			js.DeleteStream(fmt.Sprintf(`%s:events:%s`, "dev", k))
 		}
 	}
-	x, err := resources.New(
+	service, err := resources.New(
 		resources.SetNamespace("dev"),
 		resources.SetMongoClient(mgo),
 		resources.SetDatabase(db),
@@ -76,8 +76,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	service := &resources.Service{DSL: x}
 	if err = service.Load(context.TODO()); err != nil {
 		log.Fatalln(err)
 	}

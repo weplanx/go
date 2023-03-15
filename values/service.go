@@ -1,15 +1,17 @@
-package kv
+package values
 
 import (
 	"errors"
-	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
 	"github.com/thoas/go-funk"
+	"github.com/vmihailenco/msgpack/v5"
 	"time"
 )
 
 type Service struct {
-	*KV
+	Namespace     string
+	KeyValue      nats.KeyValue
+	DynamicValues *DynamicValues
 }
 
 func (x *Service) Load() (err error) {
@@ -19,7 +21,7 @@ func (x *Service) Load() (err error) {
 		if !errors.Is(err, nats.ErrKeyNotFound) {
 			return
 		}
-		b, _ = sonic.Marshal(x.DynamicValues)
+		b, _ = msgpack.Marshal(x.DynamicValues)
 		if _, err = x.KeyValue.Put("values", b); err != nil {
 			return
 		}
@@ -29,7 +31,7 @@ func (x *Service) Load() (err error) {
 		b = entry.Value()
 	}
 
-	if err = sonic.Unmarshal(b, &x.DynamicValues); err != nil {
+	if err = msgpack.Unmarshal(b, &x.DynamicValues); err != nil {
 		return
 	}
 
@@ -53,7 +55,7 @@ func (x *Service) Sync(option *SyncOption) (err error) {
 		if entry == nil || entry.Created().Unix() < current.Unix() {
 			continue
 		}
-		if err = sonic.Unmarshal(entry.Value(), x.DynamicValues); err != nil {
+		if err = msgpack.Unmarshal(entry.Value(), x.DynamicValues); err != nil {
 			if option != nil && option.Err != nil {
 				option.Err <- err
 			}
@@ -73,7 +75,7 @@ func (x *Service) Set(update map[string]interface{}) (err error) {
 		return
 	}
 	var values map[string]interface{}
-	if err = sonic.Unmarshal(entry.Value(), &values); err != nil {
+	if err = msgpack.Unmarshal(entry.Value(), &values); err != nil {
 		return
 	}
 	for k, v := range update {
@@ -96,7 +98,7 @@ func (x *Service) Get(keys map[string]int64) (values map[string]interface{}, err
 	if entry, err = x.KeyValue.Get("values"); err != nil {
 		return
 	}
-	if err = sonic.Unmarshal(entry.Value(), &values); err != nil {
+	if err = msgpack.Unmarshal(entry.Value(), &values); err != nil {
 		return
 	}
 	for k, v := range values {
@@ -121,7 +123,7 @@ func (x *Service) Remove(key string) (err error) {
 		return
 	}
 	var values map[string]interface{}
-	if err = sonic.Unmarshal(entry.Value(), &values); err != nil {
+	if err = msgpack.Unmarshal(entry.Value(), &values); err != nil {
 		return
 	}
 	delete(values, key)
@@ -129,7 +131,7 @@ func (x *Service) Remove(key string) (err error) {
 }
 
 func (x *Service) Update(values map[string]interface{}) (err error) {
-	b, _ := sonic.Marshal(values)
+	b, _ := msgpack.Marshal(values)
 	if _, err = x.KeyValue.Put("values", b); err != nil {
 		return
 	}

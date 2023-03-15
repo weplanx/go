@@ -1,9 +1,9 @@
-package kv_test
+package values_test
 
 import (
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/utils/kv"
+	"github.com/weplanx/utils/values"
 	"sync"
 	"testing"
 	"time"
@@ -53,8 +53,8 @@ func TestSync(t *testing.T) {
 	keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{Bucket: "dev"})
 	assert.NoError(t, err)
 
-	option := kv.SyncOption{
-		Updated: make(chan *kv.DynamicValues),
+	option := values.SyncOption{
+		Updated: make(chan *values.DynamicValues),
 		Err:     make(chan error),
 	}
 	go func() {
@@ -73,19 +73,19 @@ func TestSync(t *testing.T) {
 			select {
 			case x := <-option.Updated:
 				if times == 0 {
-					assert.Equal(t, kv.DEFAULT.LoginTTL, x.LoginTTL)
-					assert.Equal(t, kv.DEFAULT.LoginFailures, x.LoginFailures)
-					assert.Equal(t, kv.DEFAULT.IpLoginFailures, x.IpLoginFailures)
-					assert.Equal(t, kv.DEFAULT.PwdStrategy, x.PwdStrategy)
-					assert.Equal(t, kv.DEFAULT.PwdTTL, x.PwdTTL)
+					assert.Equal(t, values.DEFAULT.LoginTTL, x.LoginTTL)
+					assert.Equal(t, values.DEFAULT.LoginFailures, x.LoginFailures)
+					assert.Equal(t, values.DEFAULT.IpLoginFailures, x.IpLoginFailures)
+					assert.Equal(t, values.DEFAULT.PwdStrategy, x.PwdStrategy)
+					assert.Equal(t, values.DEFAULT.PwdTTL, x.PwdTTL)
 					assert.Equal(t, "", x.Cloud)
 				}
 				if times == 1 {
-					assert.Equal(t, kv.DEFAULT.LoginTTL, x.LoginTTL)
-					assert.Equal(t, kv.DEFAULT.LoginFailures, x.LoginFailures)
-					assert.Equal(t, kv.DEFAULT.IpLoginFailures, x.IpLoginFailures)
-					assert.Equal(t, kv.DEFAULT.PwdStrategy, x.PwdStrategy)
-					assert.Equal(t, kv.DEFAULT.PwdTTL, x.PwdTTL)
+					assert.Equal(t, values.DEFAULT.LoginTTL, x.LoginTTL)
+					assert.Equal(t, values.DEFAULT.LoginFailures, x.LoginFailures)
+					assert.Equal(t, values.DEFAULT.IpLoginFailures, x.IpLoginFailures)
+					assert.Equal(t, values.DEFAULT.PwdStrategy, x.PwdStrategy)
+					assert.Equal(t, values.DEFAULT.PwdTTL, x.PwdTTL)
 					assert.Equal(t, "tencent", x.Cloud)
 				}
 				times++
@@ -134,16 +134,16 @@ func TestGetSECRETValues(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	values, err := service.Get(map[string]int64{
+	v, err := service.Get(map[string]int64{
 		"tencent_secret_id":  1,
 		"tencent_secret_key": 1,
 		"feishu_app_secret":  1,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(values))
-	assert.Equal(t, "123456", values["tencent_secret_id"])
-	assert.Equal(t, "*", values["tencent_secret_key"])
-	assert.Equal(t, "-", values["feishu_app_secret"])
+	assert.Equal(t, 3, len(v))
+	assert.Equal(t, "123456", v["tencent_secret_id"])
+	assert.Equal(t, "*", v["tencent_secret_key"])
+	assert.Equal(t, "-", v["feishu_app_secret"])
 }
 
 func TestUpdateBucketCleared(t *testing.T) {

@@ -1,4 +1,4 @@
-package kv_test
+package values_test
 
 import (
 	"bytes"

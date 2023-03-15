@@ -7,13 +7,13 @@ import (
 )
 
 type Controller struct {
-	SessionsService *Service
+	Service *Service
 }
 
-// Lists 列出所有会话用户 ID
+// Lists all session user IDs
 // @router /sessions [GET]
 func (x *Controller) Lists(ctx context.Context, c *app.RequestContext) {
-	data, err := x.SessionsService.Lists(ctx)
+	data, err := x.Service.Lists(ctx)
 	if err != nil {
 		c.Error(err)
 		return
@@ -22,10 +22,10 @@ func (x *Controller) Lists(ctx context.Context, c *app.RequestContext) {
 	c.JSON(http.StatusOK, data)
 }
 
-// Remove 移除会话
+// Remove Session
 // @router /sessions/:uid [DELETE]
 func (x *Controller) Remove(ctx context.Context, c *app.RequestContext) {
-	if err := x.SessionsService.Remove(ctx, c.Param("uid")); err != nil {
+	if err := x.Service.Remove(ctx, c.Param("uid")); err != nil {
 		c.Error(err)
 		return
 	}
@@ -33,10 +33,10 @@ func (x *Controller) Remove(ctx context.Context, c *app.RequestContext) {
 	c.Status(http.StatusNoContent)
 }
 
-// Clear 清除所有会话
+// Clear sessions
 // @router /sessions [DELETE]
 func (x *Controller) Clear(ctx context.Context, c *app.RequestContext) {
-	if err := x.SessionsService.Clear(ctx); err != nil {
+	if err := x.Service.Clear(ctx); err != nil {
 		c.Error(err)
 		return
 	}

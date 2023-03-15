@@ -34,12 +34,10 @@ func SetRedis(v *redis.Client) Option {
 	}
 }
 
-// Key 锁定命名
 func (x *Locker) Key(name string) string {
 	return fmt.Sprintf(`%s:locker:%s`, x.Namespace, name)
 }
 
-// Update 更新锁定
 func (x *Locker) Update(ctx context.Context, name string, ttl time.Duration) (err error) {
 	key := x.Key(name)
 	var exists int64
@@ -65,7 +63,6 @@ func (x *Locker) Update(ctx context.Context, name string, ttl time.Duration) (er
 	return
 }
 
-// Verify 校验锁定，True 为锁定
 func (x *Locker) Verify(ctx context.Context, name string, n int64) (result bool, err error) {
 	key := x.Key(name)
 	var exists int64
@@ -84,7 +81,6 @@ func (x *Locker) Verify(ctx context.Context, name string, n int64) (result bool,
 	return count >= n, nil
 }
 
-// Delete 移除锁定
 func (x *Locker) Delete(ctx context.Context, name string) error {
 	return x.Redis.Del(ctx, x.Key(name)).Err()
 }

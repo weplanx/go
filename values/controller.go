@@ -1,4 +1,4 @@
-package kv
+package values
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 )
 
 type Controller struct {
-	KVService *Service
+	Service *Service
 }
 
 type SetDto struct {
@@ -21,7 +21,7 @@ func (x *Controller) Set(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.KVService.Set(dto.Data); err != nil {
+	if err := x.Service.Set(dto.Data); err != nil {
 		c.Error(err)
 		return
 	}
@@ -40,7 +40,7 @@ func (x *Controller) Get(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	data, err := x.KVService.Get(dto.Keys)
+	data, err := x.Service.Get(dto.Keys)
 	if err != nil {
 		c.Error(err)
 		return
@@ -60,7 +60,7 @@ func (x *Controller) Remove(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := x.KVService.Remove(dto.Key); err != nil {
+	if err := x.Service.Remove(dto.Key); err != nil {
 		c.Error(err)
 		return
 	}

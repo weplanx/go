@@ -3,11 +3,12 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/bytedance/sonic"
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/nats-io/nats.go"
+	"github.com/redis/go-redis/v9"
 	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weplanx/utils/passlib"
+	"github.com/weplanx/utils/values"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,11 +20,16 @@ import (
 )
 
 type Service struct {
-	*DSL
+	Namespace     string
+	MongoClient   *mongo.Client
+	Db            *mongo.Database
+	Redis         *redis.Client
+	DynamicValues *values.DynamicValues
+	Js            nats.JetStreamContext
 }
 
 func (x *Service) Load(ctx context.Context) (err error) {
-	for k, v := range x.DynamicValues.DSL {
+	for k, v := range x.DynamicValues.Resources {
 		if v.Event {
 			name := fmt.Sprintf(`%s:events:%s`, x.Namespace, k)
 			subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, k)
@@ -213,9 +219,9 @@ func (x *Service) Transaction(ctx context.Context, txn string) (err error) {
 }
 
 type PendingDto struct {
-	Action string
-	Name   string
-	Data   map[string]interface{}
+	Action string                 `msgpack:"action"`
+	Name   string                 `msgpack:"name"`
+	Data   map[string]interface{} `msgpack:"data"`
 }
 
 func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err error) {
@@ -339,8 +345,8 @@ func (x *Service) Transform(data M, format M) (err error) {
 
 func (x *Service) Projection(name string, keys []string) (result bson.M) {
 	result = make(bson.M)
-	if x.DynamicValues.DSL != nil && x.DynamicValues.DSL[name] != nil {
-		for _, key := range x.DynamicValues.DSL[name].Keys {
+	if x.DynamicValues.Resources != nil && x.DynamicValues.Resources[name] != nil {
+		for _, key := range x.DynamicValues.Resources[name].Keys {
 			result[key] = 1
 		}
 	}
@@ -358,20 +364,20 @@ func (x *Service) Projection(name string, keys []string) (result bson.M) {
 }
 
 type PublishDto struct {
-	Action string      `json:"action"`
-	Id     string      `json:"id,omitempty"`
-	Filter M           `json:"filter,omitempty"`
-	Data   interface{} `json:"data,omitempty"`
-	Result interface{} `json:"result"`
+	Action string      `msgpack:"action"`
+	Id     string      `msgpack:"id,omitempty"`
+	Filter M           `msgpack:"filter,omitempty"`
+	Data   interface{} `msgpack:"data,omitempty"`
+	Result interface{} `msgpack:"result"`
 }
 
 func (x *Service) Publish(ctx context.Context, name string, dto PublishDto) (err error) {
-	if v, ok := x.DynamicValues.DSL[name]; ok {
+	if v, ok := x.DynamicValues.Resources[name]; ok {
 		if !v.Event {
 			return
 		}
 
-		b, _ := sonic.Marshal(dto)
+		b, _ := msgpack.Marshal(dto)
 		subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, name)
 		if _, err = x.Js.Publish(subject, b, nats.Context(ctx)); err != nil {
 			return
