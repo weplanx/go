@@ -24,7 +24,7 @@ func TestLoadBadValues(t *testing.T) {
 }
 
 func TestLoadBucketCleared(t *testing.T) {
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 3)
 	err := keyvalue.Delete("values")
 	assert.NoError(t, err)
 	var wg sync.WaitGroup
