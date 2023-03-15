@@ -88,11 +88,11 @@ func TestMain(m *testing.M) {
 
 func UseMongoDB() (err error) {
 	if mgo, err = mongo.Connect(context.TODO(),
-		options.Client().ApplyURI(os.Getenv("DATABASE_MONGO")),
+		options.Client().ApplyURI(os.Getenv("DATABASE_HOST")),
 	); err != nil {
 		return
 	}
-	db = mgo.Database("development",
+	db = mgo.Database("example",
 		options.Database().SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
 	)
 	if err = db.Drop(context.TODO()); err != nil {

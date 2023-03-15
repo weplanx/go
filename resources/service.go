@@ -3,10 +3,10 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/bytedance/sonic"
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
-	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weplanx/utils/passlib"
 	"github.com/weplanx/utils/values"
 	"go.mongodb.org/mongo-driver/bson"
@@ -219,15 +219,15 @@ func (x *Service) Transaction(ctx context.Context, txn string) (err error) {
 }
 
 type PendingDto struct {
-	Action string                 `msgpack:"action"`
-	Name   string                 `msgpack:"name"`
-	Data   map[string]interface{} `msgpack:"data"`
+	Action string                 `json:"action"`
+	Name   string                 `json:"name"`
+	Data   map[string]interface{} `json:"data"`
 }
 
 func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err error) {
 	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
 	var b []byte
-	if b, err = msgpack.Marshal(dto); err != nil {
+	if b, err = sonic.Marshal(dto); err != nil {
 		return
 	}
 	if err = x.Redis.LPush(ctx, key, b).Err(); err != nil {
@@ -270,7 +270,7 @@ func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err er
 				return
 			}
 			var dto PendingDto
-			if err = msgpack.Unmarshal(b, &dto); err != nil {
+			if err = sonic.Unmarshal(b, &dto); err != nil {
 				return
 			}
 			var r interface{}
@@ -364,11 +364,11 @@ func (x *Service) Projection(name string, keys []string) (result bson.M) {
 }
 
 type PublishDto struct {
-	Action string      `msgpack:"action"`
-	Id     string      `msgpack:"id,omitempty"`
-	Filter M           `msgpack:"filter,omitempty"`
-	Data   interface{} `msgpack:"data,omitempty"`
-	Result interface{} `msgpack:"result"`
+	Action string      `json:"action"`
+	Id     string      `json:"id,omitempty"`
+	Filter M           `json:"filter,omitempty"`
+	Data   interface{} `json:"data,omitempty"`
+	Result interface{} `json:"result"`
 }
 
 func (x *Service) Publish(ctx context.Context, name string, dto PublishDto) (err error) {
@@ -377,7 +377,7 @@ func (x *Service) Publish(ctx context.Context, name string, dto PublishDto) (err
 			return
 		}
 
-		b, _ := msgpack.Marshal(dto)
+		b, _ := sonic.Marshal(dto)
 		subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, name)
 		if _, err = x.Js.Publish(subject, b, nats.Context(ctx)); err != nil {
 			return
