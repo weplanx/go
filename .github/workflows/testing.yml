@@ -1,4 +1,4 @@
-name: 单元测试
+name: Testing
 
 on:
   push:
@@ -10,33 +10,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 检出
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: 部署环境
-        run: |
+      - run: |
           docker-compose -f ".github/compose/docker-compose.yml" up -d
 
-      - name: 安装 Golang
-        uses: actions/setup-go@v2
+      - uses: actions/setup-go@v2
         with:
-          go-version: ~1.19
+          go-version: ~1.20
 
-      - name: 启动测试
-        run: go test -race -covermode atomic -coverprofile=covprofile ./...
+      - run: go test -race -covermode atomic -coverprofile=covprofile ./...
         env:
           GO111MODULE: on
-          DATABASE_MONGO: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
+          DATABASE_HOST: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
           DATABASE_REDIS: redis://127.0.0.1:6379
           NATS_HOSTS: nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224
           NATS_TOKEN: s3cr3t
 
-      - name: 推送覆盖率至 COVERALLS
+      - name: PUSH COVERALLS
         run: |
           go install github.com/mattn/goveralls@latest
           goveralls -coverprofile=covprofile -service=github
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 推送 FOSSAS
+      - name: PUSH FOSSAS
         run: "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
