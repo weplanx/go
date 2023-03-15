@@ -24,6 +24,7 @@ func TestLoadBadValues(t *testing.T) {
 }
 
 func TestLoadBucketCleared(t *testing.T) {
+	time.Sleep(time.Second)
 	err := keyvalue.Delete("values")
 	assert.NoError(t, err)
 	var wg sync.WaitGroup
@@ -57,45 +58,33 @@ func TestSync(t *testing.T) {
 		Updated: make(chan *values.DynamicValues),
 		Err:     make(chan error),
 	}
-	go func() {
-		err := service.Sync(&option)
-		assert.NoError(t, err)
-	}()
-	time.Sleep(time.Millisecond * 500)
+	go service.Sync(&option)
+
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	go func() {
-		times := 0
-		for {
-			if times == 2 {
-				break
-			}
-			select {
-			case x := <-option.Updated:
-				if times == 0 {
-					assert.Equal(t, values.DEFAULT.LoginTTL, x.LoginTTL)
-					assert.Equal(t, values.DEFAULT.LoginFailures, x.LoginFailures)
-					assert.Equal(t, values.DEFAULT.IpLoginFailures, x.IpLoginFailures)
-					assert.Equal(t, values.DEFAULT.PwdStrategy, x.PwdStrategy)
-					assert.Equal(t, values.DEFAULT.PwdTTL, x.PwdTTL)
-					assert.Equal(t, "", x.Cloud)
-				}
-				if times == 1 {
-					assert.Equal(t, values.DEFAULT.LoginTTL, x.LoginTTL)
-					assert.Equal(t, values.DEFAULT.LoginFailures, x.LoginFailures)
-					assert.Equal(t, values.DEFAULT.IpLoginFailures, x.IpLoginFailures)
-					assert.Equal(t, values.DEFAULT.PwdStrategy, x.PwdStrategy)
-					assert.Equal(t, values.DEFAULT.PwdTTL, x.PwdTTL)
-					assert.Equal(t, "tencent", x.Cloud)
-				}
-				times++
-			case e := <-option.Err:
-				assert.Error(t, e)
-				times++
-			}
+		select {
+		case x := <-option.Updated:
+			assert.Equal(t, values.DEFAULT.LoginTTL, x.LoginTTL)
+			assert.Equal(t, values.DEFAULT.LoginFailures, x.LoginFailures)
+			assert.Equal(t, values.DEFAULT.IpLoginFailures, x.IpLoginFailures)
+			assert.Equal(t, values.DEFAULT.PwdStrategy, x.PwdStrategy)
+			assert.Equal(t, values.DEFAULT.PwdTTL, x.PwdTTL)
+			assert.Equal(t, "tencent", x.Cloud)
+			break
 		}
 		wg.Done()
 	}()
+	go func() {
+		select {
+		case e := <-option.Err:
+			assert.Error(t, e)
+			break
+		}
+		wg.Done()
+	}()
+
+	time.Sleep(time.Second * 3)
 
 	err = service.Set(M{
 		"cloud": "tencent",

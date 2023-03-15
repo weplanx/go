@@ -36,10 +36,11 @@ func TestMain(m *testing.M) {
 	if err := UseNats("dev"); err != nil {
 		log.Fatalln(err)
 	}
+	dv := values.DEFAULT
 	service = values.New(
 		values.SetNamespace("dev"),
 		values.SetKeyValue(keyvalue),
-		values.SetDynamicValues(&values.DEFAULT),
+		values.SetDynamicValues(&dv),
 	)
 	r = route.NewEngine(config.NewOptions([]config.Option{}))
 	r.Use(ErrHandler())

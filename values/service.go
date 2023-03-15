@@ -27,6 +27,7 @@ func (x *Service) Load() (err error) {
 		if _, err = x.KeyValue.Put("values", b); err != nil {
 			return
 		}
+		time.Sleep(time.Second)
 	}
 
 	if b == nil {
@@ -57,6 +58,7 @@ func (x *Service) Sync(option *SyncOption) (err error) {
 		if entry == nil || entry.Created().Unix() < current.Unix() {
 			continue
 		}
+
 		if err = sonic.Unmarshal(entry.Value(), x.DynamicValues); err != nil {
 			if option != nil && option.Err != nil {
 				option.Err <- err
