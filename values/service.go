@@ -2,6 +2,7 @@ package values
 
 import (
 	"errors"
+	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
 	"github.com/thoas/go-funk"
@@ -13,8 +14,6 @@ type Service struct {
 	KeyValue      nats.KeyValue
 	DynamicValues *DynamicValues
 }
-
-// json is more versatile, so we don't use msgpack here.
 
 func (x *Service) Load() (err error) {
 	var b []byte
@@ -47,7 +46,9 @@ type SyncOption struct {
 }
 
 func (x *Service) Sync(option *SyncOption) (err error) {
+
 	if err = x.Load(); err != nil {
+		fmt.Println(err)
 		return
 	}
 
@@ -65,6 +66,7 @@ func (x *Service) Sync(option *SyncOption) (err error) {
 			}
 			return
 		}
+
 		if option != nil && option.Updated != nil {
 			option.Updated <- x.DynamicValues
 		}

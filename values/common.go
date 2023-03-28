@@ -92,7 +92,7 @@ type DynamicValues struct {
 	// Tencent Cloud COS bucket region, for example: ap-guangzhou
 	TencentCosRegion string `json:"tencent_cos_region"`
 	// Tencent Cloud COS bucket pre-signature validity period, unit: second
-	TencentCosExpired int `json:"tencent_cos_expired"`
+	TencentCosExpired int64 `json:"tencent_cos_expired"`
 	// Tencent Cloud COS bucket upload size limit, unit: KB
 	TencentCosLimit int64 `json:"tencent_cos_limit"`
 	// Enterprise Collaboration
@@ -109,7 +109,7 @@ type DynamicValues struct {
 	// Public email service SMTP address
 	EmailHost string `json:"email_host"`
 	// Public email SMTP port number (SSL)
-	EmailPort string `json:"email_port"`
+	EmailPort int `json:"email_port"`
 	// Public email username
 	EmailUsername string `json:"email_username"`
 	// Public email password
