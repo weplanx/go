@@ -334,6 +334,9 @@ func (x *Service) Pipe(data M, keys []string, kind interface{}) (err error) {
 		cursor = cursor.(M)[key]
 	}
 	key := keys[n]
+	if cursor.(M)[key] == nil {
+		return
+	}
 	switch kind {
 	case "oid":
 		if cursor.(M)[key], err = primitive.ObjectIDFromHex(cursor.(M)[key].(string)); err != nil {
