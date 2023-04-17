@@ -324,8 +324,8 @@ func (x *Service) Pipe(data M, keys []string, kind interface{}) (err error) {
 	n := len(keys) - 1
 	for i, key := range keys[:n] {
 		if key == "$" {
-			for _, value := range cursor.([]interface{}) {
-				if err = x.Pipe(value.(M), keys[i+1:], kind); err != nil {
+			for _, v := range cursor.([]interface{}) {
+				if err = x.Pipe(v.(M), keys[i+1:], kind); err != nil {
 					return
 				}
 			}
@@ -334,7 +334,7 @@ func (x *Service) Pipe(data M, keys []string, kind interface{}) (err error) {
 		cursor = cursor.(M)[key]
 	}
 	key := keys[n]
-	if cursor.(M)[key] == nil {
+	if cursor == nil || cursor.(M)[key] == nil {
 		return
 	}
 	switch kind {
