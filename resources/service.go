@@ -309,52 +309,76 @@ func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ 
 }
 
 func (x *Service) Transform(data M, format M) (err error) {
-	for path, spec := range format {
-		keys, cursor := strings.Split(path, "."), data
-		n := len(keys) - 1
-		for _, key := range keys[:n] {
-			if v, ok := cursor[key].(M); ok {
-				cursor = v
-			}
+	for path, kind := range format {
+		keys := strings.Split(path, ".")
+		if err = x.Pipe(data, keys, kind); err != nil {
+			return
 		}
-		key := keys[n]
-		if cursor[key] == nil {
-			continue
-		}
-		switch spec {
-		case "oid":
-			if cursor[key], err = primitive.ObjectIDFromHex(cursor[key].(string)); err != nil {
-				return
-			}
-			break
+	}
+	return
+}
 
-		case "oids":
-			oids := cursor[key].([]interface{})
-			for i, id := range oids {
-				if oids[i], err = primitive.ObjectIDFromHex(id.(string)); err != nil {
+func (x *Service) Pipe(data M, keys []string, kind interface{}) (err error) {
+	var cursor interface{}
+	cursor = data
+	n := len(keys) - 1
+	for i, key := range keys[:n] {
+		if key == "$" {
+			for _, value := range cursor.([]interface{}) {
+				if err = x.Pipe(value.(M), keys[i+1:], kind); err != nil {
 					return
 				}
 			}
-			break
-
-		case "date":
-			if cursor[key], err = time.Parse(time.RFC1123, cursor[key].(string)); err != nil {
-				return
-			}
-			break
-
-		case "timestamp":
-			if cursor[key], err = time.Parse(time.RFC3339, cursor[key].(string)); err != nil {
-				return
-			}
-			break
-
-		case "password":
-			if cursor[key], _ = passlib.Hash(cursor[key].(string)); err != nil {
-				return
-			}
-			break
+			return
 		}
+		cursor = cursor.(M)[key]
+	}
+	key := keys[n]
+	switch kind {
+	case "oid":
+		if cursor.(M)[key], err = primitive.ObjectIDFromHex(cursor.(M)[key].(string)); err != nil {
+			return
+		}
+		break
+	case "oids":
+		oids := cursor.(M)[key].([]interface{})
+		for i, id := range oids {
+			if oids[i], err = primitive.ObjectIDFromHex(id.(string)); err != nil {
+				return
+			}
+		}
+		break
+	case "date":
+		if cursor.(M)[key], err = time.Parse(time.RFC1123, cursor.(M)[key].(string)); err != nil {
+			return
+		}
+		break
+	case "dates":
+		dates := cursor.(M)[key].([]interface{})
+		for i, date := range dates {
+			if dates[i], err = time.Parse(time.RFC1123, date.(string)); err != nil {
+				return
+			}
+		}
+		break
+	case "timestamp":
+		if cursor.(M)[key], err = time.Parse(time.RFC3339, cursor.(M)[key].(string)); err != nil {
+			return
+		}
+		break
+	case "timestamps":
+		timestamps := cursor.(M)[key].([]interface{})
+		for i, timestamp := range timestamps {
+			if timestamps[i], err = time.Parse(time.RFC3339, timestamp.(string)); err != nil {
+				return
+			}
+		}
+		break
+	case "password":
+		if cursor.(M)[key], _ = passlib.Hash(cursor.(M)[key].(string)); err != nil {
+			return
+		}
+		break
 	}
 	return
 }
