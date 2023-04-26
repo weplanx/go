@@ -1455,7 +1455,10 @@ func TestBulkDeleteBadEvent(t *testing.T) {
 
 func TestSortBadValidate(t *testing.T) {
 	body, _ := sonic.Marshal(M{
-		"data": []string{"12", "444"},
+		"data": M{
+			"key":    "sort",
+			"values": []string{"12", "444"},
+		},
 	})
 	w := ut.PerformRequest(r, "POST", "/orders/sort",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
@@ -1469,7 +1472,10 @@ func TestSort(t *testing.T) {
 	sources := orderIds[:5]
 	sources = funk.Reverse(sources).([]string)
 	body, _ := sonic.Marshal(M{
-		"data": sources,
+		"data": M{
+			"key":    "sort",
+			"values": sources,
+		},
 	})
 	w := ut.PerformRequest(r, "POST", "/orders/sort",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
@@ -1484,7 +1490,8 @@ func TestSort(t *testing.T) {
 		id, _ := primitive.ObjectIDFromHex(v)
 		ids = append(ids, id)
 	}
-	cursor, err := db.Collection("orders").Find(context.TODO(), bson.M{"_id": bson.M{"$in": ids}})
+	cursor, err := db.Collection("orders").
+		Find(context.TODO(), bson.M{"_id": bson.M{"$in": ids}})
 	assert.NoError(t, err)
 	var data []M
 	err = cursor.All(context.TODO(), &data)
@@ -1502,7 +1509,10 @@ func TestSortEvent(t *testing.T) {
 
 	projectIds = funk.Reverse(projectIds).([]string)
 	body, _ := sonic.Marshal(M{
-		"data": projectIds,
+		"data": M{
+			"key":    "sort",
+			"values": projectIds,
+		},
 	})
 	w := ut.PerformRequest(r, "POST", "/projects/sort",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
@@ -1515,11 +1525,13 @@ func TestSortEvent(t *testing.T) {
 	select {
 	case msg := <-ch:
 		assert.Equal(t, "sort", msg.Action)
-		data := make([]string, 10)
-		for i, v := range msg.Data.([]interface{}) {
-			data[i] = v.(string)
+		values := make([]string, 10)
+		data := msg.Data.(M)
+		assert.Equal(t, "sort", data["key"])
+		for i, v := range data["values"].([]interface{}) {
+			values[i] = v.(string)
 		}
-		assert.Equal(t, projectIds, data)
+		assert.Equal(t, projectIds, values)
 		t.Log(msg.Result)
 		break
 	}
@@ -1528,7 +1540,10 @@ func TestSortEvent(t *testing.T) {
 func TestSortBadEvent(t *testing.T) {
 	projectIds = funk.Reverse(projectIds).([]string)
 	body, _ := sonic.Marshal(M{
-		"data": projectIds,
+		"data": M{
+			"key":    "sort",
+			"values": projectIds,
+		},
 	})
 	RemoveStream(t)
 	w := ut.PerformRequest(r, "POST", "/projects/sort",

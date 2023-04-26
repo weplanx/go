@@ -199,7 +199,10 @@ func (x *Service) Sort(ctx context.Context, name string, key string, ids []primi
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: "sort",
-		Data:   ids,
+		Data: M{
+			"key":    key,
+			"values": ids,
+		},
 		Result: r,
 	}); err != nil {
 		return
