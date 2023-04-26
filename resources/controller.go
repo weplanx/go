@@ -512,9 +512,14 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 }
 
 type SortDto struct {
-	Collection string               `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Data       []primitive.ObjectID `json:"data,required" vd:"len($)>0;msg:'the submission data must be an array of ObjectId'"`
-	Txn        string               `json:"txn"`
+	Collection string      `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
+	Data       SortDtoData `json:"data,required"`
+	Txn        string      `json:"txn"`
+}
+
+type SortDtoData struct {
+	Key    string               `json:"key,required"`
+	Values []primitive.ObjectID `json:"values,required" vd:"len($)>0;msg:'the submission data must be an array of ObjectId'"`
 }
 
 // Sort
@@ -540,7 +545,7 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	_, err := x.Service.Sort(ctx, dto.Collection, dto.Data)
+	_, err := x.Service.Sort(ctx, dto.Collection, dto.Data.Key, dto.Data.Values)
 	if err != nil {
 		c.Error(err)
 		return

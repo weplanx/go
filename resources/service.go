@@ -179,12 +179,12 @@ func (x *Service) BulkDelete(ctx context.Context, name string, filter M) (r inte
 	return
 }
 
-func (x *Service) Sort(ctx context.Context, name string, ids []primitive.ObjectID) (r interface{}, err error) {
+func (x *Service) Sort(ctx context.Context, name string, key string, ids []primitive.ObjectID) (r interface{}, err error) {
 	var wms []mongo.WriteModel
 	for i, id := range ids {
 		update := M{
 			"$set": M{
-				"sort":        i,
+				key:           i,
 				"update_time": time.Now(),
 			},
 		}
@@ -303,7 +303,8 @@ func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ 
 	case "bulk_delete":
 		return x.BulkDelete(ctx, dto.Name, dto.Data.(M))
 	case "sort":
-		return x.Sort(ctx, dto.Name, dto.Data.([]primitive.ObjectID))
+		data := dto.Data.(SortDtoData)
+		return x.Sort(ctx, dto.Name, data.Key, data.Values)
 	}
 	return
 }
