@@ -22,7 +22,7 @@ jobs:
       - run: go test -race -covermode atomic -coverprofile=covprofile ./...
         env:
           GO111MODULE: on
-          DATABASE_HOST: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
+#          DATABASE_HOST: mongodb://root:example@127.0.0.1:27017/example?authSource=admin&directConnection=true
           DATABASE_REDIS: redis://127.0.0.1:6379
           NATS_HOSTS: nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224
           NATS_TOKEN: s3cr3t
