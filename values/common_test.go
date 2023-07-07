@@ -7,12 +7,12 @@ import (
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/bytedance/sonic/decoder"
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
+	"github.com/weplanx/go-wpx/cipher"
 	"github.com/weplanx/go-wpx/values"
 	"log"
 	"net/http"
@@ -22,7 +22,6 @@ import (
 )
 
 var (
-	nc       *nats.Conn
 	js       nats.JetStreamContext
 	keyvalue nats.KeyValue
 	service  *values.Service
@@ -35,21 +34,25 @@ func TestMain(m *testing.M) {
 	if err := UseNats("dev"); err != nil {
 		log.Fatalln(err)
 	}
-	dv := values.DEFAULT
-	service = values.New(
-		values.SetNamespace("dev"),
-		values.SetKeyValue(keyvalue),
-		values.SetDynamicValues(&dv),
-	)
-	engine = route.NewEngine(config.NewOptions([]config.Option{}))
-	engine.Use(ErrHandler())
-	x := &values.Controller{Service: service}
-	r := engine.Group("values")
-	{
-		r.GET("", x.Get)
-		r.PATCH("", x.Set)
-		r.DELETE(":key", x.Remove)
+	v := values.DEFAULT
+	cipherx, err := cipher.New("vGglcAlIavhcvZGra7JuZDzp3DZPQ6iU")
+	if err != nil {
+		log.Fatalln(err)
 	}
+	service = &values.Service{
+		KeyValue: keyvalue,
+		Cipher:   cipherx,
+		Values:   &v,
+	}
+	//engine = route.NewEngine(config.NewOptions([]config.Option{}))
+	//engine.Use(ErrHandler())
+	//x := &values.Controller{Service: service}
+	//r := engine.Group("values")
+	//{
+	//	r.GET("", x.Get)
+	//	r.PATCH("", x.Set)
+	//	r.DELETE(":key", x.Remove)
+	//}
 	os.Exit(m.Run())
 }
 
@@ -69,13 +72,14 @@ func UseNats(namespace string) (err error) {
 			return
 		}
 		if !nkeys.IsValidPublicUserKey(pub) {
-			panic("nkey 验证失败")
+			panic("nkey failed")
 		}
 		auth = nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
 			sig, _ := kp.Sign(nonce)
 			return sig, nil
 		})
 	}
+	var nc *nats.Conn
 	if nc, err = nats.Connect(
 		os.Getenv("NATS_HOSTS"),
 		nats.MaxReconnects(5),
@@ -89,7 +93,7 @@ func UseNats(namespace string) (err error) {
 		return
 	}
 	js.DeleteKeyValue(namespace)
-	if keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{Bucket: namespace}); err != nil {
+	if object, err = js.CreateObjectStore(&nats.ObjectStoreConfig{Bucket: namespace}); err != nil {
 		return
 	}
 	return
