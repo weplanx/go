@@ -24,6 +24,7 @@ import (
 var (
 	js       nats.JetStreamContext
 	keyvalue nats.KeyValue
+	cipherx  *cipher.Cipher
 	service  *values.Service
 	engine   *route.Engine
 )
@@ -31,14 +32,14 @@ var (
 type M = map[string]interface{}
 
 func TestMain(m *testing.M) {
-	if err := UseNats("dev"); err != nil {
+	var err error
+	if err = UseNats("dev"); err != nil {
+		log.Fatalln(err)
+	}
+	if cipherx, err = cipher.New("vGglcAlIavhcvZGra7JuZDzp3DZPQ6iU"); err != nil {
 		log.Fatalln(err)
 	}
 	v := values.DEFAULT
-	cipherx, err := cipher.New("vGglcAlIavhcvZGra7JuZDzp3DZPQ6iU")
-	if err != nil {
-		log.Fatalln(err)
-	}
 	service = &values.Service{
 		KeyValue: keyvalue,
 		Cipher:   cipherx,
@@ -92,8 +93,13 @@ func UseNats(namespace string) (err error) {
 	if js, err = nc.JetStream(nats.PublishAsyncMaxPending(256)); err != nil {
 		return
 	}
-	js.DeleteKeyValue(namespace)
-	if object, err = js.CreateObjectStore(&nats.ObjectStoreConfig{Bucket: namespace}); err != nil {
+	//js.DeleteKeyValue(namespace)
+	//if keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{Bucket: namespace}); err != nil {
+	//	return
+	//}
+	if keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{
+		Bucket: namespace,
+	}); err != nil {
 		return
 	}
 	return

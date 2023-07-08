@@ -15,13 +15,13 @@ var (
 		PwdStrategy:     1,
 		PwdTTL:          time.Hour * 24 * 365,
 	}
-	SECRET = []string{
-		"TencentSecretKey",
-		"LarkAppSecret",
-		"LarkEncryptKey",
-		"LarkVerificationToken",
-		"EmailPassword",
-		"OpenapiSecret",
+	SECRET = map[string]bool{
+		"TencentSecretKey":      true,
+		"LarkAppSecret":         true,
+		"LarkEncryptKey":        true,
+		"LarkVerificationToken": true,
+		"EmailPassword":         true,
+		"OpenapiSecret":         true,
 	}
 )
 

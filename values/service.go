@@ -6,6 +6,7 @@ import (
 	"github.com/thoas/go-funk"
 	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weplanx/go-wpx/cipher"
+	"reflect"
 )
 
 type Service struct {
@@ -14,14 +15,16 @@ type Service struct {
 	Values   *Values
 }
 
-func (x *Service) Fetch() (data map[string]interface{}, err error) {
+func (x *Service) Fetch(values map[string]interface{}) (err error) {
 	var entry nats.KeyValueEntry
 	if entry, err = x.KeyValue.Get("values"); err != nil {
-		if !errors.Is(err, nats.ErrKeyNotFound) {
-			return
-		}
-		if err = x.Update(x.Values); err != nil {
-			return
+		if errors.Is(err, nats.ErrKeyNotFound) {
+			v := reflect.ValueOf(*x.Values)
+			typ := v.Type()
+			for i := 0; i < v.NumField(); i++ {
+				values[typ.Field(i).Name] = v.Field(i).Interface()
+			}
+			return x.Update(values)
 		}
 		return
 	}
@@ -29,7 +32,7 @@ func (x *Service) Fetch() (data map[string]interface{}, err error) {
 	if b, err = x.Cipher.Decode(string(entry.Value())); err != nil {
 		return
 	}
-	if err = msgpack.Unmarshal(b, &x.Values); err != nil {
+	if err = msgpack.Unmarshal(b, &values); err != nil {
 		return
 	}
 	return
@@ -69,35 +72,30 @@ func (x *Service) Fetch() (data map[string]interface{}, err error) {
 //}
 
 func (x *Service) Set(data map[string]interface{}) (err error) {
-	if err = x.Fetch(); err != nil {
+	var values map[string]interface{}
+	if err = x.Fetch(values); err != nil {
 		return
 	}
-	for path, value := range data {
-		if err = funk.Set(&x.Values, value, path); err != nil {
-			return
-		}
+	for key, value := range data {
+		values[key] = value
 	}
 	return x.Update(values)
 }
 
 func (x *Service) Get(keys []string) (values map[string]interface{}, err error) {
-	var entry nats.KeyValueEntry
-	if entry, err = x.KeyValue.Get("values"); err != nil {
+	if err = x.Fetch(values); err != nil {
 		return
 	}
-	var b []byte
-	if b, err = x.Cipher.Decode(string(entry.Value())); err != nil {
-		return
-	}
-	if err = msgpack.Unmarshal(b, &values); err != nil {
-		return
+	contains := make(map[string]bool)
+	for _, v := range keys {
+		contains[v] = true
 	}
 	for k, v := range values {
-		if len(keys) != 0 && !funk.Contains(keys, k) {
+		if len(keys) != 0 && !contains[k] {
 			delete(values, k)
 			continue
 		}
-		if funk.Contains(SECRET, k) {
+		if SECRET[k] {
 			if funk.IsEmpty(v) {
 				values[k] = "-"
 			} else {
@@ -109,16 +107,8 @@ func (x *Service) Get(keys []string) (values map[string]interface{}, err error) 
 }
 
 func (x *Service) Remove(key string) (err error) {
-	var entry nats.KeyValueEntry
-	if entry, err = x.KeyValue.Get("values"); err != nil {
-		return
-	}
-	var b []byte
-	if b, err = x.Cipher.Decode(string(entry.Value())); err != nil {
-		return
-	}
 	var values map[string]interface{}
-	if err = msgpack.Unmarshal(b, &values); err != nil {
+	if err = x.Fetch(values); err != nil {
 		return
 	}
 	delete(values, key)
