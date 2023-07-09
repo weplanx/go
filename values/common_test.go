@@ -29,8 +29,6 @@ var (
 	engine   *route.Engine
 )
 
-type M = map[string]interface{}
-
 func TestMain(m *testing.M) {
 	var err error
 	if err = UseNats("dev"); err != nil {
@@ -93,10 +91,6 @@ func UseNats(namespace string) (err error) {
 	if js, err = nc.JetStream(nats.PublishAsyncMaxPending(256)); err != nil {
 		return
 	}
-	//js.DeleteKeyValue(namespace)
-	//if keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{Bucket: namespace}); err != nil {
-	//	return
-	//}
 	if keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{
 		Bucket: namespace,
 	}); err != nil {

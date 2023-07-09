@@ -15,16 +15,16 @@ type Service struct {
 	Values   *Values
 }
 
-func (x *Service) Fetch(values map[string]interface{}) (err error) {
+func (x *Service) Fetch(values *map[string]interface{}) (err error) {
 	var entry nats.KeyValueEntry
 	if entry, err = x.KeyValue.Get("values"); err != nil {
 		if errors.Is(err, nats.ErrKeyNotFound) {
 			v := reflect.ValueOf(*x.Values)
 			typ := v.Type()
 			for i := 0; i < v.NumField(); i++ {
-				values[typ.Field(i).Name] = v.Field(i).Interface()
+				(*values)[typ.Field(i).Name] = v.Field(i).Interface()
 			}
-			return x.Update(values)
+			return x.Update(*values)
 		}
 		return
 	}
@@ -71,18 +71,18 @@ func (x *Service) Fetch(values map[string]interface{}) (err error) {
 //	return
 //}
 
-func (x *Service) Set(data map[string]interface{}) (err error) {
+func (x *Service) Set(update map[string]interface{}) (err error) {
 	var values map[string]interface{}
-	if err = x.Fetch(values); err != nil {
+	if err = x.Fetch(&values); err != nil {
 		return
 	}
-	for key, value := range data {
+	for key, value := range update {
 		values[key] = value
 	}
 	return x.Update(values)
 }
 
-func (x *Service) Get(keys []string) (values map[string]interface{}, err error) {
+func (x *Service) Get(keys []string, values *map[string]interface{}) (err error) {
 	if err = x.Fetch(values); err != nil {
 		return
 	}
@@ -90,28 +90,30 @@ func (x *Service) Get(keys []string) (values map[string]interface{}, err error) 
 	for _, v := range keys {
 		contains[v] = true
 	}
-	for k, v := range values {
+	for k, v := range *values {
 		if len(keys) != 0 && !contains[k] {
-			delete(values, k)
+			delete(*values, k)
 			continue
 		}
 		if SECRET[k] {
 			if funk.IsEmpty(v) {
-				values[k] = "-"
+				(*values)[k] = "-"
 			} else {
-				values[k] = "*"
+				(*values)[k] = "*"
 			}
 		}
 	}
 	return
 }
 
-func (x *Service) Remove(key string) (err error) {
+func (x *Service) Remove(keys []string) (err error) {
 	var values map[string]interface{}
-	if err = x.Fetch(values); err != nil {
+	if err = x.Fetch(&values); err != nil {
 		return
 	}
-	delete(values, key)
+	for _, key := range keys {
+		delete(values, key)
+	}
 	return x.Update(values)
 }
 
