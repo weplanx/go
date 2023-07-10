@@ -30,8 +30,8 @@ func (x *Cipher) Encode(data []byte) (ciphertext string, err error) {
 }
 
 func (x *Cipher) Decode(ciphertext string) (data []byte, err error) {
-	encrypted, err := base64.StdEncoding.DecodeString(ciphertext)
-	if err != nil {
+	var encrypted []byte
+	if encrypted, err = base64.StdEncoding.DecodeString(ciphertext); err != nil {
 		return
 	}
 	nonce, text := encrypted[:x.AEAD.NonceSize()], encrypted[x.AEAD.NonceSize():]

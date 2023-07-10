@@ -4,26 +4,16 @@ import (
 	"time"
 )
 
-var (
-	DEFAULT = Values{
-		SessionTTL:      time.Hour,
-		LoginTTL:        time.Minute * 15,
-		LoginFailures:   5,
-		IpLoginFailures: 10,
-		IpWhitelist:     []string{},
-		IpBlacklist:     []string{},
-		PwdStrategy:     1,
-		PwdTTL:          time.Hour * 24 * 365,
-	}
-	SECRET = map[string]bool{
-		"TencentSecretKey":      true,
-		"LarkAppSecret":         true,
-		"LarkEncryptKey":        true,
-		"LarkVerificationToken": true,
-		"EmailPassword":         true,
-		"OpenapiSecret":         true,
-	}
-)
+var DEFAULT = Values{
+	SessionTTL:      time.Hour,
+	LoginTTL:        time.Minute * 15,
+	LoginFailures:   5,
+	IpLoginFailures: 10,
+	IpWhitelist:     []string{},
+	IpBlacklist:     []string{},
+	PwdStrategy:     1,
+	PwdTTL:          time.Hour * 24 * 365,
+}
 
 type Values struct {
 	// session period (seconds)
@@ -62,7 +52,7 @@ type Values struct {
 	// It is recommended to use CAM to assign the required permissions
 	TencentSecretId string
 	// Tencent Cloud API Secret Key
-	TencentSecretKey string
+	TencentSecretKey string `secret:"*"`
 	// Tencent Cloud COS bucket name
 	TencentCosBucket string
 	// Tencent Cloud COS bucket region, for example: ap-guangzhou
@@ -75,11 +65,11 @@ type Values struct {
 	// Lark App ID
 	LarkAppId string
 	// Lark application key
-	LarkAppSecret string
+	LarkAppSecret string `secret:"*"`
 	// Lark event subscription security verification data key
-	LarkEncryptKey string
+	LarkEncryptKey string `secret:"*"`
 	// Lark Event Subscription Verification Token
-	LarkVerificationToken string
+	LarkVerificationToken string `secret:"*"`
 	// Third-party registration-free authorization code redirection address
 	RedirectUrl string
 	// Public email service SMTP address
@@ -89,12 +79,12 @@ type Values struct {
 	// Public email username
 	EmailUsername string
 	// Public email password
-	EmailPassword string
+	EmailPassword string `secret:"*"`
 	// Openapi url
 	OpenapiUrl string
 	// Openapi application authentication key
 	// API gateway application authentication https://cloud.tencent.com/document/product/628/55088
 	OpenapiKey string
 	// Openapi Application Authentication Secret
-	OpenapiSecret string
+	OpenapiSecret string `secret:"*"`
 }

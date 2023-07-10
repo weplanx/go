@@ -1,26 +1,39 @@
 package values_test
 
 import (
+	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/weplanx/go-wpx/values"
+	"sync"
 	"testing"
 )
 
-func TestKeys(t *testing.T) {
-	keys, err := keyvalue.Keys()
-	assert.NoError(t, err)
-	t.Log(keys)
-}
-
 func TestService_Fetch(t *testing.T) {
-	data := make(map[string]interface{})
-	err := service.Fetch(&data)
+	err := service.Reset()
 	assert.NoError(t, err)
-	t.Log(data)
+
+	data1 := values.Values{}
+	err = service.Fetch(&data1)
+	assert.NoError(t, err)
+	assert.Equal(t, values.DEFAULT.LoginFailures, data1.LoginFailures)
+	assert.Equal(t, values.DEFAULT.IpLoginFailures, data1.IpLoginFailures)
+	assert.Equal(t, values.DEFAULT.SessionTTL, data1.SessionTTL)
+	assert.Equal(t, values.DEFAULT.LoginTTL, data1.LoginTTL)
+	assert.Equal(t, values.DEFAULT.PwdTTL, data1.PwdTTL)
+
+	data2 := make(map[string]interface{})
+	err = service.Fetch(&data2)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(values.DEFAULT.LoginFailures), data2["LoginFailures"])
+	assert.Equal(t, float64(values.DEFAULT.IpLoginFailures), data2["IpLoginFailures"])
+	assert.Equal(t, float64(values.DEFAULT.SessionTTL), data2["SessionTTL"])
+	assert.Equal(t, float64(values.DEFAULT.LoginTTL), data2["LoginTTL"])
+	assert.Equal(t, float64(values.DEFAULT.PwdTTL), data2["PwdTTL"])
 }
 
 func TestService_Set(t *testing.T) {
 	err := service.Set(map[string]interface{}{
+		"LoginFailures":    5,
 		"TencentSecretKey": "123456",
 		"Wechat":           "abcdefg",
 	})
@@ -28,7 +41,18 @@ func TestService_Set(t *testing.T) {
 }
 
 func TestService_Get(t *testing.T) {
-	data := make(map[string]interface{})
+	data1, err := service.Get()
+	assert.NoError(t, err)
+	t.Log(data1)
+	assert.Equal(t, float64(values.DEFAULT.LoginFailures), data1["LoginFailures"])
+	assert.Equal(t, float64(values.DEFAULT.IpLoginFailures), data1["IpLoginFailures"])
+	assert.Equal(t, float64(values.DEFAULT.SessionTTL), data1["SessionTTL"])
+	assert.Equal(t, float64(values.DEFAULT.PwdStrategy), data1["PwdStrategy"])
+	assert.Equal(t, float64(values.DEFAULT.LoginTTL), data1["LoginTTL"])
+	assert.Equal(t, float64(values.DEFAULT.PwdTTL), data1["PwdTTL"])
+	assert.Equal(t, "*", data1["TencentSecretKey"])
+	assert.Equal(t, "abcdefg", data1["Wechat"])
+
 	keys := []string{
 		"LoginFailures",
 		"Cloud",
@@ -37,15 +61,15 @@ func TestService_Get(t *testing.T) {
 		"Wechat",
 		"XXX",
 	}
-	err := service.Get(keys, &data)
+	data2, err := service.Get(keys...)
 	assert.NoError(t, err)
-	assert.Equal(t, 5, len(data))
-	assert.Equal(t, "", data["Cloud"])
-	assert.Equal(t, "-", data["LarkAppSecret"])
-	assert.Equal(t, int64(5), data["LoginFailures"])
-	assert.Equal(t, "*", data["TencentSecretKey"])
-	assert.Equal(t, "abcdefg", data["Wechat"])
-	assert.Nil(t, data["XXX"])
+	t.Log(data2)
+	assert.Equal(t, float64(5), data2["LoginFailures"])
+	assert.Equal(t, "*", data2["TencentSecretKey"])
+	assert.Equal(t, "abcdefg", data2["Wechat"])
+	assert.Nil(t, data2["Cloud"])
+	assert.Nil(t, data2["LarkAppSecret"])
+	assert.Nil(t, data2["XXX"])
 }
 
 func TestService_Update(t *testing.T) {
@@ -56,10 +80,10 @@ func TestService_Update(t *testing.T) {
 	data.LarkAppSecret = "123456"
 	err := service.Update(data)
 	assert.NoError(t, err)
-	result := make(map[string]interface{})
-	err = service.Fetch(&result)
+	result, err := service.Get()
 	assert.NoError(t, err)
-	assert.Equal(t, data.IpLoginFailures, result["IpLoginFailures"])
+	t.Log(result)
+	assert.Equal(t, float64(data.IpLoginFailures), result["IpLoginFailures"])
 	assert.Equal(t, data.Cloud, result["Cloud"])
 	assert.Equal(t, data.LarkAppId, result["LarkAppId"])
 	assert.Equal(t, "*", result["LarkAppSecret"])
@@ -67,11 +91,39 @@ func TestService_Update(t *testing.T) {
 
 func TestService_Remove(t *testing.T) {
 	keys := []string{"LarkAppId", "LarkAppSecret"}
-	err := service.Remove(keys)
+	err := service.Remove(keys...)
 	assert.NoError(t, err)
-	result := make(map[string]interface{})
-	err = service.Get(keys, &result)
+	result, err := service.Get(keys...)
 	t.Log(result)
 	assert.Nil(t, result["LarkAppId"])
-	assert.Equal(t, "-", result["LarkAppSecret"])
+	assert.Nil(t, result["LarkAppSecret"])
+}
+
+func TestService_SyncNotExists(t *testing.T) {
+	err := keyvalue.Delete("values")
+	assert.NoError(t, err)
+	err = service.Sync(nil)
+	assert.Error(t, err, nats.ErrKeyNotFound)
+}
+
+func TestService_Sync(t *testing.T) {
+	err := service.Reset()
+	assert.NoError(t, err)
+
+	ok := make(chan interface{})
+	go service.Sync(ok)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		for data := range ok {
+			assert.Equal(t, int64(10), data.(*values.Values).LoginFailures)
+			break
+		}
+		wg.Done()
+	}()
+	err = service.Set(map[string]interface{}{
+		"LoginFailures": 10,
+	})
+	assert.NoError(t, err)
+	wg.Wait()
 }

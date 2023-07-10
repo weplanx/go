@@ -1,12 +1,12 @@
 package values
 
 import (
-	"errors"
+	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
 	"github.com/thoas/go-funk"
-	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weplanx/go-wpx/cipher"
 	"reflect"
+	"time"
 )
 
 type Service struct {
@@ -15,61 +15,41 @@ type Service struct {
 	Values   *Values
 }
 
-func (x *Service) Fetch(values *map[string]interface{}) (err error) {
+func (x *Service) Fetch(v interface{}) (err error) {
 	var entry nats.KeyValueEntry
 	if entry, err = x.KeyValue.Get("values"); err != nil {
-		if errors.Is(err, nats.ErrKeyNotFound) {
-			v := reflect.ValueOf(*x.Values)
-			typ := v.Type()
-			for i := 0; i < v.NumField(); i++ {
-				(*values)[typ.Field(i).Name] = v.Field(i).Interface()
-			}
-			return x.Update(*values)
-		}
 		return
 	}
 	var b []byte
 	if b, err = x.Cipher.Decode(string(entry.Value())); err != nil {
 		return
 	}
-	if err = msgpack.Unmarshal(b, &values); err != nil {
+	if err = sonic.Unmarshal(b, v); err != nil {
 		return
 	}
 	return
 }
 
-//type SyncOption struct {
-//	Updated chan *Values
-//	Err     chan error
-//}
-//
-//func (x *Service) Sync(option *SyncOption) (err error) {
-//	if err = x.Load(); err != nil {
-//		return
-//	}
-//	current := time.Now()
-//	var watch nats.ObjectWatcher
-//	watch, err = x.Object.Watch()
-//	for entry := range watch.Updates() {
-//		if entry.Name != "values" {
-//			continue
-//		}
-//		if entry == nil || entry.Created().Unix() < current.Unix() {
-//			continue
-//		}
-//		if err = sonic.Unmarshal(entry.Value(), x.Values); err != nil {
-//			if option != nil && option.Err != nil {
-//				option.Err <- err
-//			}
-//			return
-//		}
-//		if option != nil && option.Updated != nil {
-//			option.Updated <- x.Values
-//		}
-//	}
-//
-//	return
-//}
+func (x *Service) Sync(ok chan interface{}) (err error) {
+	if err = x.Fetch(x.Values); err != nil {
+		return
+	}
+	current := time.Now()
+	var watch nats.KeyWatcher
+	watch, err = x.KeyValue.Watch("values")
+	for entry := range watch.Updates() {
+		if entry == nil || entry.Created().Unix() < current.Unix() {
+			continue
+		}
+		if err = x.Fetch(x.Values); err != nil {
+			return
+		}
+		if ok != nil {
+			ok <- x.Values
+		}
+	}
+	return
+}
 
 func (x *Service) Set(update map[string]interface{}) (err error) {
 	var values map[string]interface{}
@@ -82,31 +62,32 @@ func (x *Service) Set(update map[string]interface{}) (err error) {
 	return x.Update(values)
 }
 
-func (x *Service) Get(keys []string, values *map[string]interface{}) (err error) {
-	if err = x.Fetch(values); err != nil {
+func (x *Service) Get(keys ...string) (data map[string]interface{}, err error) {
+	if err = x.Fetch(&data); err != nil {
 		return
 	}
 	contains := make(map[string]bool)
 	for _, v := range keys {
 		contains[v] = true
 	}
-	for k, v := range *values {
-		if len(keys) != 0 && !contains[k] {
-			delete(*values, k)
+	typ := reflect.ValueOf(DEFAULT).Type()
+	for key, value := range data {
+		if len(keys) != 0 && !contains[key] || funk.IsEmpty(value) {
+			delete(data, key)
 			continue
 		}
-		if SECRET[k] {
-			if funk.IsEmpty(v) {
-				(*values)[k] = "-"
-			} else {
-				(*values)[k] = "*"
-			}
+		secret := false
+		if field, ok := typ.FieldByName(key); ok {
+			secret = field.Tag.Get("secret") == "*"
+		}
+		if secret {
+			data[key] = "*"
 		}
 	}
 	return
 }
 
-func (x *Service) Remove(keys []string) (err error) {
+func (x *Service) Remove(keys ...string) (err error) {
 	var values map[string]interface{}
 	if err = x.Fetch(&values); err != nil {
 		return
@@ -117,9 +98,9 @@ func (x *Service) Remove(keys []string) (err error) {
 	return x.Update(values)
 }
 
-func (x *Service) Update(values interface{}) (err error) {
+func (x *Service) Update(data interface{}) (err error) {
 	var b []byte
-	if b, err = msgpack.Marshal(values); err != nil {
+	if b, err = sonic.Marshal(data); err != nil {
 		return
 	}
 	var ciphertext string
@@ -130,4 +111,14 @@ func (x *Service) Update(values interface{}) (err error) {
 		return
 	}
 	return
+}
+
+func (x *Service) Reset() (err error) {
+	data := make(map[string]interface{})
+	v := reflect.ValueOf(DEFAULT)
+	typ := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		data[typ.Field(i).Name] = v.Field(i).Interface()
+	}
+	return x.Update(data)
 }
