@@ -7,6 +7,7 @@ import (
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/bytedance/sonic/decoder"
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/route"
@@ -24,16 +25,18 @@ import (
 var (
 	js       nats.JetStreamContext
 	keyvalue nats.KeyValue
-	cipherx  *cipher.Cipher
 	service  *values.Service
 	engine   *route.Engine
 )
+
+type M = map[string]interface{}
 
 func TestMain(m *testing.M) {
 	var err error
 	if err = UseNats("dev"); err != nil {
 		log.Fatalln(err)
 	}
+	var cipherx *cipher.Cipher
 	if cipherx, err = cipher.New("vGglcAlIavhcvZGra7JuZDzp3DZPQ6iU"); err != nil {
 		log.Fatalln(err)
 	}
@@ -43,15 +46,15 @@ func TestMain(m *testing.M) {
 		Cipher:   cipherx,
 		Values:   &v,
 	}
-	//engine = route.NewEngine(config.NewOptions([]config.Option{}))
-	//engine.Use(ErrHandler())
-	//x := &values.Controller{Service: service}
-	//r := engine.Group("values")
-	//{
-	//	r.GET("", x.Get)
-	//	r.PATCH("", x.Set)
-	//	r.DELETE(":key", x.Remove)
-	//}
+	engine = route.NewEngine(config.NewOptions([]config.Option{}))
+	engine.Use(ErrHandler())
+	x := &values.Controller{Service: service}
+	r := engine.Group("values")
+	{
+		r.GET("", x.Get)
+		r.PATCH("", x.Set)
+		r.DELETE(":key", x.Remove)
+	}
 	os.Exit(m.Run())
 }
 
