@@ -1,4 +1,4 @@
-package values_test
+package sessions_test
 
 import (
 	"context"
@@ -11,94 +11,49 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/route"
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nkeys"
-	"github.com/weplanx/go-wpx/cipher"
+	"github.com/redis/go-redis/v9"
+	"github.com/weplanx/go-wpx/sessions"
 	"github.com/weplanx/go-wpx/values"
 	"log"
 	"net/http"
 	"os"
 	"testing"
-	"time"
 )
 
 var (
-	keyvalue nats.KeyValue
-	service  *values.Service
-	engine   *route.Engine
+	service *sessions.Service
+	rdb     *redis.Client
+	engine  *route.Engine
 )
 
-type M = map[string]interface{}
-
 func TestMain(m *testing.M) {
-	var err error
-	if err = UseNats("dev"); err != nil {
+	if err := UseRedis(); err != nil {
 		log.Fatalln(err)
 	}
-	var cipherx *cipher.Cipher
-	if cipherx, err = cipher.New("vGglcAlIavhcvZGra7JuZDzp3DZPQ6iU"); err != nil {
-		log.Fatalln(err)
-	}
-	v := values.DEFAULT
-	service = &values.Service{
-		KeyValue: keyvalue,
-		Cipher:   cipherx,
-		Values:   &v,
-	}
+	service = sessions.New(
+		sessions.SetNamespace("dev"),
+		sessions.SetRedis(rdb),
+		sessions.SetDynamicValues(&values.DEFAULT),
+	)
+	x := sessions.Controller{Service: service}
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
-	x := &values.Controller{Service: service}
-	r := engine.Group("values")
+	r := engine.Group("sessions")
 	{
-		r.GET("", x.Get)
-		r.PATCH("", x.Set)
-		r.DELETE(":key", x.Remove)
+		r.GET("", x.Lists)
+		r.DELETE(":uid", x.Remove)
+		r.POST("clear", x.Clear)
 	}
 	os.Exit(m.Run())
 }
 
-func UseNats(namespace string) (err error) {
-	var auth nats.Option
-	if os.Getenv("NATS_TOKEN") != "" {
-		auth = nats.Token(os.Getenv("NATS_TOKEN"))
-	}
-	if os.Getenv("NATS_NKEY") != "" {
-		var kp nkeys.KeyPair
-		if kp, err = nkeys.FromSeed([]byte(os.Getenv("NATS_NKEY"))); err != nil {
-			return
-		}
-		defer kp.Wipe()
-		var pub string
-		if pub, err = kp.PublicKey(); err != nil {
-			return
-		}
-		if !nkeys.IsValidPublicUserKey(pub) {
-			panic("nkey failed")
-		}
-		auth = nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
-			sig, _ := kp.Sign(nonce)
-			return sig, nil
-		})
-	}
-	var nc *nats.Conn
-	if nc, err = nats.Connect(
-		os.Getenv("NATS_HOSTS"),
-		nats.MaxReconnects(5),
-		nats.ReconnectWait(2*time.Second),
-		nats.ReconnectJitter(500*time.Millisecond, 2*time.Second),
-		auth,
-	); err != nil {
+func UseRedis() (err error) {
+	var opts *redis.Options
+	opts, err = redis.ParseURL(os.Getenv("DATABASE_REDIS"))
+	if err != nil {
 		return
 	}
-	var js nats.JetStreamContext
-	if js, err = nc.JetStream(nats.PublishAsyncMaxPending(256)); err != nil {
-		return
-	}
-	if keyvalue, err = js.CreateKeyValue(&nats.KeyValueConfig{
-		Bucket: namespace,
-	}); err != nil {
-		return
-	}
+	rdb = redis.NewClient(opts)
 	return
 }
 

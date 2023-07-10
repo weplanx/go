@@ -9,9 +9,9 @@ import (
 )
 
 type Service struct {
-	Namespace     string
-	Redis         *redis.Client
-	DynamicValues *values.DynamicValues
+	Namespace string
+	Redis     *redis.Client
+	Values    *values.DynamicValues
 }
 
 func (x *Service) Key(name string) string {
@@ -57,12 +57,12 @@ func (x *Service) Verify(ctx context.Context, name string, jti string) (result b
 
 func (x *Service) Set(ctx context.Context, name string, jti string) error {
 	return x.Redis.
-		Set(ctx, x.Key(name), jti, x.DynamicValues.SessionTTL).Err()
+		Set(ctx, x.Key(name), jti, x.Values.SessionTTL).Err()
 }
 
 func (x *Service) Renew(ctx context.Context, userId string) error {
 	return x.Redis.
-		Expire(ctx, x.Key(userId), x.DynamicValues.SessionTTL).
+		Expire(ctx, x.Key(userId), x.Values.SessionTTL).
 		Err()
 }
 

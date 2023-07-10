@@ -13,4 +13,4 @@ Some commonly used integration utils
 
 [BSD-3-Clause License](https://github.com/weplanx/go-wpx/blob/main/LICENSE)
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweplanx%2Fgo-wpx.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweplanx%2Fgo-wpx?ref=badge_large)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweplanx%2Futils.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweplanx%2Futils?ref=badge_large)

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-var DEFAULT = Values{
+var DEFAULT = DynamicValues{
 	SessionTTL:      time.Hour,
 	LoginTTL:        time.Minute * 15,
 	LoginFailures:   5,
@@ -15,7 +15,7 @@ var DEFAULT = Values{
 	PwdTTL:          time.Hour * 24 * 365,
 }
 
-type Values struct {
+type DynamicValues struct {
 	// session period (seconds)
 	// User inactivity for 1 hour, session will end
 	SessionTTL time.Duration

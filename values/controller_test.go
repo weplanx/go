@@ -62,19 +62,6 @@ func TestSetBadService(t *testing.T) {
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
-//func TestGetBadValidate(t *testing.T) {
-//	u := url.URL{Path: "/values"}
-//	query := u.Query()
-//	query.Set("field", `name`)
-//	u.RawQuery = query.Encode()
-//	w := ut.PerformRequest(engine, "GET", u.RequestURI(),
-//		&ut.Body{},
-//		ut.Header{Key: "content-type", Value: "application/json"},
-//	)
-//	resp := w.Result()
-//	assert.Equal(t, 400, resp.StatusCode())
-//}
-
 func TestGet(t *testing.T) {
 	err := service.Reset()
 	assert.NoError(t, err)
@@ -124,15 +111,6 @@ func TestGetBadService(t *testing.T) {
 	resp := w.Result()
 	assert.Equal(t, 500, resp.StatusCode())
 }
-
-//func TestRemoveBadValidate(t *testing.T) {
-//	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/values/%s`, ""),
-//		&ut.Body{},
-//		ut.Header{Key: "content-type", Value: "application/json"},
-//	)
-//	resp := w.Result()
-//	assert.Equal(t, 400, resp.StatusCode())
-//}
 
 func TestRemove(t *testing.T) {
 	err := service.Reset()

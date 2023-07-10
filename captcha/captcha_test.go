@@ -27,13 +27,14 @@ func TestMain(m *testing.M) {
 
 func TestCreate(t *testing.T) {
 	var err error
-	err = x.Create(context.TODO(), "dev1", "abcd", time.Second*60)
+	ctx := context.TODO()
+	err = x.Create(ctx, "dev1", "abcd", time.Second*60)
 	assert.NoError(t, err)
 	var ttl time.Duration
-	ttl, err = x.Redis.TTL(context.TODO(), x.Key("dev1")).Result()
+	ttl, err = x.Redis.TTL(ctx, x.Key("dev1")).Result()
 	assert.NoError(t, err)
 	t.Log(ttl.Seconds())
-	err = x.Create(context.TODO(), "dev2", "abcd", time.Millisecond)
+	err = x.Create(ctx, "dev2", "abcd", time.Millisecond)
 	assert.NoError(t, err)
 }
 

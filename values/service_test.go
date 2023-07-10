@@ -12,7 +12,7 @@ func TestService_Fetch(t *testing.T) {
 	err := service.Reset()
 	assert.NoError(t, err)
 
-	data1 := values.Values{}
+	data1 := values.DynamicValues{}
 	err = service.Fetch(&data1)
 	assert.NoError(t, err)
 	assert.Equal(t, values.DEFAULT.LoginFailures, data1.LoginFailures)
@@ -116,7 +116,7 @@ func TestService_Sync(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		for data := range ok {
-			assert.Equal(t, int64(10), data.(*values.Values).LoginFailures)
+			assert.Equal(t, int64(10), data.(*values.DynamicValues).LoginFailures)
 			break
 		}
 		wg.Done()

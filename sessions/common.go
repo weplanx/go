@@ -29,6 +29,6 @@ func SetRedis(v *redis.Client) Option {
 
 func SetDynamicValues(v *values.DynamicValues) Option {
 	return func(x *Service) {
-		x.DynamicValues = v
+		x.Values = v
 	}
 }

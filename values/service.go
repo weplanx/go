@@ -12,7 +12,7 @@ import (
 type Service struct {
 	KeyValue nats.KeyValue
 	Cipher   *cipher.Cipher
-	Values   *Values
+	Values   *DynamicValues
 }
 
 func (x *Service) Fetch(v interface{}) (err error) {
