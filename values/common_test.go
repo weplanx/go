@@ -40,11 +40,12 @@ func TestMain(m *testing.M) {
 		log.Fatalln(err)
 	}
 	v := values.DEFAULT
-	service = &values.Service{
-		KeyValue: keyvalue,
-		Cipher:   cipherx,
-		Values:   &v,
-	}
+	service = values.New(
+		values.SetNamespace("dev"),
+		values.SetKeyValue(keyvalue),
+		values.SetCipher(cipherx),
+		values.SetDynamicValues(&v),
+	)
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
 	x := &values.Controller{Service: service}

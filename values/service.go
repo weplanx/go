@@ -10,9 +10,10 @@ import (
 )
 
 type Service struct {
-	KeyValue nats.KeyValue
-	Cipher   *cipher.Cipher
-	Values   *DynamicValues
+	Namespace string
+	KeyValue  nats.KeyValue
+	Cipher    *cipher.Cipher
+	Values    *DynamicValues
 }
 
 func (x *Service) Fetch(v interface{}) (err error) {

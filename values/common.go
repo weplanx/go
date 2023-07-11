@@ -1,8 +1,44 @@
 package values
 
 import (
+	"github.com/nats-io/nats.go"
+	"github.com/weplanx/go-wpx/cipher"
 	"time"
 )
+
+func New(options ...Option) *Service {
+	x := new(Service)
+	for _, v := range options {
+		v(x)
+	}
+	return x
+}
+
+type Option func(x *Service)
+
+func SetNamespace(v string) Option {
+	return func(x *Service) {
+		x.Namespace = v
+	}
+}
+
+func SetKeyValue(v nats.KeyValue) Option {
+	return func(x *Service) {
+		x.KeyValue = v
+	}
+}
+
+func SetCipher(v *cipher.Cipher) Option {
+	return func(x *Service) {
+		x.Cipher = v
+	}
+}
+
+func SetDynamicValues(v *DynamicValues) Option {
+	return func(x *Service) {
+		x.Values = v
+	}
+}
 
 var DEFAULT = DynamicValues{
 	SessionTTL:      time.Hour,
