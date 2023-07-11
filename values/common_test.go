@@ -60,27 +60,22 @@ func TestMain(m *testing.M) {
 
 func UseNats(namespace string) (err error) {
 	var auth nats.Option
-	if os.Getenv("NATS_TOKEN") != "" {
-		auth = nats.Token(os.Getenv("NATS_TOKEN"))
+	var kp nkeys.KeyPair
+	if kp, err = nkeys.FromSeed([]byte(os.Getenv("NATS_NKEY"))); err != nil {
+		return
 	}
-	if os.Getenv("NATS_NKEY") != "" {
-		var kp nkeys.KeyPair
-		if kp, err = nkeys.FromSeed([]byte(os.Getenv("NATS_NKEY"))); err != nil {
-			return
-		}
-		defer kp.Wipe()
-		var pub string
-		if pub, err = kp.PublicKey(); err != nil {
-			return
-		}
-		if !nkeys.IsValidPublicUserKey(pub) {
-			panic("nkey failed")
-		}
-		auth = nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
-			sig, _ := kp.Sign(nonce)
-			return sig, nil
-		})
+	defer kp.Wipe()
+	var pub string
+	if pub, err = kp.PublicKey(); err != nil {
+		return
 	}
+	if !nkeys.IsValidPublicUserKey(pub) {
+		panic("nkey failed")
+	}
+	auth = nats.Nkey(pub, func(nonce []byte) ([]byte, error) {
+		sig, _ := kp.Sign(nonce)
+		return sig, nil
+	})
 	var nc *nats.Conn
 	if nc, err = nats.Connect(
 		os.Getenv("NATS_HOSTS"),
