@@ -123,4 +123,11 @@ type DynamicValues struct {
 	OpenapiKey string
 	// Openapi Application Authentication Secret
 	OpenapiSecret string `secret:"*"`
+	// RestControls
+	RestControls map[string]*RestControl
+}
+
+type RestControl struct {
+	Event bool
+	Keys  []string
 }

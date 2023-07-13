@@ -14,12 +14,13 @@ import (
 var x *locker.Locker
 
 func TestMain(m *testing.M) {
+	namespace := os.Getenv("NAMESPACE")
 	opts, err := redis.ParseURL(os.Getenv("DATABASE_REDIS"))
 	if err != nil {
 		log.Fatalln(err)
 	}
 	x = locker.New(
-		locker.SetNamespace("dev"),
+		locker.SetNamespace(namespace),
 		locker.SetRedis(redis.NewClient(opts)),
 	)
 	os.Exit(m.Run())

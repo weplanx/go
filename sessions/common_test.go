@@ -12,6 +12,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/redis/go-redis/v9"
+	"github.com/weplanx/go/help"
 	"github.com/weplanx/go/sessions"
 	"github.com/weplanx/go/values"
 	"log"
@@ -27,23 +28,18 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	namespace := os.Getenv("NAMESPACE")
 	if err := UseRedis(); err != nil {
 		log.Fatalln(err)
 	}
 	service = sessions.New(
-		sessions.SetNamespace("dev"),
+		sessions.SetNamespace(namespace),
 		sessions.SetRedis(rdb),
 		sessions.SetDynamicValues(&values.DEFAULT),
 	)
-	x := sessions.Controller{Service: service}
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
-	r := engine.Group("sessions")
-	{
-		r.GET("", x.Lists)
-		r.DELETE(":uid", x.Remove)
-		r.POST("clear", x.Clear)
-	}
+	help.SessionsRoutes(engine.Group(""), &sessions.Controller{Service: service})
 	os.Exit(m.Run())
 }
 

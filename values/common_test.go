@@ -14,6 +14,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/weplanx/go/cipher"
+	"github.com/weplanx/go/help"
 	"github.com/weplanx/go/values"
 	"log"
 	"net/http"
@@ -32,29 +33,24 @@ type M = map[string]interface{}
 
 func TestMain(m *testing.M) {
 	var err error
-	if err = UseNats("dev"); err != nil {
+	namespace := os.Getenv("NAMESPACE")
+	if err = UseNats(namespace); err != nil {
 		log.Fatalln(err)
 	}
 	var cipherx *cipher.Cipher
-	if cipherx, err = cipher.New("vGglcAlIavhcvZGra7JuZDzp3DZPQ6iU"); err != nil {
+	if cipherx, err = cipher.New(os.Getenv("KEY")); err != nil {
 		log.Fatalln(err)
 	}
 	v := values.DEFAULT
 	service = values.New(
-		values.SetNamespace("dev"),
+		values.SetNamespace(namespace),
 		values.SetKeyValue(keyvalue),
 		values.SetCipher(cipherx),
 		values.SetDynamicValues(&v),
 	)
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
-	x := &values.Controller{Service: service}
-	r := engine.Group("values")
-	{
-		r.GET("", x.Get)
-		r.PATCH("", x.Set)
-		r.DELETE(":key", x.Remove)
-	}
+	help.ValuesRoutes(engine.Group(""), &values.Controller{Service: service})
 	os.Exit(m.Run())
 }
 
