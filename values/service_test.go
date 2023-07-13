@@ -3,7 +3,7 @@ package values_test
 import (
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/go-wpx/values"
+	"github.com/weplanx/go/values"
 	"sync"
 	"testing"
 )

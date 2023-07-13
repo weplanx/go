@@ -4,7 +4,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
 	"github.com/thoas/go-funk"
-	"github.com/weplanx/go-wpx/cipher"
+	"github.com/weplanx/go/cipher"
 	"reflect"
 	"time"
 )

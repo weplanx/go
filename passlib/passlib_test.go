@@ -2,7 +2,7 @@ package passlib_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/go-wpx/passlib"
+	"github.com/weplanx/go/passlib"
 	"testing"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/go-wpx/locker"
+	"github.com/weplanx/go/locker"
 	"log"
 	"os"
 	"testing"

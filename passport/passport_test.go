@@ -2,7 +2,7 @@ package passport_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/weplanx/go-wpx/passport"
+	"github.com/weplanx/go/passport"
 	"os"
 	"testing"
 )

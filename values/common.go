@@ -2,7 +2,7 @@ package values
 
 import (
 	"github.com/nats-io/nats.go"
-	"github.com/weplanx/go-wpx/cipher"
+	"github.com/weplanx/go/cipher"
 	"time"
 )
 
