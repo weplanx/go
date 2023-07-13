@@ -12,3 +12,5 @@ Some commonly used integration utils
 ## License
 
 [BSD-3-Clause License](https://github.com/weplanx/go/blob/main/LICENSE)
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fweplanx%2Fgo.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fweplanx%2Fgo?ref=badge_large)
