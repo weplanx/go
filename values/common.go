@@ -124,7 +124,8 @@ type DynamicValues struct {
 	// Openapi Application Authentication Secret
 	OpenapiSecret string `secret:"*"`
 	// RestControls
-	RestControls map[string]*RestControl
+	RestControls   map[string]*RestControl
+	RestTxnTimeout time.Duration
 }
 
 type RestControl struct {

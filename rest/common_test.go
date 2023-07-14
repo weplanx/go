@@ -60,14 +60,17 @@ func TestMain(m *testing.M) {
 		rest.SetRedis(rdb),
 		rest.SetJetStream(js),
 		rest.SetKeyValue(keyvalue),
-		rest.SetDynamicValues(&values.DynamicValues{RestControls: map[string]*values.RestControl{
-			"users": {
-				Keys: []string{"name", "department", "roles", "create_time", "update_time"},
+		rest.SetDynamicValues(&values.DynamicValues{
+			RestControls: map[string]*values.RestControl{
+				"users": {
+					Keys: []string{"name", "department", "roles", "create_time", "update_time"},
+				},
+				"projects": {
+					Event: true,
+				},
 			},
-			"projects": {
-				Event: true,
-			},
-		}}),
+			RestTxnTimeout: time.Second * 30,
+		}),
 	)
 	if err := MockDb(ctx); err != nil {
 		panic(err)

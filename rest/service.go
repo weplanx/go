@@ -215,8 +215,24 @@ type PendingDto struct {
 	Data   interface{}        `json:"data,omitempty"`
 }
 
+var ErrTxnNotExist = errors.NewPublic("the txn does not exist")
+
+func (x *Service) TxnNotExists(ctx context.Context, key string) (err error) {
+	var exists int64
+	if exists, err = x.RDb.Exists(ctx, key).Result(); err != nil {
+		return
+	}
+	if exists != 1 {
+		return ErrTxnNotExist
+	}
+	return
+}
+
 func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err error) {
 	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	if err = x.TxnNotExists(ctx, key); err != nil {
+		return
+	}
 	var b []byte
 	if b, err = sonic.Marshal(dto); err != nil {
 		return
@@ -231,11 +247,14 @@ var ErrTxnTimeOut = errors.NewPublic("the transaction has timed out")
 
 func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err error) {
 	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	if err = x.TxnNotExists(ctx, key); err != nil {
+		return
+	}
 	var begin time.Time
 	if begin, err = x.RDb.RPop(ctx, key).Time(); err != nil {
 		return
 	}
-	if time.Since(begin) > time.Second*30 {
+	if time.Since(begin) > x.Values.RestTxnTimeout {
 		err = ErrTxnTimeOut
 		return
 	}

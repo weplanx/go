@@ -7,6 +7,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/go-faker/faker/v4"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/thoas/go-funk"
 	"github.com/weplanx/go/passlib"
@@ -49,6 +50,30 @@ func TestCreateBadTransform(t *testing.T) {
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
+func TestCreateTxnNotExists(t *testing.T) {
+	txn := uuid.New().String()
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name":       "weplanx",
+			"password":   "5auBnD$L",
+			"department": "624a8facb4e5d150793d6353",
+			"roles":      roles,
+		},
+		"xdata": M{
+			"password":   "password",
+			"department": "oid",
+			"roles":      "oids",
+		},
+		"txn": txn,
+	})
+	w := ut.PerformRequest(engine, "POST", "/users/create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestCreate(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{
@@ -79,6 +104,7 @@ func TestCreate(t *testing.T) {
 	err = service.Db.Collection("users").
 		FindOne(context.TODO(), bson.M{"_id": id}).
 		Decode(&data)
+	t.Log(data)
 	assert.NoError(t, err)
 	assert.Equal(t, "weplanx", data["name"])
 	err = passlib.Verify("5auBnD$L", data["password"].(string))
@@ -90,6 +116,7 @@ func TestCreate(t *testing.T) {
 		roleIds[k], _ = primitive.ObjectIDFromHex(v)
 	}
 	assert.ElementsMatch(t, roleIds, data["roles"])
+
 }
 
 func TestCreateBadDbValidate(t *testing.T) {
@@ -209,6 +236,29 @@ func TestBulkCreateBadTransform(t *testing.T) {
 		},
 	})
 	w := ut.PerformRequest(engine, "POST", "/orders/bulk_create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestBulkCreateTxnNotExists(t *testing.T) {
+	txn := uuid.New().String()
+	body, _ := sonic.Marshal(M{
+		"data": []M{
+			{
+				"name": "admin",
+				"key":  "*",
+			},
+			{
+				"name": "staff",
+				"key":  "xyz",
+			},
+		},
+		"txn": txn,
+	})
+	w := ut.PerformRequest(engine, "POST", "/roles/bulk_create",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -734,6 +784,27 @@ func TestUpdateBadDataTransform(t *testing.T) {
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
+func TestUpdateTxnNotExists(t *testing.T) {
+	txn := uuid.New().String()
+	body, _ := sonic.Marshal(M{
+		"filter": M{
+			"key": "*",
+		},
+		"data": M{
+			"$set": M{
+				"name": "super",
+			},
+		},
+		"txn": txn,
+	})
+	w := ut.PerformRequest(engine, "POST", "/roles/update",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestUpdate(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"filter": M{
@@ -935,6 +1006,27 @@ func TestUpdateByIdBadDataTransform(t *testing.T) {
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
+func TestUpdateByIdTxnNotExists(t *testing.T) {
+	txn := uuid.New().String()
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"$set": M{
+				"department": "62cbf9ac465f45091e981b1e",
+			},
+		},
+		"xdata": M{
+			"$set.department": "oid",
+		},
+		"txn": txn,
+	})
+	w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/users/%s`, userId),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestUpdateById(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{
@@ -1123,6 +1215,30 @@ func TestReplaceBadTransform(t *testing.T) {
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
+func TestReplaceTxnNotExists(t *testing.T) {
+	txn := uuid.New().String()
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name":       "kain",
+			"password":   "123456",
+			"department": nil,
+			"roles":      []string{},
+		},
+		"xdata": M{
+			"password":   "password",
+			"department": "oid",
+			"roles":      "oids",
+		},
+		"txn": txn,
+	})
+	w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/users/%s`, userId),
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestReplace(t *testing.T) {
 	body, _ := sonic.Marshal(M{
 		"data": M{
@@ -1247,6 +1363,16 @@ func TestDeleteBadValidate(t *testing.T) {
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
+func TestDeleteTxnNotExists(t *testing.T) {
+	txn := uuid.New().String()
+	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/users/%s?txn=%s`, userId, txn),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestDelete(t *testing.T) {
 	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/users/%s`, userId),
 		&ut.Body{},
@@ -1325,6 +1451,22 @@ func TestBulkDeleteBadTransform(t *testing.T) {
 		},
 	})
 	w := ut.PerformRequest(engine, "POST", "/orders/bulk_delete",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestBulkDeleteTxnNotExists(t *testing.T) {
+	txn := uuid.New()
+	body, _ := sonic.Marshal(M{
+		"filter": M{
+			"key": "*",
+		},
+		"txn": txn,
+	})
+	w := ut.PerformRequest(engine, "POST", "/roles/bulk_delete",
 		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
@@ -1435,6 +1577,25 @@ func TestSortBadValidate(t *testing.T) {
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
+func TestSortTxnNotExists(t *testing.T) {
+	txn := uuid.New().String()
+	sources := orderIds[:5]
+	sources = funk.Reverse(sources).([]string)
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"key":    "sort",
+			"values": sources,
+		},
+		"txn": txn,
+	})
+	w := ut.PerformRequest(engine, "POST", "/orders/sort",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
 func TestSort(t *testing.T) {
 	sources := orderIds[:5]
 	sources = funk.Reverse(sources).([]string)
@@ -1521,4 +1682,187 @@ func TestSortBadEvent(t *testing.T) {
 	assert.Equal(t, 500, resp.StatusCode())
 	assert.Empty(t, resp.Body())
 	RecoverStream(t)
+}
+
+func TestTransaction(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_users").Drop(ctx)
+	assert.NoError(t, err)
+	err = service.Db.Collection("x_roles").Drop(ctx)
+	assert.NoError(t, err)
+
+	// Get Txn
+	w1 := ut.PerformRequest(engine, "POST", "/transaction",
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp1 := w1.Result()
+	assert.Equal(t, 201, resp1.StatusCode())
+	var result1 M
+	err = sonic.Unmarshal(resp1.Body(), &result1)
+	assert.NoError(t, err)
+	txn := result1["txn"].(string)
+
+	body2, _ := sonic.Marshal(M{
+		"data": M{
+			"name": "admin",
+			"key":  "*",
+		},
+		"txn": txn,
+	})
+	w2 := ut.PerformRequest(engine, "POST", "/x_roles/create",
+		&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp2 := w2.Result()
+	assert.Equal(t, 204, resp2.StatusCode())
+
+	body3, _ := sonic.Marshal(M{
+		"data": M{
+			"name":  "kainxxxx",
+			"roles": []string{"*"},
+		},
+		"txn": txn,
+	})
+	w3 := ut.PerformRequest(engine, "POST", "/x_users/create",
+		&ut.Body{Body: bytes.NewBuffer(body3), Len: len(body3)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp3 := w3.Result()
+	assert.Equal(t, 204, resp3.StatusCode())
+
+	body4, _ := sonic.Marshal(M{
+		"txn": txn,
+	})
+	w4 := ut.PerformRequest(engine, "POST", "/commit",
+		&ut.Body{Body: bytes.NewBuffer(body4), Len: len(body4)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp4 := w4.Result()
+	assert.Equal(t, 200, resp4.StatusCode())
+
+	var user M
+	err = service.Db.Collection("x_users").FindOne(ctx, bson.M{
+		"name": "kainxxxx",
+	}).Decode(&user)
+	assert.NoError(t, err)
+	assert.Equal(t, primitive.A{"*"}, user["roles"])
+
+	var role M
+	err = service.Db.Collection("x_roles").FindOne(ctx, bson.M{
+		"key": "*",
+	}).Decode(&role)
+	assert.NoError(t, err)
+	assert.Equal(t, "admin", role["name"])
+}
+
+func TestCommitNotTxn(t *testing.T) {
+	w1 := ut.PerformRequest(engine, "POST", "/commit",
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp1 := w1.Result()
+	assert.Equal(t, 400, resp1.StatusCode())
+
+	body2, _ := sonic.Marshal(M{
+		"txn": uuid.New().String(),
+	})
+	w2 := ut.PerformRequest(engine, "POST", "/commit",
+		&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp2 := w2.Result()
+	assert.Equal(t, 400, resp2.StatusCode())
+}
+
+func TestCommitTimeout(t *testing.T) {
+	service.Values.RestTxnTimeout = time.Second
+	w1 := ut.PerformRequest(engine, "POST", "/transaction",
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp1 := w1.Result()
+	assert.Equal(t, 201, resp1.StatusCode())
+	var result1 M
+	err := sonic.Unmarshal(resp1.Body(), &result1)
+	assert.NoError(t, err)
+	txn := result1["txn"].(string)
+
+	time.Sleep(time.Second)
+
+	body2, _ := sonic.Marshal(M{
+		"txn": txn,
+	})
+	w2 := ut.PerformRequest(engine, "POST", "/commit",
+		&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp2 := w2.Result()
+	assert.Equal(t, 400, resp2.StatusCode())
+	t.Log(string(resp2.Body()))
+}
+
+func TestMoreTransform(t *testing.T) {
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name": "体验卡",
+			"pd":   "2023-04-12T22:00:00.906Z",
+			"valid": []string{
+				"2023-04-12T22:00:00.906Z",
+				"2023-04-13T06:30:05.586Z",
+			},
+			"metadata": []M{
+				{
+					"name": "aps",
+					"date": "Fri, 14 Jul 2023 19:13:24 CST",
+					//"wm": []string{
+					//	"Fri, 14 Jul 2023 19:13:24 CST",
+					//	"Fri, 14 Jul 2023 20:14:10 CST",
+					//},
+				},
+				{
+					"name": "kmx",
+					"date": "Fri, 14 Jul 2023 21:15:05 CST",
+					//"wm": []string{
+					//	"Fri, 14 Jul 2023 21:15:05 CST",
+					//	"Fri, 14 Jul 2023 22:15:20 CST",
+					//},
+				},
+			},
+		},
+		"xdata": M{
+			"pd":              "timestamp",
+			"valid":           "timestamps",
+			"metadata.$.date": "date",
+			//"metadate.$.wm":   "dates",
+		},
+	})
+	// TODO: 待排查
+	w := ut.PerformRequest(engine, "POST", "/coupons/create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 201, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, result)
+
+	id := result["InsertedID"].(string)
+	oid, _ := primitive.ObjectIDFromHex(id)
+
+	var coupon M
+	err = service.Db.Collection("coupons").FindOne(context.TODO(), bson.M{
+		"_id": oid,
+	}).Decode(&coupon)
+	assert.NoError(t, err)
+
+	t.Log(coupon)
+	assert.Equal(t, "体验卡", coupon["name"])
+	assert.Equal(t, primitive.DateTime(1681336800906), coupon["pd"])
+	assert.Equal(t,
+		primitive.A{primitive.DateTime(1681336800906), primitive.DateTime(1681367405586)},
+		coupon["valid"],
+	)
 }
