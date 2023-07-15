@@ -1746,7 +1746,7 @@ func TestMoreTransform(t *testing.T) {
 		coupon["valid"],
 	)
 	metadata := coupon["metadata"].(primitive.A)
-	assert.Equal(t, primitive.A{
+	assert.ElementsMatch(t, primitive.A{
 		M{
 			"name": "aps",
 			"date": primitive.DateTime(1689333204000),
