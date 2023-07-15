@@ -19,6 +19,8 @@ const PASS1 = `$argon2i$v=19$m=65536,t=4,p=1$NPCjKIcoU2z6rg6p8glOfg$jrbRcvsTq/IT
 const PASS2 = `$argon2id$v=x$m=65536,t=4,p=1$NPCjKIcoU2z6rg6p8glOfg$jrbRcvsTq/ITJP414/xhNNwOtVeHYa478hPn8M6uJLA`
 const PASS3 = `$argon2id$v=18$m=65536,t=4,p=1$NPCjKIcoU2z6rg6p8glOfg$jrbRcvsTq/ITJP414/xhNNwOtVeHYa478hPn8M6uJLA`
 const PASS4 = `$argon2id$v=19$xcxcsdsdwe$NPCjKIcoU2z6rg6p8glOfg$jrbRcvsTq/ITJP414/xhNNwOtVeHYa478hPn8M6uJLA`
+const PASS5 = `$argon2id$v=19$m=65536,t=4,p=1$()$jrbRcvsTq/ITJP414/xhNNwOtVeHYa478hPn8M6uJLA`
+const PASS6 = `$argon2id$v=19$m=65536,t=4,p=1$NPCjKIcoU2z6rg6p8glOfg$()`
 
 func TestVerifyErrors(t *testing.T) {
 	var err error
@@ -32,4 +34,9 @@ func TestVerifyErrors(t *testing.T) {
 	assert.ErrorIs(t, err, passlib.ErrIncompatibleVersion)
 	err = passlib.Verify("pass@VAN1234", PASS4)
 	assert.ErrorIs(t, err, passlib.ErrInvalidHash)
+	err = passlib.Verify("pass@VAN1234", PASS5)
+	assert.Error(t, err)
+	err = passlib.Verify("pass@VAN1234", PASS6)
+	assert.Error(t, err)
+	t.Log(err)
 }

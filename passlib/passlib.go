@@ -28,7 +28,6 @@ func Hash(password string) (hash string, err error) {
 	if _, err = rand.Read(salt); err != nil {
 		return
 	}
-
 	key := argon2.IDKey([]byte(password), salt,
 		DEFAULT_TIME_COST, DEFAULT_MEMORY_COST, DEFAULT_THREADS, 32)
 
@@ -41,6 +40,7 @@ func Hash(password string) (hash string, err error) {
 
 func Verify(password string, hash string) (err error) {
 	options := strings.Split(hash, "$")
+	fmt.Println(options)
 	if len(options) != 6 {
 		return ErrInvalidHash
 	}

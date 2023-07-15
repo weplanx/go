@@ -1684,14 +1684,91 @@ func TestSortBadEvent(t *testing.T) {
 	RecoverStream(t)
 }
 
-func TestTransaction(t *testing.T) {
-	ctx := context.TODO()
-	err := service.Db.Collection("x_users").Drop(ctx)
+func TestMoreTransform(t *testing.T) {
+	body, _ := sonic.Marshal(M{
+		"data": M{
+			"name": "体验卡",
+			"pd":   "2023-04-12T22:00:00.906Z",
+			"valid": []string{
+				"2023-04-12T22:00:00.906Z",
+				"2023-04-13T06:30:05.586Z",
+			},
+			"metadata": []M{
+				{
+					"name": "aps",
+					"date": "Fri, 14 Jul 2023 19:13:24 CST",
+					"wm": []string{
+						"Fri, 14 Jul 2023 19:13:24 CST",
+						"Fri, 14 Jul 2023 20:14:10 CST",
+					},
+				},
+				{
+					"name": "kmx",
+					"date": "Fri, 14 Jul 2023 21:15:05 CST",
+					"wm": []string{
+						"Fri, 14 Jul 2023 21:15:05 CST",
+						"Fri, 14 Jul 2023 22:15:20 CST",
+					},
+				},
+			},
+		},
+		"xdata": M{
+			"pd":              "timestamp",
+			"valid":           "timestamps",
+			"metadata.$.date": "date",
+			"metadata.$.wm":   "dates",
+		},
+	})
+	w := ut.PerformRequest(engine, "POST", "/coupons/create",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 201, resp.StatusCode())
+	var result M
+	err := sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
-	err = service.Db.Collection("x_roles").Drop(ctx)
+	assert.NotEmpty(t, result)
+
+	id := result["InsertedID"].(string)
+	oid, _ := primitive.ObjectIDFromHex(id)
+
+	var coupon M
+	err = service.Db.Collection("coupons").FindOne(context.TODO(), bson.M{
+		"_id": oid,
+	}).Decode(&coupon)
 	assert.NoError(t, err)
 
-	// Get Txn
+	assert.Equal(t, "体验卡", coupon["name"])
+	assert.Equal(t, primitive.DateTime(1681336800906), coupon["pd"])
+	assert.Equal(t,
+		primitive.A{primitive.DateTime(1681336800906), primitive.DateTime(1681367405586)},
+		coupon["valid"],
+	)
+	metadata := coupon["metadata"].(primitive.A)
+	assert.Equal(t, primitive.A{
+		M{
+			"name": "aps",
+			"date": primitive.DateTime(1689333204000),
+			"wm": primitive.A{
+				primitive.DateTime(1689333204000),
+				primitive.DateTime(1689336850000),
+			},
+		},
+		M{
+			"name": "kmx",
+			"date": primitive.DateTime(1689340505000),
+			"wm": primitive.A{
+				primitive.DateTime(1689340505000),
+				primitive.DateTime(1689344120000),
+			},
+		},
+	}, metadata)
+}
+
+type TransactionFn = func(txn string)
+
+func Transaction(t *testing.T, fn TransactionFn) {
 	w1 := ut.PerformRequest(engine, "POST", "/transaction",
 		&ut.Body{},
 		ut.Header{Key: "content-type", Value: "application/json"},
@@ -1699,47 +1776,326 @@ func TestTransaction(t *testing.T) {
 	resp1 := w1.Result()
 	assert.Equal(t, 201, resp1.StatusCode())
 	var result1 M
-	err = sonic.Unmarshal(resp1.Body(), &result1)
+	err := sonic.Unmarshal(resp1.Body(), &result1)
 	assert.NoError(t, err)
 	txn := result1["txn"].(string)
 
-	body2, _ := sonic.Marshal(M{
-		"data": M{
-			"name": "admin",
-			"key":  "*",
-		},
+	fn(txn)
+
+	body, _ := sonic.Marshal(M{
 		"txn": txn,
 	})
-	w2 := ut.PerformRequest(engine, "POST", "/x_roles/create",
-		&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
+	w2 := ut.PerformRequest(engine, "POST", "/commit",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
 	resp2 := w2.Result()
-	assert.Equal(t, 204, resp2.StatusCode())
+	assert.Equal(t, 200, resp2.StatusCode())
+}
 
-	body3, _ := sonic.Marshal(M{
-		"data": M{
-			"name":  "kainxxxx",
-			"roles": []string{"*"},
-		},
-		"txn": txn,
-	})
-	w3 := ut.PerformRequest(engine, "POST", "/x_users/create",
-		&ut.Body{Body: bytes.NewBuffer(body3), Len: len(body3)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp3 := w3.Result()
-	assert.Equal(t, 204, resp3.StatusCode())
+func TestTxBulkCreate(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_test").Drop(ctx)
+	assert.NoError(t, err)
 
-	body4, _ := sonic.Marshal(M{
-		"txn": txn,
+	Transaction(t, func(txn string) {
+		body, _ := sonic.Marshal(M{
+			"data": []M{
+				{"name": "abc"},
+				{"name": "xxx"},
+			},
+			"txn": txn,
+		})
+		w := ut.PerformRequest(engine, "POST", "/x_test/bulk_create",
+			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp := w.Result()
+		assert.Equal(t, 204, resp.StatusCode())
+
+		count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), count)
 	})
-	w4 := ut.PerformRequest(engine, "POST", "/commit",
-		&ut.Body{Body: bytes.NewBuffer(body4), Len: len(body4)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp4 := w4.Result()
-	assert.Equal(t, 200, resp4.StatusCode())
+
+	count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), count)
+}
+
+func TestTxUpdate(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_test").Drop(ctx)
+	assert.NoError(t, err)
+
+	r, err := service.Db.Collection("x_test").InsertOne(ctx, bson.M{
+		"name": "kain",
+	})
+	assert.NoError(t, err)
+	id := r.InsertedID
+
+	Transaction(t, func(txn string) {
+		body, _ := sonic.Marshal(M{
+			"filter": M{"name": "kain"},
+			"data": M{
+				"$set": M{"name": "xxxx"},
+			},
+			"txn": txn,
+		})
+		w := ut.PerformRequest(engine, "POST", "/x_test/update",
+			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp := w.Result()
+		assert.Equal(t, 204, resp.StatusCode())
+
+		var result M
+		err := service.Db.Collection("x_test").FindOne(ctx, bson.M{
+			"_id": id,
+		}).Decode(&result)
+		assert.NoError(t, err)
+		assert.Equal(t, "kain", result["name"])
+	})
+
+	var result M
+	err = service.Db.Collection("x_test").FindOne(ctx, bson.M{
+		"_id": id,
+	}).Decode(&result)
+	assert.NoError(t, err)
+	assert.Equal(t, "xxxx", result["name"])
+}
+
+func TestTxUpdateById(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_test").Drop(ctx)
+	assert.NoError(t, err)
+
+	r, err := service.Db.Collection("x_test").InsertOne(ctx, bson.M{
+		"name": "kain",
+	})
+	assert.NoError(t, err)
+	id := r.InsertedID.(primitive.ObjectID)
+
+	Transaction(t, func(txn string) {
+		body, _ := sonic.Marshal(M{
+			"data": M{
+				"$set": M{"name": "xxxx"},
+			},
+			"txn": txn,
+		})
+		w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/x_test/%s`, id.Hex()),
+			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp := w.Result()
+		assert.Equal(t, 204, resp.StatusCode())
+
+		var result M
+		err := service.Db.Collection("x_test").FindOne(ctx, bson.M{
+			"_id": id,
+		}).Decode(&result)
+		assert.NoError(t, err)
+		assert.Equal(t, "kain", result["name"])
+	})
+
+	var result M
+	err = service.Db.Collection("x_test").FindOne(ctx, bson.M{
+		"_id": id,
+	}).Decode(&result)
+	assert.NoError(t, err)
+	assert.Equal(t, "xxxx", result["name"])
+}
+
+func TestTxReplace(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_test").Drop(ctx)
+	assert.NoError(t, err)
+
+	r, err := service.Db.Collection("x_test").InsertOne(ctx, bson.M{
+		"name": "kain",
+	})
+	assert.NoError(t, err)
+	id := r.InsertedID.(primitive.ObjectID)
+
+	Transaction(t, func(txn string) {
+		body, _ := sonic.Marshal(M{
+			"data": M{
+				"name": "xxxx",
+			},
+			"txn": txn,
+		})
+		w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/x_test/%s`, id.Hex()),
+			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp := w.Result()
+		assert.Equal(t, 204, resp.StatusCode())
+
+		var result M
+		err := service.Db.Collection("x_test").FindOne(ctx, bson.M{
+			"_id": id,
+		}).Decode(&result)
+		assert.NoError(t, err)
+		assert.Equal(t, "kain", result["name"])
+	})
+
+	var result M
+	err = service.Db.Collection("x_test").FindOne(ctx, bson.M{
+		"_id": id,
+	}).Decode(&result)
+	assert.NoError(t, err)
+	assert.Equal(t, "xxxx", result["name"])
+}
+
+func TestTxDelete(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_test").Drop(ctx)
+	assert.NoError(t, err)
+
+	r, err := service.Db.Collection("x_test").InsertOne(ctx, bson.M{
+		"name": "kain",
+	})
+	assert.NoError(t, err)
+	id := r.InsertedID.(primitive.ObjectID)
+
+	Transaction(t, func(txn string) {
+		u := url.URL{Path: fmt.Sprintf(`/x_test/%s`, id.Hex())}
+		query := u.Query()
+		query.Add("txn", txn)
+		u.RawQuery = query.Encode()
+		w := ut.PerformRequest(engine, "DELETE", u.RequestURI(),
+			&ut.Body{},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp := w.Result()
+		assert.Equal(t, 204, resp.StatusCode())
+
+		count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), count)
+	})
+
+	count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+}
+
+func TestTxBulkDelete(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_test").Drop(ctx)
+	assert.NoError(t, err)
+
+	_, err = service.Db.Collection("x_test").InsertOne(ctx, bson.M{
+		"name": "kain",
+	})
+	assert.NoError(t, err)
+
+	Transaction(t, func(txn string) {
+		body, _ := sonic.Marshal(M{
+			"filter": M{
+				"name": "kain",
+			},
+			"txn": txn,
+		})
+		w := ut.PerformRequest(engine, "POST", "/x_test/bulk_delete",
+			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp := w.Result()
+		assert.Equal(t, 204, resp.StatusCode())
+
+		count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), count)
+	})
+
+	count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+}
+
+func TestTxSort(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_test").Drop(ctx)
+	assert.NoError(t, err)
+
+	r, err := service.Db.Collection("x_test").InsertMany(ctx, []interface{}{
+		bson.M{"name": "kain"},
+		bson.M{"name": "xxxx"},
+	})
+	assert.NoError(t, err)
+	var sources []string
+	for _, v := range r.InsertedIDs {
+		sources = append(sources, v.(primitive.ObjectID).Hex())
+	}
+
+	Transaction(t, func(txn string) {
+		body, _ := sonic.Marshal(M{
+			"data": M{
+				"key":    "sort",
+				"values": sources,
+			},
+			"txn": txn,
+		})
+		w := ut.PerformRequest(engine, "POST", "/x_test/sort",
+			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp := w.Result()
+		assert.Equal(t, 204, resp.StatusCode())
+
+		cursor, err := service.Db.Collection("x_test").Find(ctx, bson.M{})
+		assert.NoError(t, err)
+		var result []M
+		err = cursor.All(ctx, &result)
+		assert.NoError(t, err)
+		t.Log(result)
+	})
+
+	cursor, err := service.Db.Collection("x_test").Find(ctx, bson.M{})
+	assert.NoError(t, err)
+	var result []M
+	err = cursor.All(ctx, &result)
+	assert.NoError(t, err)
+	t.Log(result)
+}
+
+func TestTransaction(t *testing.T) {
+	ctx := context.TODO()
+	err := service.Db.Collection("x_users").Drop(ctx)
+	assert.NoError(t, err)
+	err = service.Db.Collection("x_roles").Drop(ctx)
+	assert.NoError(t, err)
+
+	Transaction(t, func(txn string) {
+		body1, _ := sonic.Marshal(M{
+			"data": M{
+				"name": "admin",
+				"key":  "*",
+			},
+			"txn": txn,
+		})
+		w1 := ut.PerformRequest(engine, "POST", "/x_roles/create",
+			&ut.Body{Body: bytes.NewBuffer(body1), Len: len(body1)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp1 := w1.Result()
+		assert.Equal(t, 204, resp1.StatusCode())
+
+		body2, _ := sonic.Marshal(M{
+			"data": M{
+				"name":  "kainxxxx",
+				"roles": []string{"*"},
+			},
+			"txn": txn,
+		})
+		w2 := ut.PerformRequest(engine, "POST", "/x_users/create",
+			&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
+			ut.Header{Key: "content-type", Value: "application/json"},
+		)
+		resp2 := w2.Result()
+		assert.Equal(t, 204, resp2.StatusCode())
+	})
 
 	var user M
 	err = service.Db.Collection("x_users").FindOne(ctx, bson.M{
@@ -1800,69 +2156,4 @@ func TestCommitTimeout(t *testing.T) {
 	resp2 := w2.Result()
 	assert.Equal(t, 400, resp2.StatusCode())
 	t.Log(string(resp2.Body()))
-}
-
-func TestMoreTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
-		"data": M{
-			"name": "体验卡",
-			"pd":   "2023-04-12T22:00:00.906Z",
-			"valid": []string{
-				"2023-04-12T22:00:00.906Z",
-				"2023-04-13T06:30:05.586Z",
-			},
-			"metadata": []M{
-				{
-					"name": "aps",
-					"date": "Fri, 14 Jul 2023 19:13:24 CST",
-					//"wm": []string{
-					//	"Fri, 14 Jul 2023 19:13:24 CST",
-					//	"Fri, 14 Jul 2023 20:14:10 CST",
-					//},
-				},
-				{
-					"name": "kmx",
-					"date": "Fri, 14 Jul 2023 21:15:05 CST",
-					//"wm": []string{
-					//	"Fri, 14 Jul 2023 21:15:05 CST",
-					//	"Fri, 14 Jul 2023 22:15:20 CST",
-					//},
-				},
-			},
-		},
-		"xdata": M{
-			"pd":              "timestamp",
-			"valid":           "timestamps",
-			"metadata.$.date": "date",
-			//"metadate.$.wm":   "dates",
-		},
-	})
-	// TODO: 待排查
-	w := ut.PerformRequest(engine, "POST", "/coupons/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
-	assert.Equal(t, 201, resp.StatusCode())
-	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, result)
-
-	id := result["InsertedID"].(string)
-	oid, _ := primitive.ObjectIDFromHex(id)
-
-	var coupon M
-	err = service.Db.Collection("coupons").FindOne(context.TODO(), bson.M{
-		"_id": oid,
-	}).Decode(&coupon)
-	assert.NoError(t, err)
-
-	t.Log(coupon)
-	assert.Equal(t, "体验卡", coupon["name"])
-	assert.Equal(t, primitive.DateTime(1681336800906), coupon["pd"])
-	assert.Equal(t,
-		primitive.A{primitive.DateTime(1681336800906), primitive.DateTime(1681367405586)},
-		coupon["valid"],
-	)
 }

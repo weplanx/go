@@ -9,6 +9,39 @@ import (
 	"testing"
 )
 
+func TestMorePipe(t *testing.T) {
+	input := M{
+		"data": M{
+			"date": "abc",
+			"dates": []interface{}{
+				"a",
+				"b",
+			},
+			"timestamps": []interface{}{
+				"a",
+				"b",
+			},
+			"metadata": nil,
+			"items": []interface{}{
+				M{"sn": "123"},
+				M{"sn": "456"},
+			},
+		},
+	}
+	err := service.Pipe(input, []string{"data", "date"}, "date")
+	assert.Error(t, err)
+	err = service.Pipe(input, []string{"data", "dates"}, "dates")
+	assert.Error(t, err)
+	err = service.Pipe(input, []string{"data", "timestamps"}, "timestamps")
+	assert.Error(t, err)
+	err = service.Pipe(input, []string{"data", "metadata", "$", "v"}, "password")
+	assert.NoError(t, err)
+	err = service.Pipe(input, []string{"data", "items", "$", "sn"}, "date")
+	assert.Error(t, err)
+	err = service.Pipe(input, []string{"data", "unkown"}, "date")
+	assert.NoError(t, err)
+}
+
 func MockSubscribe(t *testing.T, ch chan rest.PublishDto) {
 	name := fmt.Sprintf(`%s:events:%s`, service.Namespace, "projects")
 	subject := fmt.Sprintf(`%s.events.%s`, service.Namespace, "projects")

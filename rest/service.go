@@ -309,89 +309,100 @@ func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ 
 	case "delete":
 		return x.Delete(ctx, dto.Name, dto.Id)
 	case "bulk_delete":
-		return x.BulkDelete(ctx, dto.Name, dto.Data.(M))
+		return x.BulkDelete(ctx, dto.Name, dto.Filter)
 	case "sort":
-		data := dto.Data.(SortDtoData)
-		return x.Sort(ctx, dto.Name, data.Key, data.Values)
+		data := dto.Data.(M)
+		var ids []primitive.ObjectID
+		for _, v := range data["values"].([]interface{}) {
+			id, _ := primitive.ObjectIDFromHex(v.(string))
+			ids = append(ids, id)
+		}
+		return x.Sort(ctx, dto.Name, data["key"].(string), ids)
 	}
 	return
 }
 
-func (x *Service) Transform(data M, format M) (err error) {
-	for path, kind := range format {
-		keys := strings.Split(path, ".")
-		if err = x.Pipe(data, keys, kind); err != nil {
+func (x *Service) Transform(data M, rules M) (err error) {
+	for key, value := range rules {
+		paths := strings.Split(key, ".")
+		if err = x.Pipe(data, paths, value); err != nil {
 			return
 		}
 	}
 	return
 }
 
-func (x *Service) Pipe(data M, keys []string, kind interface{}) (err error) {
-	var cursor interface{}
-	cursor = data
-	n := len(keys) - 1
-	for i, key := range keys[:n] {
-		if key == "$" {
-			for _, v := range cursor.([]interface{}) {
-				if err = x.Pipe(v.(M), keys[i+1:], kind); err != nil {
+func (x *Service) Pipe(input M, paths []string, kind interface{}) (err error) {
+	var cursor interface{} = input
+	n := len(paths) - 1
+	for i, path := range paths[:n] {
+		if path == "$" {
+			for _, item := range cursor.([]interface{}) {
+				if err = x.Pipe(item.(M), paths[i+1:], kind); err != nil {
 					return
 				}
 			}
 			return
 		}
-		cursor = cursor.(M)[key]
+		if cursor.(M)[path] == nil {
+			return
+		}
+		cursor = cursor.(M)[path]
 	}
-	key := keys[n]
+	key := paths[n]
 	if cursor == nil || cursor.(M)[key] == nil {
 		return
 	}
+	unknow := cursor.(M)[key]
+	var data interface{}
 	switch kind {
 	case "oid":
-		if cursor.(M)[key], err = primitive.ObjectIDFromHex(cursor.(M)[key].(string)); err != nil {
+		if data, err = primitive.ObjectIDFromHex(unknow.(string)); err != nil {
 			return
 		}
 		break
 	case "oids":
-		oids := cursor.(M)[key].([]interface{})
+		oids := unknow.([]interface{})
 		for i, id := range oids {
 			if oids[i], err = primitive.ObjectIDFromHex(id.(string)); err != nil {
 				return
 			}
 		}
+		data = oids
 		break
 	case "date":
-		if cursor.(M)[key], err = time.Parse(time.RFC1123, cursor.(M)[key].(string)); err != nil {
+		if data, err = time.Parse(time.RFC1123, unknow.(string)); err != nil {
 			return
 		}
 		break
 	case "dates":
-		dates := cursor.(M)[key].([]interface{})
+		dates := unknow.([]interface{})
 		for i, date := range dates {
 			if dates[i], err = time.Parse(time.RFC1123, date.(string)); err != nil {
 				return
 			}
 		}
+		data = dates
 		break
 	case "timestamp":
-		if cursor.(M)[key], err = time.Parse(time.RFC3339, cursor.(M)[key].(string)); err != nil {
+		if data, err = time.Parse(time.RFC3339, unknow.(string)); err != nil {
 			return
 		}
 		break
 	case "timestamps":
-		timestamps := cursor.(M)[key].([]interface{})
+		timestamps := unknow.([]interface{})
 		for i, timestamp := range timestamps {
 			if timestamps[i], err = time.Parse(time.RFC3339, timestamp.(string)); err != nil {
 				return
 			}
 		}
+		data = timestamps
 		break
 	case "password":
-		if cursor.(M)[key], _ = passlib.Hash(cursor.(M)[key].(string)); err != nil {
-			return
-		}
+		data, _ = passlib.Hash(unknow.(string))
 		break
 	}
+	cursor.(M)[key] = data
 	return
 }
 
