@@ -12,17 +12,31 @@ import (
 )
 
 func TestSetBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	body1, _ := sonic.Marshal(M{
 		"data": M{
 			"key1": "value1",
 		},
 	})
-	w := ut.PerformRequest(engine, "PATCH", "/values",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+	w1 := ut.PerformRequest(engine, "PATCH", "/values",
+		&ut.Body{Body: bytes.NewBuffer(body1), Len: len(body1)},
 		ut.Header{Key: "content-type", Value: "application/json"},
 	)
-	resp := w.Result()
-	assert.Equal(t, 400, resp.StatusCode())
+	resp1 := w1.Result()
+	assert.Equal(t, 400, resp1.StatusCode())
+	t.Log(string(resp1.Body()))
+
+	body2, _ := sonic.Marshal(M{
+		"update": M{
+			"Wechat123": "abcdefg",
+		},
+	})
+	w2 := ut.PerformRequest(engine, "PATCH", "/values",
+		&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp2 := w2.Result()
+	assert.Equal(t, 400, resp2.StatusCode())
+	t.Log(string(resp2.Body()))
 }
 
 func TestSet(t *testing.T) {
@@ -60,6 +74,20 @@ func TestSetBadService(t *testing.T) {
 	)
 	resp := w.Result()
 	assert.Equal(t, 500, resp.StatusCode())
+}
+
+func TestGetBadValidate(t *testing.T) {
+	u := url.URL{Path: "/values"}
+	query := u.Query()
+	query.Add("keys", "LoginTTL123")
+	u.RawQuery = query.Encode()
+	w := ut.PerformRequest(engine, "GET", u.RequestURI(),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+	t.Log(string(resp.Body()))
 }
 
 func TestGet(t *testing.T) {
@@ -112,6 +140,18 @@ func TestGetBadService(t *testing.T) {
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
+func TestRemoveBadValidate(t *testing.T) {
+	err := service.Reset()
+	assert.NoError(t, err)
+	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/values/%s`, "LoginTTL12"),
+		&ut.Body{},
+		ut.Header{Key: "content-type", Value: "application/json"},
+	)
+	resp := w.Result()
+	assert.Equal(t, 400, resp.StatusCode())
+	t.Log(string(resp.Body()))
+}
+
 func TestRemove(t *testing.T) {
 	err := service.Reset()
 	assert.NoError(t, err)
@@ -125,7 +165,7 @@ func TestRemove(t *testing.T) {
 	var data M
 	data, err = service.Get("LoginTTL")
 	assert.NoError(t, err)
-	assert.NotNil(t, data["LoginTTL"])
+	assert.Nil(t, data["LoginTTL"])
 }
 
 func TestRemoveBadService(t *testing.T) {

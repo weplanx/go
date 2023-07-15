@@ -23,7 +23,7 @@ func SetNamespace(v string) Option {
 
 func SetRedis(v *redis.Client) Option {
 	return func(x *Service) {
-		x.Redis = v
+		x.RDb = v
 	}
 }
 

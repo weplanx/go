@@ -27,16 +27,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreate(t *testing.T) {
-	var err error
 	ctx := context.TODO()
-	err = x.Create(ctx, "dev1", "abcd", time.Second*60)
-	assert.NoError(t, err)
-	var ttl time.Duration
-	ttl, err = x.Redis.TTL(ctx, x.Key("dev1")).Result()
-	assert.NoError(t, err)
-	t.Log(ttl.Seconds())
-	err = x.Create(ctx, "dev2", "abcd", time.Millisecond)
-	assert.NoError(t, err)
+	status := x.Create(ctx, "dev1", "abcd", time.Second*60)
+	assert.Equal(t, "OK", status)
+	status = x.Create(ctx, "dev2", "abcd", time.Millisecond)
+	assert.Equal(t, "OK", status)
 }
 
 func TestVerify(t *testing.T) {
@@ -51,14 +46,10 @@ func TestVerify(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	var err error
-	var exists bool
-	exists, err = x.Exists(context.TODO(), "dev1")
-	assert.NoError(t, err)
+	exists := x.Exists(context.TODO(), "dev1")
 	assert.True(t, exists)
-	err = x.Delete(context.TODO(), "dev1")
-	assert.NoError(t, err)
-	exists, err = x.Exists(context.TODO(), "dev1")
-	assert.NoError(t, err)
+	result := x.Delete(context.TODO(), "dev1")
+	assert.Equal(t, int64(1), result)
+	exists = x.Exists(context.TODO(), "dev1")
 	assert.False(t, exists)
 }

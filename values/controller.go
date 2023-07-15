@@ -11,7 +11,7 @@ type Controller struct {
 }
 
 type SetDto struct {
-	Update map[string]interface{} `json:"update,required"`
+	Update map[string]interface{} `json:"update,required" vd:"len($)>0&&range($,regexp('^[a-zA-Z]+$',#k));msg:'the key must be alphabet'"`
 }
 
 func (x *Controller) Set(_ context.Context, c *app.RequestContext) {
@@ -30,7 +30,7 @@ func (x *Controller) Set(_ context.Context, c *app.RequestContext) {
 }
 
 type GetDto struct {
-	Keys []string `query:"keys"`
+	Keys []string `query:"keys" vd:"range($,regexp('^[a-zA-Z]+$',#v));msg:'the key must be alphabet'"`
 }
 
 func (x *Controller) Get(_ context.Context, c *app.RequestContext) {
@@ -50,7 +50,7 @@ func (x *Controller) Get(_ context.Context, c *app.RequestContext) {
 }
 
 type RemoveDto struct {
-	Key string `query:"key,requred"`
+	Key string `path:"key,required" vd:"regexp('^[a-zA-Z]+$');msg:'the key must be alphabet'"`
 }
 
 func (x *Controller) Remove(_ context.Context, c *app.RequestContext) {

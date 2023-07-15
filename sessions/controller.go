@@ -3,6 +3,7 @@ package sessions
 import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/common/utils"
 	"net/http"
 )
 
@@ -11,29 +12,26 @@ type Controller struct {
 }
 
 func (x *Controller) Lists(ctx context.Context, c *app.RequestContext) {
-	data, err := x.Service.Lists(ctx)
-	if err != nil {
-		c.Error(err)
-		return
-	}
+	c.JSON(http.StatusOK, x.Service.Lists(ctx))
+}
 
-	c.JSON(http.StatusOK, data)
+type RemoveDto struct {
+	Uid string `path:"uid,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
 }
 
 func (x *Controller) Remove(ctx context.Context, c *app.RequestContext) {
-	if err := x.Service.Remove(ctx, c.Param("uid")); err != nil {
+	var dto RemoveDto
+	if err := c.BindAndValidate(&dto); err != nil {
 		c.Error(err)
 		return
 	}
-
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, utils.H{
+		"DeletedCount": x.Service.Remove(ctx, dto.Uid),
+	})
 }
 
 func (x *Controller) Clear(ctx context.Context, c *app.RequestContext) {
-	if err := x.Service.Clear(ctx); err != nil {
-		c.Error(err)
-		return
-	}
-
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, utils.H{
+		"DeletedCount": x.Service.Clear(ctx),
+	})
 }

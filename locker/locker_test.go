@@ -26,40 +26,47 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestLocker_Update(t *testing.T) {
-	var err error
-	err = x.Update(context.TODO(), "dev", time.Second*60)
-	assert.NoError(t, err)
-	var ttl time.Duration
-	ttl, err = x.Redis.TTL(context.TODO(), x.Key("dev")).Result()
-	assert.NoError(t, err)
+func TestLockerUpdate(t *testing.T) {
+	ctx := context.TODO()
+	n := x.Update(ctx, "dev", time.Second*60)
+	assert.Equal(t, int64(1), n)
+	ttl := x.RDb.TTL(ctx, x.Key("dev")).Val()
 	t.Log(ttl.Seconds())
 }
 
-func TestLocker_Verify(t *testing.T) {
-	var err error
-	var result bool
-	result, err = x.Verify(context.TODO(), "dev", 3)
+func TestLockerVerify(t *testing.T) {
+	ctx := context.TODO()
+	err := x.Verify(ctx, "dev", 3)
 	assert.NoError(t, err)
-	assert.False(t, result)
 
 	for i := 0; i < 3; i++ {
-		err = x.Update(context.TODO(), "dev", time.Second*60)
-		assert.NoError(t, err)
+		n := x.Update(ctx, "dev", time.Second*60)
+		assert.Equal(t, int64(i+2), n)
 	}
 
-	result, err = x.Verify(context.TODO(), "dev", 3)
-	assert.NoError(t, err)
-	assert.True(t, result)
+	err = x.Verify(ctx, "dev", 3)
+	assert.ErrorIs(t, err, locker.ErrLocked)
 }
 
-func TestLocker_Delete(t *testing.T) {
-	var err error
-	err = x.Delete(context.TODO(), "dev")
-	assert.NoError(t, err)
+func TestLockerVerifyNotExists(t *testing.T) {
+	ctx := context.TODO()
+	err := x.Verify(ctx, "unknow", 3)
+	assert.ErrorIs(t, err, locker.ErrLockerNotExists)
+}
 
-	var exists int64
-	exists, err = x.Redis.Exists(context.TODO(), x.Key("dev")).Result()
-	assert.NoError(t, err)
-	assert.Equal(t, exists, int64(0))
+func TestLockerVerifyBad(t *testing.T) {
+	ctx := context.TODO()
+	status := x.RDb.Set(ctx, x.Key("notnumber"), "abc", time.Second*10).Val()
+	assert.Equal(t, "OK", status)
+	err := x.Verify(ctx, "notnumber", 3)
+	assert.Error(t, err)
+	t.Log(err)
+}
+
+func TestLockerDelete(t *testing.T) {
+	ctx := context.TODO()
+	result := x.Delete(ctx, "dev")
+	assert.Equal(t, int64(1), result)
+	count := x.RDb.Exists(ctx, x.Key("dev")).Val()
+	assert.Equal(t, int64(0), count)
 }

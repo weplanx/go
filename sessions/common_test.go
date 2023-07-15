@@ -27,6 +27,8 @@ var (
 	engine  *route.Engine
 )
 
+type M = map[string]interface{}
+
 func TestMain(m *testing.M) {
 	namespace := os.Getenv("NAMESPACE")
 	if err := UseRedis(); err != nil {
@@ -37,8 +39,10 @@ func TestMain(m *testing.M) {
 		sessions.SetRedis(rdb),
 		sessions.SetDynamicValues(&values.DEFAULT),
 	)
+
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
+	help.RegValidate()
 	help.SessionsRoutes(engine.Group(""), &sessions.Controller{Service: service})
 	os.Exit(m.Run())
 }
