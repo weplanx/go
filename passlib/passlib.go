@@ -40,7 +40,6 @@ func Hash(password string) (hash string, err error) {
 
 func Verify(password string, hash string) (err error) {
 	options := strings.Split(hash, "$")
-	fmt.Println(options)
 	if len(options) != 6 {
 		return ErrInvalidHash
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/bytedance/sonic"
-	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,36 +11,27 @@ import (
 )
 
 func TestListsEmpty(t *testing.T) {
-	w := ut.PerformRequest(engine, "GET", "/sessions",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("GET", "/sessions", nil)
+	assert.NoError(t, err)
 	var uids []string
-	err := sonic.Unmarshal(resp.Body(), &uids)
+	err = sonic.Unmarshal(resp.Body(), &uids)
 	assert.NoError(t, err)
 	assert.Empty(t, uids)
 }
 
 func TestRemoveNotUid(t *testing.T) {
-	w := ut.PerformRequest(engine, "DELETE", "/sessions/xid",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("DELETE", "/sessions/xid", nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestClearEmpty(t *testing.T) {
-	w := ut.PerformRequest(engine, "POST", "/sessions/clear",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("POST", "/sessions/clear", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
 
 	var r M
-	err := sonic.Unmarshal(resp.Body(), &r)
+	err = sonic.Unmarshal(resp.Body(), &r)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(0), r["DeletedCount"])
 }
@@ -52,15 +42,12 @@ func TestRemove(t *testing.T) {
 	status := service.Set(ctx, uid, uuid.New().String())
 	assert.Equal(t, "OK", status)
 
-	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/sessions/%s`, uid),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("DELETE", fmt.Sprintf(`/sessions/%s`, uid), nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
 
 	var r M
-	err := sonic.Unmarshal(resp.Body(), &r)
+	err = sonic.Unmarshal(resp.Body(), &r)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(1), r["DeletedCount"])
 
@@ -77,23 +64,17 @@ func TestListsAndClear(t *testing.T) {
 		assert.Equal(t, "OK", status)
 	}
 
-	w1 := ut.PerformRequest(engine, "GET", "/sessions",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp1 := w1.Result()
+	resp1, err := R("GET", "/sessions", nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp1.StatusCode())
 
 	var uids []string
-	err := sonic.Unmarshal(resp1.Body(), &uids)
+	err = sonic.Unmarshal(resp1.Body(), &uids)
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, users, uids)
 
-	w2 := ut.PerformRequest(engine, "POST", "/sessions/clear",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp2 := w2.Result()
+	resp2, err := R("POST", "/sessions/clear", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp2.StatusCode())
 
 	var r M

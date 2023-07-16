@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 	"github.com/weplanx/go/values"
@@ -58,3 +59,9 @@ func SetDynamicValues(v *values.DynamicValues) Option {
 		x.Values = v
 	}
 }
+
+type M = map[string]interface{}
+
+var ErrCollectionForbidden = errors.NewPublic("the collection is forbidden")
+var ErrTxnNotExist = errors.NewPublic("the txn does not exist")
+var ErrTxnTimeOut = errors.NewPublic("the transaction has timed out")

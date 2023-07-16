@@ -35,6 +35,11 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	if err := x.Service.Transform(dto.Data, dto.Xdata); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -78,6 +83,11 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 	var dto BulkCreateDto
 	if err := c.BindAndValidate(&dto); err != nil {
 		c.Error(err)
+		return
+	}
+
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
 		return
 	}
 
@@ -130,6 +140,11 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	if err := x.Service.Transform(dto.Filter, dto.Xfilter); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -161,6 +176,11 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	var dto FindDto
 	if err := c.BindAndValidate(&dto); err != nil {
 		c.Error(err)
+		return
+	}
+
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
 		return
 	}
 
@@ -227,6 +247,11 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	if err := x.Service.Transform(dto.Filter, dto.Xfilter); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -259,6 +284,11 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 	option := options.FindOne().
 		SetProjection(x.Service.Projection(dto.Collection, dto.Keys))
@@ -287,6 +317,11 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 	var dto UpdateDto
 	if err := c.BindAndValidate(&dto); err != nil {
 		c.Error(err)
+		return
+	}
+
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
 		return
 	}
 
@@ -344,6 +379,11 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	if err := x.Service.Transform(dto.Data, dto.Xdata); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -395,6 +435,11 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	if err := x.Service.Transform(dto.Data, dto.Xdata); err != nil {
 		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
 		return
@@ -442,6 +487,11 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
 
 	if dto.Txn != "" {
@@ -480,6 +530,11 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 	var dto BulkDeleteDto
 	if err := c.BindAndValidate(&dto); err != nil {
 		c.Error(err)
+		return
+	}
+
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
 		return
 	}
 
@@ -531,6 +586,11 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	if x.IsForbid(dto.Collection) {
+		c.Error(ErrCollectionForbidden)
+		return
+	}
+
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
 			Action: "sort",
@@ -558,11 +618,7 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 // @router /transaction [POST]
 func (x *Controller) Transaction(ctx context.Context, c *app.RequestContext) {
 	txn := uuid.New().String()
-	if err := x.Service.Transaction(ctx, txn); err != nil {
-		c.Error(err)
-		return
-	}
-
+	x.Service.Transaction(ctx, txn)
 	c.JSON(http.StatusCreated, utils.H{
 		"txn": txn,
 	})

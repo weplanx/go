@@ -1,15 +1,19 @@
 package values_test
 
 import (
+	"bytes"
 	"context"
 	"github.com/bytedance/go-tagexpr/v2/binding"
 	"github.com/bytedance/go-tagexpr/v2/validator"
 	"github.com/bytedance/gopkg/util/logger"
+	"github.com/bytedance/sonic"
 	"github.com/bytedance/sonic/decoder"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/common/errors"
+	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/cloudwego/hertz/pkg/common/utils"
+	"github.com/cloudwego/hertz/pkg/protocol"
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
@@ -18,6 +22,7 @@ import (
 	"github.com/weplanx/go/values"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -138,4 +143,39 @@ func ErrHandler() app.HandlerFunc {
 			c.Status(http.StatusInternalServerError)
 		}
 	}
+}
+
+func R(method string, url string, body interface{}) (resp *protocol.Response, err error) {
+	utBody := &ut.Body{}
+	utHeaders := []ut.Header{
+		{Key: "content-type", Value: "application/json"},
+	}
+	if body != nil {
+		var b []byte
+		if b, err = sonic.Marshal(body); err != nil {
+			return
+		}
+		utBody.Body = bytes.NewBuffer(b)
+		utBody.Len = len(b)
+	}
+
+	w := ut.PerformRequest(engine, method, url,
+		utBody,
+		utHeaders...,
+	)
+
+	resp = w.Result()
+	return
+}
+
+type Params = [][2]string
+
+func U(path string, params Params) string {
+	u := url.URL{Path: path}
+	query := u.Query()
+	for _, v := range params {
+		query.Add(v[0], v[1])
+	}
+	u.RawQuery = query.Encode()
+	return u.RequestURI()
 }

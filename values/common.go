@@ -129,6 +129,7 @@ type DynamicValues struct {
 }
 
 type RestControl struct {
-	Event bool
-	Keys  []string
+	Keys   []string
+	Status bool
+	Event  bool
 }

@@ -1,11 +1,9 @@
 package rest_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/bytedance/sonic"
-	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/go-faker/faker/v4"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"net/url"
 	"testing"
 	"time"
 )
@@ -23,18 +20,34 @@ import (
 var roles = []string{"635797539db7928aaebbe6e5", "635797c19db7928aaebbe6e6"}
 var userId string
 
-func TestCreateBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "POST", "/users/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestCreateValidateBad(t *testing.T) {
+	resp, err := R("POST", "/users/create", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestCreateBadTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestCreateForbid(t *testing.T) {
+	resp, err := R("POST", "/members/create", M{
+		"data": M{
+			"name": "kain",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestCreateForbidStatusFalse(t *testing.T) {
+	resp, err := R("POST", "/levels/create", M{
+		"data": M{
+			"name": "level1",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestCreateTransformBad(t *testing.T) {
+	resp, err := R("POST", "/users/create", M{
 		"data": M{
 			"department": "123",
 		},
@@ -42,17 +55,13 @@ func TestCreateBadTransform(t *testing.T) {
 			"department": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestCreateTxnNotExists(t *testing.T) {
 	txn := uuid.New().String()
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/users/create", M{
 		"data": M{
 			"name":       "weplanx",
 			"password":   "5auBnD$L",
@@ -66,16 +75,12 @@ func TestCreateTxnNotExists(t *testing.T) {
 		},
 		"txn": txn,
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestCreate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/users/create", M{
 		"data": M{
 			"name":       "weplanx",
 			"password":   "5auBnD$L",
@@ -88,25 +93,23 @@ func TestCreate(t *testing.T) {
 			"roles":      "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 201, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, result)
+
 	userId = result["InsertedID"].(string)
 	id, _ := primitive.ObjectIDFromHex(userId)
 	var data M
 	err = service.Db.Collection("users").
 		FindOne(context.TODO(), bson.M{"_id": id}).
 		Decode(&data)
-	t.Log(data)
 	assert.NoError(t, err)
 	assert.Equal(t, "weplanx", data["name"])
+
 	err = passlib.Verify("5auBnD$L", data["password"].(string))
 	assert.NoError(t, err)
 	departmentId, _ := primitive.ObjectIDFromHex("624a8facb4e5d150793d6353")
@@ -116,20 +119,15 @@ func TestCreate(t *testing.T) {
 		roleIds[k], _ = primitive.ObjectIDFromHex(v)
 	}
 	assert.ElementsMatch(t, roleIds, data["roles"])
-
 }
 
-func TestCreateBadDbValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestCreateDbJSONSchemaBad(t *testing.T) {
+	resp, err := R("POST", "/users/create", M{
 		"data": M{
 			"name": "weplanx",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
@@ -140,7 +138,7 @@ func TestCreateEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/create", M{
 		"data": M{
 			"name":        "默认项目",
 			"namespace":   "default",
@@ -151,14 +149,11 @@ func TestCreateEvent(t *testing.T) {
 			"expire_time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/projects/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 201, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, result)
 
@@ -177,9 +172,10 @@ func TestCreateEvent(t *testing.T) {
 	}
 }
 
-func TestCreateBadEvent(t *testing.T) {
+func TestCreateEventBad(t *testing.T) {
+	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/create", M{
 		"data": M{
 			"name":        "默认项目",
 			"namespace":   "default",
@@ -190,12 +186,7 @@ func TestCreateBadEvent(t *testing.T) {
 			"expire_time": "timestamp",
 		},
 	})
-	RemoveStream(t)
-	w := ut.PerformRequest(engine, "POST", "/projects/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
@@ -210,18 +201,24 @@ type Order struct {
 	TmpId    primitive.ObjectID `json:"-" faker:"-"`
 }
 
-func TestBulkCreateBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestBulkCreateValidateBad(t *testing.T) {
+	resp, err := R("POST", "/orders/bulk_create", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestBulkCreateBadTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestBulkCreateForbid(t *testing.T) {
+	resp, err := R("POST", "/members/bulk_create", M{
+		"data": []M{
+			{"name": "kain"},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestBulkCreateTransformBad(t *testing.T) {
+	resp, err := R("POST", "/orders/bulk_create", M{
 		"data": []Order{
 			{
 				No:       "123456",
@@ -235,17 +232,13 @@ func TestBulkCreateBadTransform(t *testing.T) {
 			"time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestBulkCreateTxnNotExists(t *testing.T) {
 	txn := uuid.New().String()
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/roles/bulk_create", M{
 		"data": []M{
 			{
 				"name": "admin",
@@ -258,11 +251,7 @@ func TestBulkCreateTxnNotExists(t *testing.T) {
 		},
 		"txn": txn,
 	})
-	w := ut.PerformRequest(engine, "POST", "/roles/bulk_create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
@@ -280,20 +269,17 @@ func TestBulkCreate(t *testing.T) {
 		orders[i].Time = orders[i].TmpTime.Format(time.RFC3339)
 		orderMap[orders[i].No] = orders[i]
 	}
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/orders/bulk_create", M{
 		"data": orders,
 		"xdata": M{
 			"time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 201, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, result)
 
@@ -322,8 +308,8 @@ func TestBulkCreate(t *testing.T) {
 	}
 }
 
-func TestBulkCreateBadDbValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestBulkCreateDbJSONSchemaBad(t *testing.T) {
+	resp, err := R("POST", "/orders/bulk_create", M{
 		"data": []Order{
 			{
 				No:       "123456",
@@ -333,11 +319,7 @@ func TestBulkCreateBadDbValidate(t *testing.T) {
 			},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
@@ -359,20 +341,17 @@ func TestBulkCreateEvent(t *testing.T) {
 		}
 	}
 
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/bulk_create", M{
 		"data": data,
 		"xdata": M{
 			"expire_time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/projects/bulk_create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 201, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, result)
 
@@ -397,10 +376,11 @@ func TestBulkCreateEvent(t *testing.T) {
 	}
 }
 
-func TestBulkCreateBadEvent(t *testing.T) {
+func TestBulkCreateEventBad(t *testing.T) {
+	RemoveStream(t)
 	expire1 := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
 	expire2 := time.Now().Add(time.Hour * 36).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/bulk_create", M{
 		"data": []M{
 			{
 				"name":        "测试1",
@@ -419,28 +399,27 @@ func TestBulkCreateBadEvent(t *testing.T) {
 			"expire_time": "timestamp",
 		},
 	})
-	RemoveStream(t)
-	w := ut.PerformRequest(engine, "POST", "/projects/bulk_create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
 
-func TestSizeBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "POST", "/orders/size",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestSizeValidateBad(t *testing.T) {
+	resp, err := R("POST", "/orders/size", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestSizeBadTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestSizeForbid(t *testing.T) {
+	resp, err := R("POST", "/members/size", M{
+		"filter": M{},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestSizeTransformBad(t *testing.T) {
+	resp, err := R("POST", "/orders/size", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -448,31 +427,23 @@ func TestSizeBadTransform(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/size",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestSize(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/orders/size", M{
 		"filter": M{},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/size",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Empty(t, resp.Body())
 	assert.Equal(t, "200", resp.Header.Get("x-total"))
 	assert.Equal(t, 204, resp.StatusCode())
 }
 
-func TestSizeWithFilterAndFormat(t *testing.T) {
+func TestSizeFilterAndXfilter(t *testing.T) {
 	oids := orderIds[:5]
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/orders/size", M{
 		"filter": M{
 			"_id": M{"$in": oids},
 		},
@@ -480,42 +451,38 @@ func TestSizeWithFilterAndFormat(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/size",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Empty(t, resp.Body())
 	assert.Equal(t, "5", resp.Header.Get("x-total"))
 	assert.Equal(t, 204, resp.StatusCode())
 }
 
-func TestSizeBadFilter(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestSizeFilterBad(t *testing.T) {
+	resp, err := R("POST", "/orders/size", M{
 		"filter": M{
 			"abc": M{"$": "v"},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/size",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
-func TestFindBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "POST", "/orders/find",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestFindValidateBad(t *testing.T) {
+	resp, err := R("POST", "/orders/find", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestFindBadTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestFindForbid(t *testing.T) {
+	resp, err := R("POST", "/members/find", M{
+		"filter": M{},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestFindTransformBad(t *testing.T) {
+	resp, err := R("POST", "/orders/find", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -523,27 +490,20 @@ func TestFindBadTransform(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/find",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFind(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/orders/find", M{
 		"filter": M{},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/find",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, "200", resp.Header.Get("x-total"))
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result []M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.Equal(t, 100, len(result))
 
@@ -559,22 +519,18 @@ func TestFind(t *testing.T) {
 }
 
 func TestFindSort(t *testing.T) {
-	u := url.URL{Path: "/orders/find"}
-	query := u.Query()
-	query.Add("sort", "cost:1")
-	u.RawQuery = query.Encode()
-	body, _ := sonic.Marshal(M{
+	u := U("/orders/find", Params{
+		{"sort", "cost:1"},
+	})
+	resp, err := R("POST", u, M{
 		"filter": M{},
 	})
-	w := ut.PerformRequest(engine, "POST", u.RequestURI(),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, "200", resp.Header.Get("x-total"))
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result []M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.Equal(t, 100, len(result))
 
@@ -583,45 +539,43 @@ func TestFindSort(t *testing.T) {
 	}
 }
 
-func TestFindBadFilter(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestFindFilterBad(t *testing.T) {
+	resp, err := R("POST", "/orders/find", M{
 		"filter": M{
 			"abc": M{"$": "v"},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/find",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
-func TestFindBadKeys(t *testing.T) {
-	u := url.URL{Path: "/orders/find"}
-	query := u.Query()
-	query.Add("keys", `abc1`)
-	u.RawQuery = query.Encode()
-	w := ut.PerformRequest(engine, "POST", u.RequestURI(),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestFindKeysBad(t *testing.T) {
+	u := U("/orders/find", Params{
+		{"keys", "abc1"},
+	})
+	resp, err := R("POST", u, nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestFindOneBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "POST", "/orders/find_one",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestFindOneValidateBad(t *testing.T) {
+	resp, err := R("POST", "/orders/find_one", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestFindOneBadTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestFindOneForbid(t *testing.T) {
+	resp, err := R("POST", "/members/find_one", M{
+		"filter": M{
+			"name": "kain",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestFindOneTransformBad(t *testing.T) {
+	resp, err := R("POST", "/orders/find_one", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -629,28 +583,21 @@ func TestFindOneBadTransform(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/find_one",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFindOne(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/users/find_one", M{
 		"filter": M{
 			"name": "weplanx",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/find_one",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	assert.Empty(t, result["password"])
@@ -660,51 +607,53 @@ func TestFindOne(t *testing.T) {
 	assert.NotEmpty(t, result["update_time"])
 }
 
-func TestFindOneBadFilter(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestFindOneFilterBad(t *testing.T) {
+	resp, err := R("POST", "/orders/find_one", M{
 		"filter": M{
 			"abc": M{
 				"$": "v",
 			},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/find_one",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
-func TestFindByIdBadValidate(t *testing.T) {
-	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
-	query := u.Query()
-	query.Set("keys", "$$$$")
-	u.RawQuery = query.Encode()
-	w := ut.PerformRequest(engine, "GET", u.RequestURI(),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestFindByIdValidateBad(t *testing.T) {
+	u := U(fmt.Sprintf(`/users/%s`, userId), Params{
+		{"keys", "$$$$"},
+	})
+	resp, err := R("GET", u, nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
+func TestFindByIdForbid(t *testing.T) {
+	id := primitive.NewObjectID().Hex()
+	resp, err := R("GET", fmt.Sprintf(`/members/%s`, id), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestFindByIdNotExists(t *testing.T) {
+	u := U(fmt.Sprintf(`/users/%s`, primitive.NewObjectID().Hex()), Params{})
+	resp, err := R("GET", u, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 500, resp.StatusCode())
+}
+
 func TestFindById(t *testing.T) {
-	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
-	query := u.Query()
-	query.Add("keys", "name")
-	query.Add("keys", "password")
-	query.Add("keys", "department")
-	query.Add("keys", "roles")
-	u.RawQuery = query.Encode()
-	w := ut.PerformRequest(engine, "GET", u.RequestURI(),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	u := U(fmt.Sprintf(`/users/%s`, userId), Params{
+		{"keys", "name"},
+		{"keys", "password"},
+		{"keys", "department"},
+		{"keys", "roles"},
+	})
+	resp, err := R("GET", u, nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	assert.Empty(t, result["password"])
@@ -714,31 +663,38 @@ func TestFindById(t *testing.T) {
 	assert.Empty(t, result["update_time"])
 }
 
-func TestFindByIdBadKeys(t *testing.T) {
-	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
-	query := u.Query()
-	query.Add("keys", `abc1`)
-	u.RawQuery = query.Encode()
-	w := ut.PerformRequest(engine, "GET", u.RequestURI(),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestFindByIdKeysBad(t *testing.T) {
+	u := U(fmt.Sprintf(`/users/%s`, userId), Params{
+		{"keys", "abc1"},
+	})
+	resp, err := R("GET", u, nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestUpdateBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "POST", "/users/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestUpdateValidateBad(t *testing.T) {
+	resp, err := R("POST", "/users/update", M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestUpdateBadFilterTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestUpdateForbid(t *testing.T) {
+	resp, err := R("POST", "/members/update", M{
+		"filter": M{
+			"name": "kain",
+		},
+		"data": M{
+			"$set": M{
+				"name": "xxxx",
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestUpdateTransformFilterBad(t *testing.T) {
+	resp, err := R("POST", "/users/update", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -754,16 +710,12 @@ func TestUpdateBadFilterTransform(t *testing.T) {
 			"$set.department": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestUpdateBadDataTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestUpdateTransformDataBad(t *testing.T) {
+	resp, err := R("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -776,17 +728,13 @@ func TestUpdateBadDataTransform(t *testing.T) {
 			"$set.department": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestUpdateTxnNotExists(t *testing.T) {
 	txn := uuid.New().String()
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/roles/update", M{
 		"filter": M{
 			"key": "*",
 		},
@@ -797,16 +745,12 @@ func TestUpdateTxnNotExists(t *testing.T) {
 		},
 		"txn": txn,
 	})
-	w := ut.PerformRequest(engine, "POST", "/roles/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestUpdate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -819,14 +763,11 @@ func TestUpdate(t *testing.T) {
 			"$set.department": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	var data M
@@ -849,7 +790,7 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdatePush(t *testing.T) {
 	roles = append(roles, "62ce35710d94671a2e4a7d4c")
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -862,14 +803,11 @@ func TestUpdatePush(t *testing.T) {
 			"$push.roles": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	var data M
@@ -890,8 +828,8 @@ func TestUpdatePush(t *testing.T) {
 	assert.ElementsMatch(t, roleIds, data["roles"])
 }
 
-func TestUpdateBadDbValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestUpdateDbJSONSchemaBad(t *testing.T) {
+	resp, err := R("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -901,11 +839,7 @@ func TestUpdateBadDbValidate(t *testing.T) {
 			},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/users/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
@@ -914,7 +848,7 @@ func TestUpdateEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 72).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/update", M{
 		"filter": M{
 			"namespace": "default",
 		},
@@ -928,14 +862,11 @@ func TestUpdateEvent(t *testing.T) {
 			"$set.expire_time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/projects/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	select {
@@ -950,9 +881,10 @@ func TestUpdateEvent(t *testing.T) {
 	}
 }
 
-func TestUpdateBadEvent(t *testing.T) {
+func TestUpdateEventBad(t *testing.T) {
+	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 72).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/update", M{
 		"filter": M{
 			"namespace": "default",
 		},
@@ -966,29 +898,32 @@ func TestUpdateBadEvent(t *testing.T) {
 			"$set.expire_time": "timestamp",
 		},
 	})
-	RemoveStream(t)
-	w := ut.PerformRequest(engine, "POST", "/projects/update",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
 
-func TestUpdateByIdBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/users/%s`, userId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestUpdateByIdValidateBad(t *testing.T) {
+	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestUpdateByIdBadDataTransform(t *testing.T) {
-	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
-	body, _ := sonic.Marshal(M{
+func TestUpdateByIdForbid(t *testing.T) {
+	id := primitive.NewObjectID().Hex()
+	resp, err := R("PATCH", fmt.Sprintf(`/members/%s`, id), M{
+		"data": M{
+			"$set": M{
+				"name": "xxxx",
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestUpdateByIdTransformDataBad(t *testing.T) {
+	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "123456",
@@ -998,17 +933,13 @@ func TestUpdateByIdBadDataTransform(t *testing.T) {
 			"$set.department": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "PATCH", u.RequestURI(),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestUpdateByIdTxnNotExists(t *testing.T) {
 	txn := uuid.New().String()
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "62cbf9ac465f45091e981b1e",
@@ -1019,16 +950,12 @@ func TestUpdateByIdTxnNotExists(t *testing.T) {
 		},
 		"txn": txn,
 	})
-	w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/users/%s`, userId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestUpdateById(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "62cbf9ac465f45091e981b1e",
@@ -1038,14 +965,11 @@ func TestUpdateById(t *testing.T) {
 			"$set.department": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/users/%s`, userId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	var data M
@@ -1068,7 +992,7 @@ func TestUpdateById(t *testing.T) {
 
 func TestUpdateByIdPush(t *testing.T) {
 	roles = append(roles, "62ce35b9b1d8fe7e38ef4c8c")
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$push": M{
 				"roles": "62ce35b9b1d8fe7e38ef4c8c",
@@ -1078,14 +1002,11 @@ func TestUpdateByIdPush(t *testing.T) {
 			"$push.roles": "oid",
 		},
 	})
-	w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/users/%s`, userId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	var data M
@@ -1106,20 +1027,15 @@ func TestUpdateByIdPush(t *testing.T) {
 	assert.ElementsMatch(t, roleIds, data["roles"])
 }
 
-func TestUpdateByIdBadDbValidate(t *testing.T) {
-	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
-	body, _ := sonic.Marshal(M{
+func TestUpdateByIdDbJSONSchemaBad(t *testing.T) {
+	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "123456",
 			},
 		},
 	})
-	w := ut.PerformRequest(engine, "PATCH", u.RequestURI(),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
@@ -1128,7 +1044,7 @@ func TestUpdateByIdEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PATCH", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"$set": M{
 				"expire_time": expire,
@@ -1138,14 +1054,11 @@ func TestUpdateByIdEvent(t *testing.T) {
 			"$set.expire_time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/projects/%s`, projectId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	select {
@@ -1160,9 +1073,10 @@ func TestUpdateByIdEvent(t *testing.T) {
 	}
 }
 
-func TestUpdateByIdBadEvent(t *testing.T) {
+func TestUpdateByIdEventBad(t *testing.T) {
+	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PATCH", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"$set": M{
 				"expire_time": expire,
@@ -1172,29 +1086,30 @@ func TestUpdateByIdBadEvent(t *testing.T) {
 			"$set.expire_time": "timestamp",
 		},
 	})
-	RemoveStream(t)
-	w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/projects/%s`, projectId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
 
-func TestReplaceBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{})
-	w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/$$$$/%s`, userId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestReplaceValidateBad(t *testing.T) {
+	resp, err := R("PUT", fmt.Sprintf(`/$$$$/%s`, userId), M{})
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestReplaceBadTransform(t *testing.T) {
-	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
-	body, _ := sonic.Marshal(M{
+func TestReplaceForbid(t *testing.T) {
+	id := primitive.NewObjectID().Hex()
+	resp, err := R("PUT", fmt.Sprintf(`/members/%s`, id), M{
+		"data": M{
+			"name": "xxxx",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestReplaceTransformBad(t *testing.T) {
+	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name":       "kain",
 			"password":   "123456",
@@ -1207,17 +1122,13 @@ func TestReplaceBadTransform(t *testing.T) {
 			"roles":      "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "PUT", u.RequestURI(),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestReplaceTxnNotExists(t *testing.T) {
 	txn := uuid.New().String()
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name":       "kain",
 			"password":   "123456",
@@ -1231,16 +1142,12 @@ func TestReplaceTxnNotExists(t *testing.T) {
 		},
 		"txn": txn,
 	})
-	w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/users/%s`, userId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestReplace(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name":       "kain",
 			"password":   "123456",
@@ -1253,14 +1160,11 @@ func TestReplace(t *testing.T) {
 			"roles":      "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/users/%s`, userId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	var data M
@@ -1276,18 +1180,13 @@ func TestReplace(t *testing.T) {
 	assert.Equal(t, primitive.A{}, data["roles"])
 }
 
-func TestReplaceBadDbValidate(t *testing.T) {
-	u := url.URL{Path: fmt.Sprintf(`/users/%s`, userId)}
-	body, _ := sonic.Marshal(M{
+func TestReplaceDbJSONSchemaBad(t *testing.T) {
+	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name": "kain",
 		},
 	})
-	w := ut.PerformRequest(engine, "PUT", u.RequestURI(),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
@@ -1296,7 +1195,7 @@ func TestReplaceEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PUT", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"name":        "工单项目",
 			"namespace":   "orders",
@@ -1307,14 +1206,11 @@ func TestReplaceEvent(t *testing.T) {
 			"expire_time": "timestamp",
 		},
 	})
-	w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/projects/%s`, projectId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	select {
@@ -1331,9 +1227,10 @@ func TestReplaceEvent(t *testing.T) {
 	}
 }
 
-func TestReplaceBadEvent(t *testing.T) {
+func TestReplaceEventBad(t *testing.T) {
+	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("PUT", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"name":        "工单项目",
 			"namespace":   "orders",
@@ -1344,44 +1241,38 @@ func TestReplaceBadEvent(t *testing.T) {
 			"expire_time": "timestamp",
 		},
 	})
-	RemoveStream(t)
-	w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/projects/%s`, projectId),
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
 
-func TestDeleteBadValidate(t *testing.T) {
-	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/$$$$/%s`, userId),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+func TestDeleteValidateBad(t *testing.T) {
+	resp, err := R("DELETE", fmt.Sprintf(`/$$$$/%s`, userId), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestDeleteForbid(t *testing.T) {
+	id := primitive.NewObjectID().Hex()
+	resp, err := R("DELETE", fmt.Sprintf(`/members/%s`, id), nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestDeleteTxnNotExists(t *testing.T) {
 	txn := uuid.New().String()
-	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/users/%s?txn=%s`, userId, txn),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("DELETE", fmt.Sprintf(`/users/%s?txn=%s`, userId, txn), nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestDelete(t *testing.T) {
-	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/users/%s`, userId),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("DELETE", fmt.Sprintf(`/users/%s`, userId), nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(1), result["DeletedCount"])
 
@@ -1398,14 +1289,12 @@ func TestDeleteEvent(t *testing.T) {
 	ch := make(chan rest.PublishDto)
 	go MockSubscribe(t, ch)
 
-	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/projects/%s`, projectId),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("DELETE", fmt.Sprintf(`/projects/%s`, projectId), nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(1), result["DeletedCount"])
 
@@ -1418,31 +1307,34 @@ func TestDeleteEvent(t *testing.T) {
 	}
 }
 
-func TestDeleteBadEvent(t *testing.T) {
+func TestDeleteEventBad(t *testing.T) {
 	RemoveStream(t)
-	w := ut.PerformRequest(engine, "DELETE", fmt.Sprintf(`/projects/%s`, projectId),
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	resp, err := R("DELETE", fmt.Sprintf(`/projects/%s`, projectId), nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
 
-func TestBulkDeleteBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestBulkDeleteValidateBad(t *testing.T) {
+	resp, err := R("POST", "/orders/bulk_delete", M{
 		"filter": M{},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_delete",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
-func TestBulkDeleteBadTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestBulkDeleteForbid(t *testing.T) {
+	resp, err := R("POST", "/members/bulk_delete", M{
+		"filter": M{
+			"name": "kain",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+}
+
+func TestBulkDeleteTransformBad(t *testing.T) {
+	resp, err := R("POST", "/orders/bulk_delete", M{
 		"filter": M{
 			"_id": M{"$in": []string{"12345"}},
 		},
@@ -1450,32 +1342,24 @@ func TestBulkDeleteBadTransform(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_delete",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestBulkDeleteTxnNotExists(t *testing.T) {
 	txn := uuid.New()
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/roles/bulk_delete", M{
 		"filter": M{
 			"key": "*",
 		},
 		"txn": txn,
 	})
-	w := ut.PerformRequest(engine, "POST", "/roles/bulk_delete",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestBulkDelete(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/orders/bulk_delete", M{
 		"filter": M{
 			"_id": M{"$in": orderIds[5:]},
 		},
@@ -1483,14 +1367,11 @@ func TestBulkDelete(t *testing.T) {
 			"_id.$in": "oids",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_delete",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	var ids []primitive.ObjectID
@@ -1503,17 +1384,13 @@ func TestBulkDelete(t *testing.T) {
 	assert.Equal(t, int64(0), n)
 }
 
-func TestBulkDeleteBadFilter(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestBulkDeleteFilterBad(t *testing.T) {
+	resp, err := R("POST", "/orders/bulk_delete", M{
 		"filter": M{
 			"abc": M{"$": "v"},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/bulk_delete",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
@@ -1521,19 +1398,16 @@ func TestBulkDeleteEvent(t *testing.T) {
 	ch := make(chan rest.PublishDto)
 	go MockSubscribe(t, ch)
 
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/bulk_delete", M{
 		"filter": M{
 			"namespace": M{"$in": []string{"test1", "test2"}},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/projects/bulk_delete",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 
 	select {
@@ -1546,70 +1420,65 @@ func TestBulkDeleteEvent(t *testing.T) {
 	}
 }
 
-func TestBulkDeleteBadEvent(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestBulkDeleteEventBad(t *testing.T) {
+	RemoveStream(t)
+	resp, err := R("POST", "/projects/bulk_delete", M{
 		"filter": M{
 			"namespace": M{"$in": []string{"test1", "test2"}},
 		},
 	})
-	RemoveStream(t)
-	w := ut.PerformRequest(engine, "POST", "/projects/bulk_delete",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
 
-func TestSortBadValidate(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+func TestSortValidateBad(t *testing.T) {
+	resp, err := R("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": []string{"12", "444"},
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/sort",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
+}
+
+func TestSortForbid(t *testing.T) {
+	resp, err := R("POST", "/members/sort", M{
+		"data": M{
+			"key":    "sort",
+			"values": []string{primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex()},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestSortTxnNotExists(t *testing.T) {
 	txn := uuid.New().String()
 	sources := orderIds[:5]
 	sources = funk.Reverse(sources).([]string)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": sources,
 		},
 		"txn": txn,
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/sort",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestSort(t *testing.T) {
 	sources := orderIds[:5]
 	sources = funk.Reverse(sources).([]string)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": sources,
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/orders/sort",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 204, resp.StatusCode())
 	assert.Empty(t, resp.Body())
 
@@ -1636,17 +1505,13 @@ func TestSortEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	projectIds = funk.Reverse(projectIds).([]string)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": projectIds,
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/projects/sort",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 204, resp.StatusCode())
 	assert.Empty(t, resp.Body())
 
@@ -1660,32 +1525,27 @@ func TestSortEvent(t *testing.T) {
 			values[i] = v.(string)
 		}
 		assert.Equal(t, projectIds, values)
-		t.Log(msg.Result)
 		break
 	}
 }
 
-func TestSortBadEvent(t *testing.T) {
+func TestSortEventBad(t *testing.T) {
+	RemoveStream(t)
 	projectIds = funk.Reverse(projectIds).([]string)
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/projects/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": projectIds,
 		},
 	})
-	RemoveStream(t)
-	w := ut.PerformRequest(engine, "POST", "/projects/sort",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	assert.Empty(t, resp.Body())
 	RecoverStream(t)
 }
 
 func TestMoreTransform(t *testing.T) {
-	body, _ := sonic.Marshal(M{
+	resp, err := R("POST", "/coupons/create", M{
 		"data": M{
 			"name": "体验卡",
 			"pd":   "2023-04-12T22:00:00.906Z",
@@ -1719,14 +1579,11 @@ func TestMoreTransform(t *testing.T) {
 			"metadata.$.wm":   "dates",
 		},
 	})
-	w := ut.PerformRequest(engine, "POST", "/coupons/create",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp := w.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 201, resp.StatusCode())
+
 	var result M
-	err := sonic.Unmarshal(resp.Body(), &result)
+	err = sonic.Unmarshal(resp.Body(), &result)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, result)
 
@@ -1749,51 +1606,20 @@ func TestMoreTransform(t *testing.T) {
 	t.Log(metadata)
 }
 
-type TransactionFn = func(txn string)
-
-func Transaction(t *testing.T, fn TransactionFn) {
-	w1 := ut.PerformRequest(engine, "POST", "/transaction",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp1 := w1.Result()
-	assert.Equal(t, 201, resp1.StatusCode())
-	var result1 M
-	err := sonic.Unmarshal(resp1.Body(), &result1)
-	assert.NoError(t, err)
-	txn := result1["txn"].(string)
-
-	fn(txn)
-
-	body, _ := sonic.Marshal(M{
-		"txn": txn,
-	})
-	w2 := ut.PerformRequest(engine, "POST", "/commit",
-		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp2 := w2.Result()
-	assert.Equal(t, 200, resp2.StatusCode())
-}
-
 func TestTxBulkCreate(t *testing.T) {
 	ctx := context.TODO()
 	err := service.Db.Collection("x_test").Drop(ctx)
 	assert.NoError(t, err)
 
 	Transaction(t, func(txn string) {
-		body, _ := sonic.Marshal(M{
+		resp, err := R("POST", "/x_test/bulk_create", M{
 			"data": []M{
 				{"name": "abc"},
 				{"name": "xxx"},
 			},
 			"txn": txn,
 		})
-		w := ut.PerformRequest(engine, "POST", "/x_test/bulk_create",
-			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp := w.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
 		count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
@@ -1818,22 +1644,18 @@ func TestTxUpdate(t *testing.T) {
 	id := r.InsertedID
 
 	Transaction(t, func(txn string) {
-		body, _ := sonic.Marshal(M{
+		resp, err := R("POST", "/x_test/update", M{
 			"filter": M{"name": "kain"},
 			"data": M{
 				"$set": M{"name": "xxxx"},
 			},
 			"txn": txn,
 		})
-		w := ut.PerformRequest(engine, "POST", "/x_test/update",
-			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp := w.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
 		var result M
-		err := service.Db.Collection("x_test").FindOne(ctx, bson.M{
+		err = service.Db.Collection("x_test").FindOne(ctx, bson.M{
 			"_id": id,
 		}).Decode(&result)
 		assert.NoError(t, err)
@@ -1860,21 +1682,17 @@ func TestTxUpdateById(t *testing.T) {
 	id := r.InsertedID.(primitive.ObjectID)
 
 	Transaction(t, func(txn string) {
-		body, _ := sonic.Marshal(M{
+		resp, err := R("PATCH", fmt.Sprintf(`/x_test/%s`, id.Hex()), M{
 			"data": M{
 				"$set": M{"name": "xxxx"},
 			},
 			"txn": txn,
 		})
-		w := ut.PerformRequest(engine, "PATCH", fmt.Sprintf(`/x_test/%s`, id.Hex()),
-			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp := w.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
 		var result M
-		err := service.Db.Collection("x_test").FindOne(ctx, bson.M{
+		err = service.Db.Collection("x_test").FindOne(ctx, bson.M{
 			"_id": id,
 		}).Decode(&result)
 		assert.NoError(t, err)
@@ -1901,21 +1719,17 @@ func TestTxReplace(t *testing.T) {
 	id := r.InsertedID.(primitive.ObjectID)
 
 	Transaction(t, func(txn string) {
-		body, _ := sonic.Marshal(M{
+		resp, err := R("PUT", fmt.Sprintf(`/x_test/%s`, id.Hex()), M{
 			"data": M{
 				"name": "xxxx",
 			},
 			"txn": txn,
 		})
-		w := ut.PerformRequest(engine, "PUT", fmt.Sprintf(`/x_test/%s`, id.Hex()),
-			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp := w.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
 		var result M
-		err := service.Db.Collection("x_test").FindOne(ctx, bson.M{
+		err = service.Db.Collection("x_test").FindOne(ctx, bson.M{
 			"_id": id,
 		}).Decode(&result)
 		assert.NoError(t, err)
@@ -1942,15 +1756,11 @@ func TestTxDelete(t *testing.T) {
 	id := r.InsertedID.(primitive.ObjectID)
 
 	Transaction(t, func(txn string) {
-		u := url.URL{Path: fmt.Sprintf(`/x_test/%s`, id.Hex())}
-		query := u.Query()
-		query.Add("txn", txn)
-		u.RawQuery = query.Encode()
-		w := ut.PerformRequest(engine, "DELETE", u.RequestURI(),
-			&ut.Body{},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp := w.Result()
+		u := U(fmt.Sprintf(`/x_test/%s`, id.Hex()), Params{
+			{"txn", txn},
+		})
+		resp, err := R("DELETE", u, nil)
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
 		count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
@@ -1974,17 +1784,13 @@ func TestTxBulkDelete(t *testing.T) {
 	assert.NoError(t, err)
 
 	Transaction(t, func(txn string) {
-		body, _ := sonic.Marshal(M{
+		resp, err := R("POST", "/x_test/bulk_delete", M{
 			"filter": M{
 				"name": "kain",
 			},
 			"txn": txn,
 		})
-		w := ut.PerformRequest(engine, "POST", "/x_test/bulk_delete",
-			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp := w.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
 		count, err := service.Db.Collection("x_test").CountDocuments(ctx, bson.M{})
@@ -2013,18 +1819,14 @@ func TestTxSort(t *testing.T) {
 	}
 
 	Transaction(t, func(txn string) {
-		body, _ := sonic.Marshal(M{
+		resp, err := R("POST", "/x_test/sort", M{
 			"data": M{
 				"key":    "sort",
 				"values": sources,
 			},
 			"txn": txn,
 		})
-		w := ut.PerformRequest(engine, "POST", "/x_test/sort",
-			&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp := w.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
 		cursor, err := service.Db.Collection("x_test").Find(ctx, bson.M{})
@@ -2051,32 +1853,24 @@ func TestTransaction(t *testing.T) {
 	assert.NoError(t, err)
 
 	Transaction(t, func(txn string) {
-		body1, _ := sonic.Marshal(M{
+		resp1, err := R("POST", "/x_roles/create", M{
 			"data": M{
 				"name": "admin",
 				"key":  "*",
 			},
 			"txn": txn,
 		})
-		w1 := ut.PerformRequest(engine, "POST", "/x_roles/create",
-			&ut.Body{Body: bytes.NewBuffer(body1), Len: len(body1)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp1 := w1.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp1.StatusCode())
 
-		body2, _ := sonic.Marshal(M{
+		resp2, err := R("POST", "/x_users/create", M{
 			"data": M{
 				"name":  "kainxxxx",
 				"roles": []string{"*"},
 			},
 			"txn": txn,
 		})
-		w2 := ut.PerformRequest(engine, "POST", "/x_users/create",
-			&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
-			ut.Header{Key: "content-type", Value: "application/json"},
-		)
-		resp2 := w2.Result()
+		assert.NoError(t, err)
 		assert.Equal(t, 204, resp2.StatusCode())
 	})
 
@@ -2096,47 +1890,33 @@ func TestTransaction(t *testing.T) {
 }
 
 func TestCommitNotTxn(t *testing.T) {
-	w1 := ut.PerformRequest(engine, "POST", "/commit",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp1 := w1.Result()
+	resp1, err := R("POST", "/commit", nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp1.StatusCode())
 
-	body2, _ := sonic.Marshal(M{
+	resp2, err := R("POST", "/commit", M{
 		"txn": uuid.New().String(),
 	})
-	w2 := ut.PerformRequest(engine, "POST", "/commit",
-		&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp2 := w2.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp2.StatusCode())
 }
 
 func TestCommitTimeout(t *testing.T) {
 	service.Values.RestTxnTimeout = time.Second
-	w1 := ut.PerformRequest(engine, "POST", "/transaction",
-		&ut.Body{},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp1 := w1.Result()
+	resp1, err := R("POST", "/transaction", nil)
+	assert.NoError(t, err)
 	assert.Equal(t, 201, resp1.StatusCode())
+
 	var result1 M
-	err := sonic.Unmarshal(resp1.Body(), &result1)
+	err = sonic.Unmarshal(resp1.Body(), &result1)
 	assert.NoError(t, err)
 	txn := result1["txn"].(string)
 
 	time.Sleep(time.Second)
 
-	body2, _ := sonic.Marshal(M{
+	resp2, err := R("POST", "/commit", M{
 		"txn": txn,
 	})
-	w2 := ut.PerformRequest(engine, "POST", "/commit",
-		&ut.Body{Body: bytes.NewBuffer(body2), Len: len(body2)},
-		ut.Header{Key: "content-type", Value: "application/json"},
-	)
-	resp2 := w2.Result()
+	assert.NoError(t, err)
 	assert.Equal(t, 400, resp2.StatusCode())
-	t.Log(string(resp2.Body()))
 }

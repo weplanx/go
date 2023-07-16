@@ -72,6 +72,11 @@ func TestService_Get(t *testing.T) {
 	assert.Nil(t, data2["XXX"])
 }
 
+func TestService_UpdateBad(t *testing.T) {
+	err := service.Update(make(chan int))
+	assert.Error(t, err)
+}
+
 func TestService_Update(t *testing.T) {
 	data := values.DEFAULT
 	data.IpLoginFailures = 3

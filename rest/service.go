@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/bytedance/sonic"
-	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 	"github.com/weplanx/go/passlib"
@@ -29,7 +28,12 @@ type Service struct {
 	Values    *values.DynamicValues
 }
 
-type M = map[string]interface{}
+func (x *Service) IsForbid(name string) bool {
+	if x.Values.RestControls[name] == nil {
+		return true
+	}
+	return !x.Values.RestControls[name].Status
+}
 
 func (x *Service) Create(ctx context.Context, name string, doc M) (r interface{}, err error) {
 	if r, err = x.Db.Collection(name).InsertOne(ctx, doc); err != nil {
@@ -134,8 +138,8 @@ func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectI
 
 func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID) (r interface{}, err error) {
 	filter := M{
-		"_id":                  id,
-		"metadata.undeletable": bson.M{"$exists": false},
+		"_id":             id,
+		"metadata.retain": bson.M{"$exists": false},
 	}
 	if r, err = x.Db.Collection(name).DeleteOne(ctx, filter); err != nil {
 		return
@@ -196,15 +200,10 @@ func (x *Service) Sort(ctx context.Context, name string, key string, ids []primi
 	return
 }
 
-func (x *Service) Transaction(ctx context.Context, txn string) (err error) {
+func (x *Service) Transaction(ctx context.Context, txn string) {
 	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
-	if err = x.RDb.LPush(ctx, key, time.Now().Format(time.RFC3339)).Err(); err != nil {
-		return
-	}
-	if err = x.RDb.Expire(ctx, key, time.Hour*5).Err(); err != nil {
-		return
-	}
-	return
+	x.RDb.LPush(ctx, key, time.Now().Format(time.RFC3339)).Val()
+	x.RDb.Expire(ctx, key, time.Hour*5).Val()
 }
 
 type PendingDto struct {
@@ -214,8 +213,6 @@ type PendingDto struct {
 	Filter M                  `json:"filter,omitempty"`
 	Data   interface{}        `json:"data,omitempty"`
 }
-
-var ErrTxnNotExist = errors.NewPublic("the txn does not exist")
 
 func (x *Service) TxnNotExists(ctx context.Context, key string) (err error) {
 	var exists int64
@@ -242,8 +239,6 @@ func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err 
 	}
 	return
 }
-
-var ErrTxnTimeOut = errors.NewPublic("the transaction has timed out")
 
 func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err error) {
 	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)

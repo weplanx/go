@@ -1,28 +1,32 @@
 package rest_test
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"github.com/bytedance/go-tagexpr/v2/binding"
 	"github.com/bytedance/go-tagexpr/v2/validator"
 	"github.com/bytedance/gopkg/util/logger"
+	"github.com/bytedance/sonic"
 	"github.com/bytedance/sonic/decoder"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/common/errors"
+	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/cloudwego/hertz/pkg/common/utils"
+	"github.com/cloudwego/hertz/pkg/protocol"
 	"github.com/cloudwego/hertz/pkg/route"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 	"github.com/weplanx/go/help"
 	"github.com/weplanx/go/rest"
 	"github.com/weplanx/go/values"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"net/http"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -39,6 +43,38 @@ var (
 )
 
 type M = map[string]interface{}
+
+var controls = map[string]*values.RestControl{
+	"users": {
+		Keys:   []string{"name", "department", "roles", "create_time", "update_time"},
+		Status: true,
+	},
+	"roles": {
+		Status: true,
+	},
+	"projects": {
+		Status: true,
+		Event:  true,
+	},
+	"orders": {
+		Status: true,
+	},
+	"coupons": {
+		Status: true,
+	},
+	"x_test": {
+		Status: true,
+	},
+	"x_roles": {
+		Status: true,
+	},
+	"x_users": {
+		Status: true,
+	},
+	"levels": {
+		Status: false,
+	},
+}
 
 func TestMain(m *testing.M) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -61,14 +97,7 @@ func TestMain(m *testing.M) {
 		rest.SetJetStream(js),
 		rest.SetKeyValue(keyvalue),
 		rest.SetDynamicValues(&values.DynamicValues{
-			RestControls: map[string]*values.RestControl{
-				"users": {
-					Keys: []string{"name", "department", "roles", "create_time", "update_time"},
-				},
-				"projects": {
-					Event: true,
-				},
-			},
+			RestControls:   controls,
 			RestTxnTimeout: time.Second * 30,
 		}),
 	)
@@ -96,75 +125,6 @@ func UseMongo(ctx context.Context) (err error) {
 		SetWriteConcern(writeconcern.Majority())
 	db = mgo.Database(os.Getenv("DATABASE_NAME"), option)
 	if err = db.Drop(ctx); err != nil {
-		return
-	}
-	return
-}
-
-func MockDb(ctx context.Context) (err error) {
-	usersOption := options.CreateCollection().
-		SetValidator(bson.D{
-			{"$jsonSchema", bson.D{
-				{"title", "users"},
-				{"required", bson.A{"_id", "name", "password", "department", "roles", "create_time", "update_time"}},
-				{"properties", bson.D{
-					{"_id", bson.M{"bsonType": "objectId"}},
-					{"name", bson.M{"bsonType": "string"}},
-					{"password", bson.M{"bsonType": "string"}},
-					{"department", bson.M{"bsonType": []string{"null", "objectId"}}},
-					{"roles", bson.M{
-						"bsonType": "array",
-						"items":    bson.M{"bsonType": "objectId"},
-					}},
-					{"create_time", bson.M{"bsonType": "date"}},
-					{"update_time", bson.M{"bsonType": "date"}},
-				}},
-				{"additionalProperties", false},
-			}},
-		})
-	if err = db.CreateCollection(ctx, "users", usersOption); err != nil {
-		return
-	}
-	ordersOption := options.CreateCollection().
-		SetValidator(bson.D{
-			{"$jsonSchema", bson.D{
-				{"title", "orders"},
-				{"required", bson.A{"_id", "no", "customer", "phone", "cost", "time", "create_time", "update_time"}},
-				{"properties", bson.D{
-					{"_id", bson.M{"bsonType": "objectId"}},
-					{"no", bson.M{"bsonType": "string"}},
-					{"customer", bson.M{"bsonType": "string"}},
-					{"phone", bson.M{"bsonType": "string"}},
-					{"cost", bson.M{"bsonType": "number"}},
-					{"time", bson.M{"bsonType": "date"}},
-					{"sort", bson.M{"bsonType": []string{"null", "number"}}},
-					{"create_time", bson.M{"bsonType": "date"}},
-					{"update_time", bson.M{"bsonType": "date"}},
-				}},
-				{"additionalProperties", false},
-			}},
-		})
-	if err = db.CreateCollection(ctx, "orders", ordersOption); err != nil {
-		return
-	}
-	projectsOption := options.CreateCollection().SetValidator(bson.D{
-		{"$jsonSchema", bson.D{
-			{"title", "projects"},
-			{"required", bson.A{"_id", "name", "namespace", "secret", "create_time", "update_time"}},
-			{"properties", bson.D{
-				{"_id", bson.M{"bsonType": "objectId"}},
-				{"name", bson.M{"bsonType": "string"}},
-				{"namespace", bson.M{"bsonType": "string"}},
-				{"secret", bson.M{"bsonType": "string"}},
-				{"expire_time", bson.M{"bsonType": []string{"null", "date"}}},
-				{"sort", bson.M{"bsonType": []string{"null", "number"}}},
-				{"create_time", bson.M{"bsonType": "date"}},
-				{"update_time", bson.M{"bsonType": "date"}},
-			}},
-			{"additionalProperties", false},
-		}},
-	})
-	if err = db.CreateCollection(ctx, "projects", projectsOption); err != nil {
 		return
 	}
 	return
@@ -214,24 +174,6 @@ func UseNats(ctx context.Context) (err error) {
 	return
 }
 
-func MockStream(ctx context.Context) (err error) {
-	for k, v := range service.Values.RestControls {
-		if v.Event {
-			name := fmt.Sprintf(`%s:events:%s`, service.Namespace, k)
-			subject := fmt.Sprintf(`%s.events.%s`, service.Namespace, k)
-			js.DeleteStream(name)
-			if _, err := js.AddStream(&nats.StreamConfig{
-				Name:      name,
-				Subjects:  []string{subject},
-				Retention: nats.WorkQueuePolicy,
-			}, nats.Context(ctx)); err != nil {
-				panic(err)
-			}
-		}
-	}
-	return
-}
-
 func ErrHandler() app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		c.Next(ctx)
@@ -276,4 +218,60 @@ func ErrHandler() app.HandlerFunc {
 			c.Status(http.StatusInternalServerError)
 		}
 	}
+}
+
+func R(method string, url string, body interface{}) (resp *protocol.Response, err error) {
+	utBody := &ut.Body{}
+	utHeaders := []ut.Header{
+		{Key: "content-type", Value: "application/json"},
+	}
+	if body != nil {
+		var b []byte
+		if b, err = sonic.Marshal(body); err != nil {
+			return
+		}
+		utBody.Body = bytes.NewBuffer(b)
+		utBody.Len = len(b)
+	}
+
+	w := ut.PerformRequest(engine, method, url,
+		utBody,
+		utHeaders...,
+	)
+
+	resp = w.Result()
+	return
+}
+
+type Params = [][2]string
+
+func U(path string, params Params) string {
+	u := url.URL{Path: path}
+	query := u.Query()
+	for _, v := range params {
+		query.Add(v[0], v[1])
+	}
+	u.RawQuery = query.Encode()
+	return u.RequestURI()
+}
+
+type TransactionFn = func(txn string)
+
+func Transaction(t *testing.T, fn TransactionFn) {
+	resp1, err := R("POST", "/transaction", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 201, resp1.StatusCode())
+
+	var result1 M
+	err = sonic.Unmarshal(resp1.Body(), &result1)
+	assert.NoError(t, err)
+	txn := result1["txn"].(string)
+
+	fn(txn)
+
+	resp2, err := R("POST", "/commit", M{
+		"txn": txn,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp2.StatusCode())
 }
