@@ -54,82 +54,83 @@ var DEFAULT = DynamicValues{
 type DynamicValues struct {
 	// session period (seconds)
 	// User inactivity for 1 hour, session will end
-	SessionTTL time.Duration
+	SessionTTL time.Duration `yaml:"session_ttl"`
 	// login lockout time
 	// Locked for 15 minutes
-	LoginTTL time.Duration
+	LoginTTL time.Duration `yaml:"login_ttl"`
 	// Maximum number of login failures for a user
 	// If you fail to log in 5 times consecutively within a limited time (lockout time),
 	// your account will be locked
-	LoginFailures int64
+	LoginFailures int64 `yaml:"login_failures"`
 	// Maximum number of login failures for the user's host IP
 	// If the same host IP fails to log in 10 times continuously, the IP will be locked (period is the login_ttl)
-	IpLoginFailures int64
+	IpLoginFailures int64 `yaml:"ip_login_failures"`
 	// IP whitelist
 	// Whitelisting IPs does not restrict login failure lockouts
-	IpWhitelist []string
+	IpWhitelist []string `yaml:"ip_whitelist"`
 	// IP blacklist
 	// will ban all access
-	IpBlacklist []string
+	IpBlacklist []string `yaml:"ip_blacklist"`
 	// password strength
 	// 0: unlimited
 	// 1: uppercase and lowercase letters
 	// 2: uppercase and lowercase letters, numbers
 	// 3: uppercase and lowercase letters, numbers, special characters
-	PwdStrategy int
+	PwdStrategy int `yaml:"pwd_strategy"`
 	// password validity period
 	// After the password expires, it is mandatory to change the password, 0: permanently valid
-	PwdTTL time.Duration
+	PwdTTL time.Duration `yaml:"pwd_ttl"`
 	// Public Cloud
 	// Supported: Tencent Cloud `tencent`
 	// Plan: AWS `aws`
-	Cloud string
+	Cloud string `yaml:"cloud"`
 	// Tencent Cloud API Secret Id
 	// It is recommended to use CAM to assign the required permissions
-	TencentSecretId string
+	TencentSecretId string `yaml:"tencent_secret_id"`
 	// Tencent Cloud API Secret Key
-	TencentSecretKey string `secret:"*"`
+	TencentSecretKey string `yaml:"tencent_secret_key" secret:"*"`
 	// Tencent Cloud COS bucket name
-	TencentCosBucket string
+	TencentCosBucket string `yaml:"tencent_cos_bucket"`
 	// Tencent Cloud COS bucket region, for example: ap-guangzhou
-	TencentCosRegion string
+	TencentCosRegion string `yaml:"tencent_cos_region"`
 	// Tencent Cloud COS bucket pre-signature validity period, unit: second
-	TencentCosExpired int64
+	TencentCosExpired int64 `yaml:"tencent_cos_expired"`
 	// Tencent Cloud COS bucket upload size limit, unit: KB
-	TencentCosLimit int64
+	TencentCosLimit int64 `yaml:"tencent_cos_limit"`
 	// Enterprise Collaboration
 	// Lark App ID
-	LarkAppId string
+	LarkAppId string `yaml:"lark_app_id"`
 	// Lark application key
-	LarkAppSecret string `secret:"*"`
+	LarkAppSecret string `yaml:"lark_app_secret" secret:"*"`
 	// Lark event subscription security verification data key
-	LarkEncryptKey string `secret:"*"`
+	LarkEncryptKey string `yaml:"lark_encrypt_key" secret:"*"`
 	// Lark Event Subscription Verification Token
-	LarkVerificationToken string `secret:"*"`
+	LarkVerificationToken string `yaml:"lark_verification_token" secret:"*"`
 	// Third-party registration-free authorization code redirection address
-	RedirectUrl string
+	RedirectUrl string `yaml:"redirect_url"`
 	// Public email service SMTP address
-	EmailHost string
+	EmailHost string `yaml:"email_host"`
 	// Public email SMTP port number (SSL)
-	EmailPort int
+	EmailPort int `yaml:"email_port"`
 	// Public email username
-	EmailUsername string
+	EmailUsername string `yaml:"email_username"`
 	// Public email password
-	EmailPassword string `secret:"*"`
+	EmailPassword string `yaml:"email_password" secret:"*"`
 	// Openapi url
-	OpenapiUrl string
+	OpenapiUrl string `yaml:"openapi_url"`
 	// Openapi application authentication key
 	// API gateway application authentication https://cloud.tencent.com/document/product/628/55088
-	OpenapiKey string
+	OpenapiKey string `yaml:"openapi_key"`
 	// Openapi Application Authentication Secret
-	OpenapiSecret string `secret:"*"`
+	OpenapiSecret string `yaml:"openapi_secret" secret:"*"`
 	// RestControls
-	RestControls   map[string]*RestControl
-	RestTxnTimeout time.Duration
+	RestControls map[string]*RestControl `yaml:"rest_controls"`
+	// Rest Txn Timeout
+	RestTxnTimeout time.Duration `yaml:"rest_txn_timeout"`
 }
 
 type RestControl struct {
-	Keys   []string
-	Status bool
-	Event  bool
+	Keys   []string `yaml:"keys"`
+	Status bool     `yaml:"status"`
+	Event  bool     `yaml:"event"`
 }
