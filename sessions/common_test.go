@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 )
 
 var (
@@ -34,6 +35,18 @@ var (
 
 type M = map[string]interface{}
 
+var DEFAULT = values.DynamicValues{
+	SessionTTL:      time.Hour,
+	LoginTTL:        time.Minute * 15,
+	LoginFailures:   5,
+	IpLoginFailures: 10,
+	IpWhitelist:     []string{},
+	IpBlacklist:     []string{},
+	PwdStrategy:     1,
+	PwdTTL:          time.Hour * 24 * 365,
+}
+var v = DEFAULT
+
 func TestMain(m *testing.M) {
 	namespace := os.Getenv("NAMESPACE")
 	if err := UseRedis(); err != nil {
@@ -42,7 +55,7 @@ func TestMain(m *testing.M) {
 	service = sessions.New(
 		sessions.SetNamespace(namespace),
 		sessions.SetRedis(rdb),
-		sessions.SetDynamicValues(&values.DEFAULT),
+		sessions.SetDynamicValues(&v),
 	)
 
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
