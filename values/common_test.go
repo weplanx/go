@@ -24,17 +24,29 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 )
 
+type M = map[string]interface{}
+
+var DEFAULT = values.DynamicValues{
+	SessionTTL:      time.Hour,
+	LoginTTL:        time.Minute * 15,
+	LoginFailures:   5,
+	IpLoginFailures: 10,
+	IpWhitelist:     []string{},
+	IpBlacklist:     []string{},
+	PwdStrategy:     1,
+	PwdTTL:          time.Hour * 24 * 365,
+}
+var v = DEFAULT
 var (
 	keyvalue nats.KeyValue
 	service  *values.Service
 	engine   *route.Engine
 )
-
-type M = map[string]interface{}
 
 func TestMain(m *testing.M) {
 	var err error
@@ -46,12 +58,11 @@ func TestMain(m *testing.M) {
 	if cipherx, err = cipher.New(os.Getenv("KEY")); err != nil {
 		log.Fatalln(err)
 	}
-	v := values.DEFAULT
 	service = values.New(
 		values.SetNamespace(namespace),
 		values.SetKeyValue(keyvalue),
 		values.SetCipher(cipherx),
-		values.SetDynamicValues(&v),
+		values.SetType(reflect.TypeOf(values.DynamicValues{})),
 	)
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
@@ -143,6 +154,16 @@ func ErrHandler() app.HandlerFunc {
 			c.Status(http.StatusInternalServerError)
 		}
 	}
+}
+
+func Reset() (err error) {
+	data := make(map[string]interface{})
+	v := reflect.ValueOf(DEFAULT)
+	typ := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		data[typ.Field(i).Name] = v.Field(i).Interface()
+	}
+	return service.Update(data)
 }
 
 func R(method string, url string, body interface{}) (resp *protocol.Response, err error) {

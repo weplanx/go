@@ -3,6 +3,7 @@ package values
 import (
 	"github.com/nats-io/nats.go"
 	"github.com/weplanx/go/cipher"
+	"reflect"
 	"time"
 )
 
@@ -34,21 +35,10 @@ func SetCipher(v *cipher.Cipher) Option {
 	}
 }
 
-func SetDynamicValues(v *DynamicValues) Option {
+func SetType(v reflect.Type) Option {
 	return func(x *Service) {
-		x.Values = v
+		x.Type = v
 	}
-}
-
-var DEFAULT = DynamicValues{
-	SessionTTL:      time.Hour,
-	LoginTTL:        time.Minute * 15,
-	LoginFailures:   5,
-	IpLoginFailures: 10,
-	IpWhitelist:     []string{},
-	IpBlacklist:     []string{},
-	PwdStrategy:     1,
-	PwdTTL:          time.Hour * 24 * 365,
 }
 
 type DynamicValues struct {

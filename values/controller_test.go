@@ -27,7 +27,7 @@ func TestSetBadValidate(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	err := service.Reset()
+	err := Reset()
 	assert.NoError(t, err)
 	resp, err := R("PATCH", "/values", M{
 		"update": M{
@@ -65,7 +65,7 @@ func TestGetBadValidate(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	err := service.Reset()
+	err := Reset()
 	assert.NoError(t, err)
 	resp, err := R("GET", "/values", nil)
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ func TestGetBadService(t *testing.T) {
 }
 
 func TestRemoveBadValidate(t *testing.T) {
-	err := service.Reset()
+	err := Reset()
 	assert.NoError(t, err)
 	resp, err := R("DELETE", fmt.Sprintf(`/values/%s`, "LoginTTL12"), nil)
 	assert.NoError(t, err)
@@ -114,7 +114,7 @@ func TestRemoveBadValidate(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	err := service.Reset()
+	err := Reset()
 	assert.NoError(t, err)
 
 	resp, err := R("DELETE", fmt.Sprintf(`/values/%s`, "LoginTTL"), nil)

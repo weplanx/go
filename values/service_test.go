@@ -9,26 +9,26 @@ import (
 )
 
 func TestService_Fetch(t *testing.T) {
-	err := service.Reset()
+	err := Reset()
 	assert.NoError(t, err)
 
 	data1 := values.DynamicValues{}
 	err = service.Fetch(&data1)
 	assert.NoError(t, err)
-	assert.Equal(t, values.DEFAULT.LoginFailures, data1.LoginFailures)
-	assert.Equal(t, values.DEFAULT.IpLoginFailures, data1.IpLoginFailures)
-	assert.Equal(t, values.DEFAULT.SessionTTL, data1.SessionTTL)
-	assert.Equal(t, values.DEFAULT.LoginTTL, data1.LoginTTL)
-	assert.Equal(t, values.DEFAULT.PwdTTL, data1.PwdTTL)
+	assert.Equal(t, DEFAULT.LoginFailures, data1.LoginFailures)
+	assert.Equal(t, DEFAULT.IpLoginFailures, data1.IpLoginFailures)
+	assert.Equal(t, DEFAULT.SessionTTL, data1.SessionTTL)
+	assert.Equal(t, DEFAULT.LoginTTL, data1.LoginTTL)
+	assert.Equal(t, DEFAULT.PwdTTL, data1.PwdTTL)
 
 	data2 := make(map[string]interface{})
 	err = service.Fetch(&data2)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(values.DEFAULT.LoginFailures), data2["LoginFailures"])
-	assert.Equal(t, float64(values.DEFAULT.IpLoginFailures), data2["IpLoginFailures"])
-	assert.Equal(t, float64(values.DEFAULT.SessionTTL), data2["SessionTTL"])
-	assert.Equal(t, float64(values.DEFAULT.LoginTTL), data2["LoginTTL"])
-	assert.Equal(t, float64(values.DEFAULT.PwdTTL), data2["PwdTTL"])
+	assert.Equal(t, float64(DEFAULT.LoginFailures), data2["LoginFailures"])
+	assert.Equal(t, float64(DEFAULT.IpLoginFailures), data2["IpLoginFailures"])
+	assert.Equal(t, float64(DEFAULT.SessionTTL), data2["SessionTTL"])
+	assert.Equal(t, float64(DEFAULT.LoginTTL), data2["LoginTTL"])
+	assert.Equal(t, float64(DEFAULT.PwdTTL), data2["PwdTTL"])
 }
 
 func TestService_Set(t *testing.T) {
@@ -44,12 +44,12 @@ func TestService_Get(t *testing.T) {
 	data1, err := service.Get()
 	assert.NoError(t, err)
 	t.Log(data1)
-	assert.Equal(t, float64(values.DEFAULT.LoginFailures), data1["LoginFailures"])
-	assert.Equal(t, float64(values.DEFAULT.IpLoginFailures), data1["IpLoginFailures"])
-	assert.Equal(t, float64(values.DEFAULT.SessionTTL), data1["SessionTTL"])
-	assert.Equal(t, float64(values.DEFAULT.PwdStrategy), data1["PwdStrategy"])
-	assert.Equal(t, float64(values.DEFAULT.LoginTTL), data1["LoginTTL"])
-	assert.Equal(t, float64(values.DEFAULT.PwdTTL), data1["PwdTTL"])
+	assert.Equal(t, float64(DEFAULT.LoginFailures), data1["LoginFailures"])
+	assert.Equal(t, float64(DEFAULT.IpLoginFailures), data1["IpLoginFailures"])
+	assert.Equal(t, float64(DEFAULT.SessionTTL), data1["SessionTTL"])
+	assert.Equal(t, float64(DEFAULT.PwdStrategy), data1["PwdStrategy"])
+	assert.Equal(t, float64(DEFAULT.LoginTTL), data1["LoginTTL"])
+	assert.Equal(t, float64(DEFAULT.PwdTTL), data1["PwdTTL"])
 	assert.Equal(t, "*", data1["TencentSecretKey"])
 	assert.Equal(t, "abcdefg", data1["Wechat"])
 
@@ -78,7 +78,7 @@ func TestService_UpdateBad(t *testing.T) {
 }
 
 func TestService_Update(t *testing.T) {
-	data := values.DEFAULT
+	data := DEFAULT
 	data.IpLoginFailures = 3
 	data.Cloud = "tencent"
 	data.LarkAppId = "asdasd"
@@ -107,16 +107,16 @@ func TestService_Remove(t *testing.T) {
 func TestService_SyncNotExists(t *testing.T) {
 	err := keyvalue.Delete("values")
 	assert.NoError(t, err)
-	err = service.Sync(nil)
+	err = service.Sync(&v, nil)
 	assert.Error(t, err, nats.ErrKeyNotFound)
 }
 
 func TestService_Sync(t *testing.T) {
-	err := service.Reset()
+	err := Reset()
 	assert.NoError(t, err)
 
 	ok := make(chan interface{})
-	go service.Sync(ok)
+	go service.Sync(&v, ok)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {

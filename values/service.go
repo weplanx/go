@@ -11,9 +11,9 @@ import (
 
 type Service struct {
 	Namespace string
+	Type      reflect.Type
 	KeyValue  nats.KeyValue
 	Cipher    *cipher.Cipher
-	Values    *DynamicValues
 }
 
 func (x *Service) Fetch(v interface{}) (err error) {
@@ -31,8 +31,8 @@ func (x *Service) Fetch(v interface{}) (err error) {
 	return
 }
 
-func (x *Service) Sync(ok chan interface{}) (err error) {
-	if err = x.Fetch(x.Values); err != nil {
+func (x *Service) Sync(v interface{}, ok chan interface{}) (err error) {
+	if err = x.Fetch(v); err != nil {
 		return
 	}
 	current := time.Now()
@@ -42,11 +42,11 @@ func (x *Service) Sync(ok chan interface{}) (err error) {
 		if entry == nil || entry.Created().Unix() < current.Unix() {
 			continue
 		}
-		if err = x.Fetch(x.Values); err != nil {
+		if err = x.Fetch(v); err != nil {
 			return
 		}
 		if ok != nil {
-			ok <- x.Values
+			ok <- v
 		}
 	}
 	return
@@ -71,14 +71,13 @@ func (x *Service) Get(keys ...string) (data map[string]interface{}, err error) {
 	for _, v := range keys {
 		contains[v] = true
 	}
-	typ := reflect.ValueOf(DEFAULT).Type()
 	for key, value := range data {
 		if len(keys) != 0 && !contains[key] || funk.IsEmpty(value) {
 			delete(data, key)
 			continue
 		}
 		secret := false
-		if field, ok := typ.FieldByName(key); ok {
+		if field, ok := x.Type.FieldByName(key); ok {
 			secret = field.Tag.Get("secret") == "*"
 		}
 		if secret {
@@ -112,14 +111,4 @@ func (x *Service) Update(data interface{}) (err error) {
 		return
 	}
 	return
-}
-
-func (x *Service) Reset() (err error) {
-	data := make(map[string]interface{})
-	v := reflect.ValueOf(DEFAULT)
-	typ := v.Type()
-	for i := 0; i < v.NumField(); i++ {
-		data[typ.Field(i).Name] = v.Field(i).Interface()
-	}
-	return x.Update(data)
 }
