@@ -319,7 +319,7 @@ func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ 
 
 func (x *Service) Transform(data M, rules M) (err error) {
 	for key, value := range rules {
-		paths := strings.Split(key, ".")
+		paths := strings.Split(key, "->")
 		if err = x.Pipe(data, paths, value); err != nil {
 			return
 		}

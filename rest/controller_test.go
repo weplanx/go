@@ -424,7 +424,7 @@ func TestSizeTransformBad(t *testing.T) {
 			"_id": M{"$in": []string{"123456"}},
 		},
 		"xfilter": M{
-			"_id.$in": "oids",
+			"_id->$in": "oids",
 		},
 	})
 	assert.NoError(t, err)
@@ -448,7 +448,7 @@ func TestSizeFilterAndXfilter(t *testing.T) {
 			"_id": M{"$in": oids},
 		},
 		"xfilter": M{
-			"_id.$in": "oids",
+			"_id->$in": "oids",
 		},
 	})
 	assert.NoError(t, err)
@@ -487,7 +487,7 @@ func TestFindTransformBad(t *testing.T) {
 			"_id": M{"$in": []string{"123456"}},
 		},
 		"xfilter": M{
-			"_id.$in": "oids",
+			"_id->$in": "oids",
 		},
 	})
 	assert.NoError(t, err)
@@ -580,7 +580,7 @@ func TestFindOneTransformBad(t *testing.T) {
 			"_id": M{"$in": []string{"123456"}},
 		},
 		"xfilter": M{
-			"_id.$in": "oids",
+			"_id->$in": "oids",
 		},
 	})
 	assert.NoError(t, err)
@@ -699,7 +699,7 @@ func TestUpdateTransformFilterBad(t *testing.T) {
 			"_id": M{"$in": []string{"123456"}},
 		},
 		"xfilter": M{
-			"_id.$in": "oids",
+			"_id->$in": "oids",
 		},
 		"data": M{
 			"$set": M{
@@ -707,7 +707,7 @@ func TestUpdateTransformFilterBad(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.department": "oid",
+			"$set->department": "oid",
 		},
 	})
 	assert.NoError(t, err)
@@ -725,7 +725,7 @@ func TestUpdateTransformDataBad(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.department": "oid",
+			"$set->department": "oid",
 		},
 	})
 	assert.NoError(t, err)
@@ -760,7 +760,7 @@ func TestUpdate(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.department": "oid",
+			"$set->department": "oid",
 		},
 	})
 	assert.NoError(t, err)
@@ -800,7 +800,7 @@ func TestUpdatePush(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$push.roles": "oid",
+			"$push->roles": "oid",
 		},
 	})
 	assert.NoError(t, err)
@@ -859,7 +859,7 @@ func TestUpdateEvent(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.expire_time": "timestamp",
+			"$set->expire_time": "timestamp",
 		},
 	})
 	assert.NoError(t, err)
@@ -895,7 +895,7 @@ func TestUpdateEventBad(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.expire_time": "timestamp",
+			"$set->expire_time": "timestamp",
 		},
 	})
 	assert.NoError(t, err)
@@ -930,7 +930,7 @@ func TestUpdateByIdTransformDataBad(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.department": "oid",
+			"$set->department": "oid",
 		},
 	})
 	assert.NoError(t, err)
@@ -946,7 +946,7 @@ func TestUpdateByIdTxnNotExists(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.department": "oid",
+			"$set->department": "oid",
 		},
 		"txn": txn,
 	})
@@ -962,7 +962,7 @@ func TestUpdateById(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.department": "oid",
+			"$set->department": "oid",
 		},
 	})
 	assert.NoError(t, err)
@@ -999,7 +999,7 @@ func TestUpdateByIdPush(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$push.roles": "oid",
+			"$push->roles": "oid",
 		},
 	})
 	assert.NoError(t, err)
@@ -1051,7 +1051,7 @@ func TestUpdateByIdEvent(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.expire_time": "timestamp",
+			"$set->expire_time": "timestamp",
 		},
 	})
 	assert.NoError(t, err)
@@ -1083,7 +1083,7 @@ func TestUpdateByIdEventBad(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"$set.expire_time": "timestamp",
+			"$set->expire_time": "timestamp",
 		},
 	})
 	assert.NoError(t, err)
@@ -1339,7 +1339,7 @@ func TestBulkDeleteTransformBad(t *testing.T) {
 			"_id": M{"$in": []string{"12345"}},
 		},
 		"xfilter": M{
-			"_id.$in": "oids",
+			"_id->$in": "oids",
 		},
 	})
 	assert.NoError(t, err)
@@ -1364,7 +1364,7 @@ func TestBulkDelete(t *testing.T) {
 			"_id": M{"$in": orderIds[5:]},
 		},
 		"xfilter": M{
-			"_id.$in": "oids",
+			"_id->$in": "oids",
 		},
 	})
 	assert.NoError(t, err)
@@ -1573,10 +1573,10 @@ func TestMoreTransform(t *testing.T) {
 			},
 		},
 		"xdata": M{
-			"pd":              "timestamp",
-			"valid":           "timestamps",
-			"metadata.$.date": "date",
-			"metadata.$.wm":   "dates",
+			"pd":                "timestamp",
+			"valid":             "timestamps",
+			"metadata->$->date": "date",
+			"metadata->$->wm":   "dates",
 		},
 	})
 	assert.NoError(t, err)
