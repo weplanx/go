@@ -6,6 +6,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
+	"github.com/weplanx/go/cipher"
 	"github.com/weplanx/go/passlib"
 	"github.com/weplanx/go/values"
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,6 +27,7 @@ type Service struct {
 	JetStream nats.JetStreamContext
 	KeyValue  nats.KeyValue
 	Values    *values.DynamicValues
+	Cipher    *cipher.Cipher
 }
 
 func (x *Service) IsForbid(name string) bool {
@@ -395,6 +397,11 @@ func (x *Service) Pipe(input M, paths []string, kind interface{}) (err error) {
 		break
 	case "password":
 		data, _ = passlib.Hash(unknow.(string))
+		break
+	case "cipher":
+		if data, err = x.Cipher.Encode([]byte(unknow.(string))); err != nil {
+			return
+		}
 		break
 	}
 	cursor.(M)[key] = data

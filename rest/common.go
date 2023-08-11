@@ -4,6 +4,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
+	"github.com/weplanx/go/cipher"
 	"github.com/weplanx/go/values"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -57,6 +58,12 @@ func SetKeyValue(v nats.KeyValue) Option {
 func SetDynamicValues(v *values.DynamicValues) Option {
 	return func(x *Service) {
 		x.Values = v
+	}
+}
+
+func SetCipher(v *cipher.Cipher) Option {
+	return func(x *Service) {
+		x.Cipher = v
 	}
 }
 

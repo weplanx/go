@@ -19,6 +19,7 @@ import (
 	"github.com/nats-io/nkeys"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+	"github.com/weplanx/go/cipher"
 	"github.com/weplanx/go/help"
 	"github.com/weplanx/go/rest"
 	"github.com/weplanx/go/values"
@@ -62,6 +63,9 @@ var controls = map[string]*values.RestControl{
 	"coupons": {
 		Status: true,
 	},
+	"members": {
+		Status: true,
+	},
 	"x_test": {
 		Status: true,
 	},
@@ -89,6 +93,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	namespace := os.Getenv("NAMESPACE")
+	xcipher, _ := cipher.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
 	service = rest.New(
 		rest.SetNamespace(namespace),
 		rest.SetMongoClient(mgo),
@@ -100,6 +105,7 @@ func TestMain(m *testing.M) {
 			RestControls:   controls,
 			RestTxnTimeout: time.Second * 30,
 		}),
+		rest.SetCipher(xcipher),
 	)
 	if err := MockDb(ctx); err != nil {
 		panic(err)

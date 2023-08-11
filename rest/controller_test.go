@@ -1606,6 +1606,66 @@ func TestMoreTransform(t *testing.T) {
 	t.Log(metadata)
 }
 
+func TestCipherTransform(t *testing.T) {
+	cards := []string{
+		"11223344",
+		"55667788",
+	}
+	cardsText, _ := sonic.MarshalString(cards)
+	idcard := M{
+		"no": "789987",
+		"x1": "www",
+		"x2": "ccc",
+	}
+	idcardText, _ := sonic.MarshalString(idcard)
+	resp, err := R("POST", "/members/create", M{
+		"data": M{
+			"name":   "用户A",
+			"phone":  "12345678",
+			"cards":  cardsText,
+			"idcard": idcardText,
+		},
+		"xdata": M{
+			"phone":  "cipher",
+			"cards":  "cipher",
+			"idcard": "cipher",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 201, resp.StatusCode())
+
+	var result M
+	err = sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, result)
+
+	id := result["InsertedID"].(string)
+	oid, _ := primitive.ObjectIDFromHex(id)
+
+	var member M
+	err = service.Db.Collection("members").FindOne(context.TODO(), bson.M{
+		"_id": oid,
+	}).Decode(&member)
+	assert.NoError(t, err)
+	assert.Equal(t, "用户A", member["name"])
+
+	var cardsV []string
+	cardsBytes, err := service.Cipher.Decode(member["cards"].(string))
+	assert.NoError(t, err)
+	err = sonic.Unmarshal(cardsBytes, &cardsV)
+	assert.NoError(t, err)
+	t.Log(cardsV)
+	assert.ElementsMatch(t, cards, cardsV)
+
+	var idcardV M
+	idcardBytes, err := service.Cipher.Decode(member["idcard"].(string))
+	assert.NoError(t, err)
+	err = sonic.Unmarshal(idcardBytes, &idcardV)
+	assert.NoError(t, err)
+	t.Log(idcardV)
+	assert.Equal(t, idcard, idcardV)
+}
+
 func TestTxBulkCreate(t *testing.T) {
 	ctx := context.TODO()
 	err := service.Db.Collection("x_test").Drop(ctx)
