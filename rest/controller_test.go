@@ -27,7 +27,7 @@ func TestCreateValidateBad(t *testing.T) {
 }
 
 func TestCreateForbid(t *testing.T) {
-	resp, err := R("POST", "/members/create", M{
+	resp, err := R("POST", "/permissions/create", M{
 		"data": M{
 			"name": "kain",
 		},
@@ -208,7 +208,7 @@ func TestBulkCreateValidateBad(t *testing.T) {
 }
 
 func TestBulkCreateForbid(t *testing.T) {
-	resp, err := R("POST", "/members/bulk_create", M{
+	resp, err := R("POST", "/permissions/bulk_create", M{
 		"data": []M{
 			{"name": "kain"},
 		},
@@ -411,7 +411,7 @@ func TestSizeValidateBad(t *testing.T) {
 }
 
 func TestSizeForbid(t *testing.T) {
-	resp, err := R("POST", "/members/size", M{
+	resp, err := R("POST", "/permissions/size", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -474,7 +474,7 @@ func TestFindValidateBad(t *testing.T) {
 }
 
 func TestFindForbid(t *testing.T) {
-	resp, err := R("POST", "/members/find", M{
+	resp, err := R("POST", "/permissions/find", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -565,7 +565,7 @@ func TestFindOneValidateBad(t *testing.T) {
 }
 
 func TestFindOneForbid(t *testing.T) {
-	resp, err := R("POST", "/members/find_one", M{
+	resp, err := R("POST", "/permissions/find_one", M{
 		"filter": M{
 			"name": "kain",
 		},
@@ -630,7 +630,7 @@ func TestFindByIdValidateBad(t *testing.T) {
 
 func TestFindByIdForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("GET", fmt.Sprintf(`/members/%s`, id), nil)
+	resp, err := R("GET", fmt.Sprintf(`/permissions/%s`, id), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
@@ -679,7 +679,7 @@ func TestUpdateValidateBad(t *testing.T) {
 }
 
 func TestUpdateForbid(t *testing.T) {
-	resp, err := R("POST", "/members/update", M{
+	resp, err := R("POST", "/permissions/update", M{
 		"filter": M{
 			"name": "kain",
 		},
@@ -911,7 +911,7 @@ func TestUpdateByIdValidateBad(t *testing.T) {
 
 func TestUpdateByIdForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("PATCH", fmt.Sprintf(`/members/%s`, id), M{
+	resp, err := R("PATCH", fmt.Sprintf(`/permissions/%s`, id), M{
 		"data": M{
 			"$set": M{
 				"name": "xxxx",
@@ -1099,7 +1099,7 @@ func TestReplaceValidateBad(t *testing.T) {
 
 func TestReplaceForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("PUT", fmt.Sprintf(`/members/%s`, id), M{
+	resp, err := R("PUT", fmt.Sprintf(`/permissions/%s`, id), M{
 		"data": M{
 			"name": "xxxx",
 		},
@@ -1254,7 +1254,7 @@ func TestDeleteValidateBad(t *testing.T) {
 
 func TestDeleteForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("DELETE", fmt.Sprintf(`/members/%s`, id), nil)
+	resp, err := R("DELETE", fmt.Sprintf(`/permissions/%s`, id), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
@@ -1324,7 +1324,7 @@ func TestBulkDeleteValidateBad(t *testing.T) {
 }
 
 func TestBulkDeleteForbid(t *testing.T) {
-	resp, err := R("POST", "/members/bulk_delete", M{
+	resp, err := R("POST", "/permissions/bulk_delete", M{
 		"filter": M{
 			"name": "kain",
 		},
@@ -1444,7 +1444,7 @@ func TestSortValidateBad(t *testing.T) {
 }
 
 func TestSortForbid(t *testing.T) {
-	resp, err := R("POST", "/members/sort", M{
+	resp, err := R("POST", "/permissions/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": []string{primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex()},
