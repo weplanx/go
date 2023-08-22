@@ -47,8 +47,9 @@ type M = map[string]interface{}
 
 var controls = map[string]*values.RestControl{
 	"users": {
-		Keys:   []string{"name", "department", "roles", "create_time", "update_time"},
-		Status: true,
+		Keys:       []string{"name", "department", "roles", "phone", "create_time", "update_time"},
+		Sensitives: []string{"phone"},
+		Status:     true,
 	},
 	"roles": {
 		Status: true,

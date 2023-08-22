@@ -86,6 +86,7 @@ func TestCreate(t *testing.T) {
 			"password":   "5auBnD$L",
 			"department": "624a8facb4e5d150793d6353",
 			"roles":      roles,
+			"phone":      "123456789",
 		},
 		"xdata": M{
 			"password":   "password",
@@ -515,6 +516,22 @@ func TestFind(t *testing.T) {
 		assert.Equal(t, order.Cost, v["cost"])
 		date, _ := time.Parse(time.RFC3339, v["time"].(string))
 		assert.Equal(t, order.TmpTime.Unix(), date.Unix())
+	}
+}
+
+func TestFindWithSensitives(t *testing.T) {
+	resp, err := R("POST", "/users/find", M{
+		"filter": M{},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode())
+
+	var result []M
+	err = sonic.Unmarshal(resp.Body(), &result)
+	assert.NoError(t, err)
+
+	for _, v := range result {
+		assert.Equal(t, "*", v["phone"])
 	}
 }
 

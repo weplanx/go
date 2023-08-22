@@ -120,7 +120,8 @@ type DynamicValues struct {
 }
 
 type RestControl struct {
-	Keys   []string `yaml:"keys"`
-	Status bool     `yaml:"status"`
-	Event  bool     `yaml:"event"`
+	Keys       []string `yaml:"keys"`
+	Sensitives []string `yaml:"sensitives"`
+	Status     bool     `yaml:"status"`
+	Event      bool     `yaml:"event"`
 }

@@ -78,8 +78,13 @@ func (x *Service) Find(ctx context.Context, name string, filter M, option *optio
 		return
 	}
 	data = make([]M, 0)
-	if err = cursor.All(ctx, &data); err != nil {
-		return
+	for cursor.Next(ctx) {
+		var v M
+		if err = cursor.Decode(&v); err != nil {
+			return
+		}
+		x.Sensitive(name, v)
+		data = append(data, v)
 	}
 	return
 }
@@ -88,6 +93,7 @@ func (x *Service) FindOne(ctx context.Context, name string, filter M, option *op
 	if err = x.Db.Collection(name).FindOne(ctx, filter, option).Decode(&data); err != nil {
 		return
 	}
+	x.Sensitive(name, data)
 	return
 }
 
@@ -426,6 +432,18 @@ func (x *Service) Projection(name string, keys []string) (result bson.M) {
 		result = projection
 	}
 	return
+}
+
+func (x *Service) Sensitive(name string, v M) {
+	if x.Values.RestControls != nil && x.Values.RestControls[name] != nil {
+		for _, key := range x.Values.RestControls[name].Sensitives {
+			if v[key] == nil {
+				v[key] = "-"
+			} else {
+				v[key] = "*"
+			}
+		}
+	}
 }
 
 type PublishDto struct {

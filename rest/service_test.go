@@ -76,6 +76,7 @@ func MockDb(ctx context.Context) (err error) {
 					{"_id", bson.M{"bsonType": "objectId"}},
 					{"name", bson.M{"bsonType": "string"}},
 					{"password", bson.M{"bsonType": "string"}},
+					{"phone", bson.M{"bsonType": "string"}},
 					{"department", bson.M{"bsonType": []string{"null", "objectId"}}},
 					{"roles", bson.M{
 						"bsonType": "array",
