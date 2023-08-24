@@ -123,20 +123,22 @@ func TestService_Sync(t *testing.T) {
 	go service.Sync(&v, update)
 	go func() {
 		count := 0
-		for data := range update {
+		for Any := range update {
+			fails := Any.(*values.DynamicValues).LoginFailures
+			t.Log(fails)
 			if count == 0 {
-				assert.Equal(t, int64(5), data.(*values.DynamicValues).LoginFailures)
+				assert.Equal(t, int64(5), fails)
 				count++
 				continue
 			}
 			if count == 1 {
-				assert.Equal(t, int64(10), data.(*values.DynamicValues).LoginFailures)
+				assert.Equal(t, int64(10), fails)
 				break
 			}
 		}
 		wg.Done()
 	}()
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second)
 	err = service.Set(map[string]interface{}{
 		"LoginFailures": 10,
 	})
