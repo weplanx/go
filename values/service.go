@@ -31,9 +31,12 @@ func (x *Service) Fetch(v interface{}) (err error) {
 	return
 }
 
-func (x *Service) Sync(v interface{}, ok chan interface{}) (err error) {
+func (x *Service) Sync(v interface{}, update chan interface{}) (err error) {
 	if err = x.Fetch(v); err != nil {
 		return
+	}
+	if update != nil {
+		update <- v
 	}
 	current := time.Now()
 	var watch nats.KeyWatcher
@@ -45,8 +48,8 @@ func (x *Service) Sync(v interface{}, ok chan interface{}) (err error) {
 		if err = x.Fetch(v); err != nil {
 			return
 		}
-		if ok != nil {
-			ok <- v
+		if update != nil {
+			update <- v
 		}
 	}
 	return
