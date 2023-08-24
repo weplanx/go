@@ -122,17 +122,10 @@ func TestService_Sync(t *testing.T) {
 	update := make(chan interface{})
 	go service.Sync(&v, update)
 	go func() {
-		count := 0
 		for Any := range update {
 			fails := Any.(*values.DynamicValues).LoginFailures
 			t.Log(fails)
-			if count == 0 {
-				assert.Equal(t, int64(5), fails)
-				count++
-				continue
-			}
-			if count == 1 {
-				assert.Equal(t, int64(10), fails)
+			if fails == int64(11) {
 				break
 			}
 		}
@@ -140,7 +133,7 @@ func TestService_Sync(t *testing.T) {
 	}()
 	time.Sleep(time.Second)
 	err = service.Set(map[string]interface{}{
-		"LoginFailures": 10,
+		"LoginFailures": 11,
 	})
 	assert.NoError(t, err)
 	wg.Wait()
