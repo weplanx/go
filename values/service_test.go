@@ -6,6 +6,7 @@ import (
 	"github.com/weplanx/go/values"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestService_Fetch(t *testing.T) {
@@ -115,17 +116,27 @@ func TestService_Sync(t *testing.T) {
 	err := Reset()
 	assert.NoError(t, err)
 
-	ok := make(chan interface{})
-	go service.Sync(&v, ok)
 	var wg sync.WaitGroup
 	wg.Add(1)
+
+	update := make(chan interface{})
+	go service.Sync(&v, update)
 	go func() {
-		for data := range ok {
-			assert.Equal(t, int64(10), data.(*values.DynamicValues).LoginFailures)
-			break
+		count := 0
+		for data := range update {
+			if count == 0 {
+				assert.Equal(t, int64(5), data.(*values.DynamicValues).LoginFailures)
+				count++
+				continue
+			}
+			if count == 1 {
+				assert.Equal(t, int64(10), data.(*values.DynamicValues).LoginFailures)
+				break
+			}
 		}
 		wg.Done()
 	}()
+	time.Sleep(time.Second)
 	err = service.Set(map[string]interface{}{
 		"LoginFailures": 10,
 	})
