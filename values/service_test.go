@@ -136,7 +136,7 @@ func TestService_Sync(t *testing.T) {
 		}
 		wg.Done()
 	}()
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 	err = service.Set(map[string]interface{}{
 		"LoginFailures": 10,
 	})
