@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/go-faker/faker/v4"
-	"github.com/google/uuid"
+	"github.com/gookit/goutil/arrutil"
+	"github.com/gookit/goutil/strutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/thoas/go-funk"
 	"github.com/weplanx/go/passlib"
 	"github.com/weplanx/go/rest"
 	"go.mongodb.org/mongo-driver/bson"
@@ -60,7 +60,7 @@ func TestCreateTransformBad(t *testing.T) {
 }
 
 func TestCreateTxnNotExists(t *testing.T) {
-	txn := uuid.New().String()
+	txn := strutil.MicroTimeHexID()
 	resp, err := R("POST", "/users/create", M{
 		"data": M{
 			"name":       "weplanx",
@@ -238,7 +238,7 @@ func TestBulkCreateTransformBad(t *testing.T) {
 }
 
 func TestBulkCreateTxnNotExists(t *testing.T) {
-	txn := uuid.New().String()
+	txn := strutil.MicroTimeHexID()
 	resp, err := R("POST", "/roles/bulk_create", M{
 		"data": []M{
 			{
@@ -750,7 +750,7 @@ func TestUpdateTransformDataBad(t *testing.T) {
 }
 
 func TestUpdateTxnNotExists(t *testing.T) {
-	txn := uuid.New().String()
+	txn := strutil.MicroTimeHexID()
 	resp, err := R("POST", "/roles/update", M{
 		"filter": M{
 			"key": "*",
@@ -955,7 +955,7 @@ func TestUpdateByIdTransformDataBad(t *testing.T) {
 }
 
 func TestUpdateByIdTxnNotExists(t *testing.T) {
-	txn := uuid.New().String()
+	txn := strutil.MicroTimeHexID()
 	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
@@ -1144,7 +1144,7 @@ func TestReplaceTransformBad(t *testing.T) {
 }
 
 func TestReplaceTxnNotExists(t *testing.T) {
-	txn := uuid.New().String()
+	txn := strutil.MicroTimeHexID()
 	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name":       "kain",
@@ -1277,7 +1277,7 @@ func TestDeleteForbid(t *testing.T) {
 }
 
 func TestDeleteTxnNotExists(t *testing.T) {
-	txn := uuid.New().String()
+	txn := strutil.MicroTimeHexID()
 	resp, err := R("DELETE", fmt.Sprintf(`/users/%s?txn=%s`, userId, txn), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
@@ -1364,7 +1364,7 @@ func TestBulkDeleteTransformBad(t *testing.T) {
 }
 
 func TestBulkDeleteTxnNotExists(t *testing.T) {
-	txn := uuid.New()
+	txn := strutil.MicroTimeHexID()
 	resp, err := R("POST", "/roles/bulk_delete", M{
 		"filter": M{
 			"key": "*",
@@ -1472,9 +1472,9 @@ func TestSortForbid(t *testing.T) {
 }
 
 func TestSortTxnNotExists(t *testing.T) {
-	txn := uuid.New().String()
+	txn := strutil.MicroTimeHexID()
 	sources := orderIds[:5]
-	sources = funk.Reverse(sources).([]string)
+	arrutil.Reverse[string](sources)
 	resp, err := R("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
@@ -1488,7 +1488,7 @@ func TestSortTxnNotExists(t *testing.T) {
 
 func TestSort(t *testing.T) {
 	sources := orderIds[:5]
-	sources = funk.Reverse(sources).([]string)
+	arrutil.Reverse[string](sources)
 	resp, err := R("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
@@ -1521,7 +1521,7 @@ func TestSortEvent(t *testing.T) {
 	ch := make(chan rest.PublishDto)
 	go MockSubscribe(t, ch)
 
-	projectIds = funk.Reverse(projectIds).([]string)
+	arrutil.Reverse[string](projectIds)
 	resp, err := R("POST", "/projects/sort", M{
 		"data": M{
 			"key":    "sort",
@@ -1548,7 +1548,8 @@ func TestSortEvent(t *testing.T) {
 
 func TestSortEventBad(t *testing.T) {
 	RemoveStream(t)
-	projectIds = funk.Reverse(projectIds).([]string)
+
+	arrutil.Reverse[string](projectIds)
 	resp, err := R("POST", "/projects/sort", M{
 		"data": M{
 			"key":    "sort",
@@ -1972,7 +1973,7 @@ func TestCommitNotTxn(t *testing.T) {
 	assert.Equal(t, 400, resp1.StatusCode())
 
 	resp2, err := R("POST", "/commit", M{
-		"txn": uuid.New().String(),
+		"txn": strutil.MicroTimeHexID(),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp2.StatusCode())

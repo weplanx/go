@@ -9,7 +9,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol"
-	"github.com/thoas/go-funk"
+	"github.com/gookit/goutil/strutil"
 	"net/http"
 )
 
@@ -80,7 +80,7 @@ func SetIgnoreMethods(methods []string) Option {
 }
 
 func (x *Csrf) SetToken(c *app.RequestContext) {
-	salt := funk.RandomString(16)
+	salt := strutil.RandomCharsV3(16)
 	c.SetCookie(x.SaltName, salt, 86400, "/", "", protocol.CookieSameSiteStrictMode, true, true)
 	c.SetCookie(x.CookieName, x.Tokenize(salt), 86400, "/", "", protocol.CookieSameSiteStrictMode, true, false)
 }

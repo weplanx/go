@@ -2,8 +2,8 @@ package values
 
 import (
 	"github.com/bytedance/sonic"
+	"github.com/gookit/goutil"
 	"github.com/nats-io/nats.go"
-	"github.com/thoas/go-funk"
 	"github.com/weplanx/go/cipher"
 	"reflect"
 	"time"
@@ -75,7 +75,7 @@ func (x *Service) Get(keys ...string) (data map[string]interface{}, err error) {
 		contains[v] = true
 	}
 	for key, value := range data {
-		if len(keys) != 0 && !contains[key] || funk.IsEmpty(value) {
+		if len(keys) != 0 && !contains[key] || goutil.IsEmpty(value) {
 			delete(data, key)
 			continue
 		}
