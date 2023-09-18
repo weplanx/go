@@ -10,7 +10,7 @@ require (
 	github.com/go-faker/faker/v4 v4.1.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.1
-	github.com/nats-io/nats.go v1.28.0
+	github.com/nats-io/nats.go v1.29.0
 	github.com/nats-io/nkeys v0.4.4
 	github.com/redis/go-redis/v9 v9.1.0
 	github.com/stretchr/testify v1.8.4

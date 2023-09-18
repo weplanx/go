@@ -19,7 +19,7 @@ func TestSetBadValidate(t *testing.T) {
 
 	resp2, err := R("PATCH", "/values", M{
 		"update": M{
-			"Wechat123": "abcdefg",
+			"Wechat$$$": "abcdefg",
 		},
 	})
 	assert.NoError(t, err)
@@ -57,7 +57,7 @@ func TestSetBadService(t *testing.T) {
 
 func TestGetBadValidate(t *testing.T) {
 	u := U("/values", Params{
-		{"keys", "LoginTTL123"},
+		{"keys", "LoginTTL$$$"},
 	})
 	resp, err := R("GET", u, nil)
 	assert.NoError(t, err)
@@ -107,7 +107,7 @@ func TestGetBadService(t *testing.T) {
 func TestRemoveBadValidate(t *testing.T) {
 	err := Reset()
 	assert.NoError(t, err)
-	resp, err := R("DELETE", fmt.Sprintf(`/values/%s`, "LoginTTL12"), nil)
+	resp, err := R("DELETE", fmt.Sprintf(`/values/%s`, "LoginTTL$$$"), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 	t.Log(string(resp.Body()))
