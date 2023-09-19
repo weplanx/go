@@ -18,6 +18,7 @@ type Csrf struct {
 	CookieName    string
 	SaltName      string
 	HeaderName    string
+	Domain        string
 	IgnoreMethods map[string]bool
 }
 
@@ -31,6 +32,7 @@ func New(options ...Option) *Csrf {
 		CookieName: "XSRF-TOKEN",
 		SaltName:   "XSRF-SALT",
 		HeaderName: "X-XSRF-TOKEN",
+		Domain:     "",
 		IgnoreMethods: map[string]bool{
 			"GET":     true,
 			"HEAD":    true,
@@ -79,10 +81,16 @@ func SetIgnoreMethods(methods []string) Option {
 	}
 }
 
+func SetDomain(v string) Option {
+	return func(x *Csrf) {
+		x.Domain = v
+	}
+}
+
 func (x *Csrf) SetToken(c *app.RequestContext) {
-	salt := strutil.RandomCharsV3(16)
+	salt := strutil.MicroTimeHexID()
 	c.SetCookie(x.SaltName, salt, 86400, "/", "", protocol.CookieSameSiteStrictMode, true, true)
-	c.SetCookie(x.CookieName, x.Tokenize(salt), 86400, "/", "", protocol.CookieSameSiteStrictMode, true, false)
+	c.SetCookie(x.CookieName, x.Tokenize(salt), 86400, "/", x.Domain, protocol.CookieSameSiteStrictMode, true, false)
 }
 
 func (x *Csrf) Tokenize(salt string) string {
