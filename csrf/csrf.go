@@ -9,7 +9,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol"
-	"github.com/gookit/goutil/strutil"
+	"github.com/weplanx/go/help"
 	"net/http"
 )
 
@@ -88,7 +88,7 @@ func SetDomain(v string) Option {
 }
 
 func (x *Csrf) SetToken(c *app.RequestContext) {
-	salt := strutil.MicroTimeHexID()
+	salt := help.Random(8)
 	c.SetCookie(x.SaltName, salt, 86400, "/", "", protocol.CookieSameSiteStrictMode, true, true)
 	c.SetCookie(x.CookieName, x.Tokenize(salt), 86400, "/", x.Domain, protocol.CookieSameSiteStrictMode, true, false)
 }

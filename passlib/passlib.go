@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	DEFAULT_MEMORY_COST uint32 = 65536
-	DEFAULT_TIME_COST   uint32 = 4
-	DEFAULT_THREADS     uint8  = 1
+	DefaultMemoryCost uint32 = 65536
+	DefaultTimeCost   uint32 = 4
+	DefaultThreads    uint8  = 1
 )
 
 var (
@@ -29,10 +29,10 @@ func Hash(password string) (hash string, err error) {
 		return
 	}
 	key := argon2.IDKey([]byte(password), salt,
-		DEFAULT_TIME_COST, DEFAULT_MEMORY_COST, DEFAULT_THREADS, 32)
+		DefaultTimeCost, DefaultMemoryCost, DefaultThreads, 32)
 
 	return fmt.Sprintf(`$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s`,
-		argon2.Version, DEFAULT_MEMORY_COST, DEFAULT_TIME_COST, DEFAULT_THREADS,
+		argon2.Version, DefaultMemoryCost, DefaultTimeCost, DefaultThreads,
 		base64.RawStdEncoding.EncodeToString(salt),
 		base64.RawStdEncoding.EncodeToString(key),
 	), nil

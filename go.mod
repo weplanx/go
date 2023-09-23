@@ -7,12 +7,12 @@ require (
 	github.com/bytedance/gopkg v0.0.0-20230728082804-614d0af6619b
 	github.com/bytedance/sonic v1.10.1
 	github.com/cloudwego/hertz v0.6.8
-	github.com/go-faker/faker/v4 v4.1.1
+	github.com/go-faker/faker/v4 v4.2.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
-	github.com/gookit/goutil v0.6.12
-	github.com/nats-io/nats.go v1.29.0
-	github.com/nats-io/nkeys v0.4.4
-	github.com/redis/go-redis/v9 v9.1.0
+	github.com/google/uuid v1.3.1
+	github.com/nats-io/nats.go v1.30.0
+	github.com/nats-io/nkeys v0.4.5
+	github.com/redis/go-redis/v9 v9.2.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.1
 	golang.org/x/crypto v0.13.0
@@ -31,7 +31,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect

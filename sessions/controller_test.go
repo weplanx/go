@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/bytedance/sonic"
-	"github.com/gookit/goutil/strutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/weplanx/go/help"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 )
@@ -39,7 +39,7 @@ func TestClearEmpty(t *testing.T) {
 func TestRemove(t *testing.T) {
 	ctx := context.TODO()
 	uid := primitive.NewObjectID().Hex()
-	status := service.Set(ctx, uid, strutil.MicroTimeHexID())
+	status := service.Set(ctx, uid, help.Uuid())
 	assert.Equal(t, "OK", status)
 
 	resp, err := R("DELETE", fmt.Sprintf(`/sessions/%s`, uid), nil)

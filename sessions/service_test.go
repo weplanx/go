@@ -2,15 +2,15 @@ package sessions_test
 
 import (
 	"context"
-	"github.com/gookit/goutil/strutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/weplanx/go/help"
 	"testing"
 	"time"
 )
 
 func TestSetAndVerify(t *testing.T) {
 	ctx := context.TODO()
-	jti := strutil.MicroTimeHexID()
+	jti := help.Uuid()
 	status := service.Set(ctx, "dev", jti)
 	assert.Equal(t, "OK", status)
 	count := rdb.Exists(ctx, service.Key("dev")).Val()

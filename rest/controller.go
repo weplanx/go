@@ -5,7 +5,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/cloudwego/hertz/pkg/common/utils"
-	"github.com/gookit/goutil/strutil"
+	"github.com/weplanx/go/help"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -617,7 +617,7 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 // Transaction
 // @router /transaction [POST]
 func (x *Controller) Transaction(ctx context.Context, c *app.RequestContext) {
-	txn := strutil.MicroTimeHexID()
+	txn := help.Uuid()
 	x.Service.Transaction(ctx, txn)
 	c.JSON(http.StatusCreated, utils.H{
 		"txn": txn,
