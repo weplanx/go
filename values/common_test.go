@@ -18,7 +18,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/weplanx/go/cipher"
-	"github.com/weplanx/go/help"
 	"github.com/weplanx/go/values"
 	"log"
 	"net/http"
@@ -66,7 +65,13 @@ func TestMain(m *testing.M) {
 	)
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
-	help.ValuesRoutes(engine.Group(""), &values.Controller{Service: service})
+	controller := &values.Controller{Service: service}
+	r := engine.Group("values")
+	{
+		r.GET("", controller.Get)
+		r.PATCH("", controller.Set)
+		r.DELETE(":key", controller.Remove)
+	}
 	os.Exit(m.Run())
 }
 

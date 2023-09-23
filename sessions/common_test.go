@@ -61,7 +61,13 @@ func TestMain(m *testing.M) {
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
 	help.RegValidate()
-	help.SessionsRoutes(engine.Group(""), &sessions.Controller{Service: service})
+	controller := &sessions.Controller{Service: service}
+	r := engine.Group("sessions")
+	{
+		r.GET("", controller.Lists)
+		r.DELETE(":uid", controller.Remove)
+		r.POST("clear", controller.Clear)
+	}
 	os.Exit(m.Run())
 }
 

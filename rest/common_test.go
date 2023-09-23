@@ -117,8 +117,24 @@ func TestMain(m *testing.M) {
 	help.RegValidate()
 	engine = route.NewEngine(config.NewOptions([]config.Option{}))
 	engine.Use(ErrHandler())
-	help.RestRoutes(engine.Group(""), &rest.Controller{Service: service})
-
+	controller := &rest.Controller{Service: service}
+	r := engine.Group(":collection")
+	{
+		r.GET(":id", controller.FindById)
+		r.POST("create", controller.Create)
+		r.POST("bulk_create", controller.BulkCreate)
+		r.POST("size", controller.Size)
+		r.POST("find", controller.Find)
+		r.POST("find_one", controller.FindOne)
+		r.POST("update", controller.Update)
+		r.POST("bulk_delete", controller.BulkDelete)
+		r.POST("sort", controller.Sort)
+		r.PATCH(":id", controller.UpdateById)
+		r.PUT(":id", controller.Replace)
+		r.DELETE(":id", controller.Delete)
+	}
+	engine.POST("transaction", controller.Transaction)
+	engine.POST("commit", controller.Commit)
 	os.Exit(m.Run())
 }
 
