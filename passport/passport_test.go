@@ -16,11 +16,11 @@ var key1 = "hZXD^@K9%wydDC3Z@cyDvE%5bz9SP7gy"
 
 func TestMain(m *testing.M) {
 	x1 = passport.New(
-		passport.SetNamespace("dev"),
+		passport.SetIssuer("dev"),
 		passport.SetKey(key1),
 	)
 	x2 = passport.New(
-		passport.SetNamespace("beta"),
+		passport.SetIssuer("beta"),
 		passport.SetKey("eK4qpn7yCBLo0u5mlAFFRCRsCmf2NQ76"),
 	)
 	os.Exit(m.Run())
@@ -35,10 +35,10 @@ var otherToken string
 
 func TestCreate(t *testing.T) {
 	var err error
-	token, err = x1.Create(userId1, jti1)
+	token, err = x1.Create(userId1, jti1, time.Hour*2)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
-	otherToken, err = x2.Create(userId2, jti2)
+	otherToken, err = x2.Create(userId2, jti2, time.Hour*2)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, otherToken)
 }
@@ -50,13 +50,13 @@ func TestVerify(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, clamis1.ID, jti1)
 	assert.Equal(t, clamis1.UserId, userId1)
-	assert.Equal(t, clamis1.Issuer, x1.Namespace)
+	assert.Equal(t, clamis1.Issuer, x1.Issuer)
 	var clamis2 passport.Claims
 	clamis2, err = x2.Verify(otherToken)
 	assert.NoError(t, err)
 	assert.Equal(t, clamis2.ID, jti2)
 	assert.Equal(t, clamis2.UserId, userId2)
-	assert.Equal(t, clamis2.Issuer, x2.Namespace)
+	assert.Equal(t, clamis2.Issuer, x2.Issuer)
 
 	_, err = x1.Verify(otherToken)
 	assert.Error(t, err)

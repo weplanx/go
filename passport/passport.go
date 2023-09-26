@@ -7,8 +7,8 @@ import (
 )
 
 type Passport struct {
-	Namespace string
-	Key       string
+	Issuer string
+	Key    string
 }
 
 func New(options ...Option) *Passport {
@@ -21,9 +21,9 @@ func New(options ...Option) *Passport {
 
 type Option func(x *Passport)
 
-func SetNamespace(v string) Option {
+func SetIssuer(v string) Option {
 	return func(x *Passport) {
-		x.Namespace = v
+		x.Issuer = v
 	}
 }
 
@@ -38,14 +38,14 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func (x *Passport) Create(userId string, jti string) (tokenString string, err error) {
+func (x *Passport) Create(userId string, jti string, expire time.Duration) (tokenString string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserId: userId,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(2 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expire)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    x.Namespace,
+			Issuer:    x.Issuer,
 			ID:        jti,
 		},
 	})
