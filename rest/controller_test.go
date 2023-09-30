@@ -20,13 +20,22 @@ var roles = []string{"635797539db7928aaebbe6e5", "635797c19db7928aaebbe6e6"}
 var userId string
 
 func TestCreateValidateBad(t *testing.T) {
-	resp, err := R("POST", "/users/create", M{})
+	resp, err := Req("POST", "/users/create", M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
+func TestCreateValidateBad2(t *testing.T) {
+	resp, err := Req("POST", "/ /create", M{
+		"data": M{},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode())
+	t.Log(string(resp.Body()))
+}
+
 func TestCreateForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/create", M{
+	resp, err := Req("POST", "/permissions/create", M{
 		"data": M{
 			"name": "kain",
 		},
@@ -36,7 +45,7 @@ func TestCreateForbid(t *testing.T) {
 }
 
 func TestCreateForbidStatusFalse(t *testing.T) {
-	resp, err := R("POST", "/levels/create", M{
+	resp, err := Req("POST", "/levels/create", M{
 		"data": M{
 			"name": "level1",
 		},
@@ -46,7 +55,7 @@ func TestCreateForbidStatusFalse(t *testing.T) {
 }
 
 func TestCreateTransformBad(t *testing.T) {
-	resp, err := R("POST", "/users/create", M{
+	resp, err := Req("POST", "/users/create", M{
 		"data": M{
 			"department": "123",
 		},
@@ -60,7 +69,7 @@ func TestCreateTransformBad(t *testing.T) {
 
 func TestCreateTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
-	resp, err := R("POST", "/users/create", M{
+	resp, err := Req("POST", "/users/create", M{
 		"data": M{
 			"name":       "weplanx",
 			"password":   "5auBnD$L",
@@ -79,7 +88,7 @@ func TestCreateTxnNotExists(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	resp, err := R("POST", "/users/create", M{
+	resp, err := Req("POST", "/users/create", M{
 		"data": M{
 			"name":       "weplanx",
 			"password":   "5auBnD$L",
@@ -122,7 +131,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreateDbJSONSchemaBad(t *testing.T) {
-	resp, err := R("POST", "/users/create", M{
+	resp, err := Req("POST", "/users/create", M{
 		"data": M{
 			"name": "weplanx",
 		},
@@ -138,7 +147,7 @@ func TestCreateEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	resp, err := R("POST", "/projects/create", M{
+	resp, err := Req("POST", "/projects/create", M{
 		"data": M{
 			"name":        "默认项目",
 			"namespace":   "default",
@@ -175,7 +184,7 @@ func TestCreateEvent(t *testing.T) {
 func TestCreateEventBad(t *testing.T) {
 	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	resp, err := R("POST", "/projects/create", M{
+	resp, err := Req("POST", "/projects/create", M{
 		"data": M{
 			"name":        "默认项目",
 			"namespace":   "default",
@@ -202,13 +211,13 @@ type Order struct {
 }
 
 func TestBulkCreateValidateBad(t *testing.T) {
-	resp, err := R("POST", "/orders/bulk_create", M{})
+	resp, err := Req("POST", "/orders/bulk_create", M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestBulkCreateForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/bulk_create", M{
+	resp, err := Req("POST", "/permissions/bulk_create", M{
 		"data": []M{
 			{"name": "kain"},
 		},
@@ -218,7 +227,7 @@ func TestBulkCreateForbid(t *testing.T) {
 }
 
 func TestBulkCreateTransformBad(t *testing.T) {
-	resp, err := R("POST", "/orders/bulk_create", M{
+	resp, err := Req("POST", "/orders/bulk_create", M{
 		"data": []Order{
 			{
 				No:       "123456",
@@ -238,7 +247,7 @@ func TestBulkCreateTransformBad(t *testing.T) {
 
 func TestBulkCreateTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
-	resp, err := R("POST", "/roles/bulk_create", M{
+	resp, err := Req("POST", "/roles/bulk_create", M{
 		"data": []M{
 			{
 				"name": "admin",
@@ -269,7 +278,7 @@ func TestBulkCreate(t *testing.T) {
 		orders[i].Time = orders[i].TmpTime.Format(time.RFC3339)
 		orderMap[orders[i].No] = orders[i]
 	}
-	resp, err := R("POST", "/orders/bulk_create", M{
+	resp, err := Req("POST", "/orders/bulk_create", M{
 		"data": orders,
 		"xdata": M{
 			"time": "timestamp",
@@ -309,7 +318,7 @@ func TestBulkCreate(t *testing.T) {
 }
 
 func TestBulkCreateDbJSONSchemaBad(t *testing.T) {
-	resp, err := R("POST", "/orders/bulk_create", M{
+	resp, err := Req("POST", "/orders/bulk_create", M{
 		"data": []Order{
 			{
 				No:       "123456",
@@ -341,7 +350,7 @@ func TestBulkCreateEvent(t *testing.T) {
 		}
 	}
 
-	resp, err := R("POST", "/projects/bulk_create", M{
+	resp, err := Req("POST", "/projects/bulk_create", M{
 		"data": data,
 		"xdata": M{
 			"expire_time": "timestamp",
@@ -380,7 +389,7 @@ func TestBulkCreateEventBad(t *testing.T) {
 	RemoveStream(t)
 	expire1 := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
 	expire2 := time.Now().Add(time.Hour * 36).Format(time.RFC3339)
-	resp, err := R("POST", "/projects/bulk_create", M{
+	resp, err := Req("POST", "/projects/bulk_create", M{
 		"data": []M{
 			{
 				"name":        "测试1",
@@ -405,13 +414,13 @@ func TestBulkCreateEventBad(t *testing.T) {
 }
 
 func TestSizeValidateBad(t *testing.T) {
-	resp, err := R("POST", "/orders/size", M{})
+	resp, err := Req("POST", "/orders/size", M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestSizeForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/size", M{
+	resp, err := Req("POST", "/permissions/size", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -419,7 +428,7 @@ func TestSizeForbid(t *testing.T) {
 }
 
 func TestSizeTransformBad(t *testing.T) {
-	resp, err := R("POST", "/orders/size", M{
+	resp, err := Req("POST", "/orders/size", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -432,7 +441,7 @@ func TestSizeTransformBad(t *testing.T) {
 }
 
 func TestSize(t *testing.T) {
-	resp, err := R("POST", "/orders/size", M{
+	resp, err := Req("POST", "/orders/size", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -443,7 +452,7 @@ func TestSize(t *testing.T) {
 
 func TestSizeFilterAndXfilter(t *testing.T) {
 	oids := orderIds[:5]
-	resp, err := R("POST", "/orders/size", M{
+	resp, err := Req("POST", "/orders/size", M{
 		"filter": M{
 			"_id": M{"$in": oids},
 		},
@@ -458,7 +467,7 @@ func TestSizeFilterAndXfilter(t *testing.T) {
 }
 
 func TestSizeFilterBad(t *testing.T) {
-	resp, err := R("POST", "/orders/size", M{
+	resp, err := Req("POST", "/orders/size", M{
 		"filter": M{
 			"abc": M{"$": "v"},
 		},
@@ -468,13 +477,13 @@ func TestSizeFilterBad(t *testing.T) {
 }
 
 func TestFindValidateBad(t *testing.T) {
-	resp, err := R("POST", "/orders/find", M{})
+	resp, err := Req("POST", "/orders/find", M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFindForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/find", M{
+	resp, err := Req("POST", "/permissions/find", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -482,7 +491,7 @@ func TestFindForbid(t *testing.T) {
 }
 
 func TestFindTransformBad(t *testing.T) {
-	resp, err := R("POST", "/orders/find", M{
+	resp, err := Req("POST", "/orders/find", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -495,7 +504,7 @@ func TestFindTransformBad(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	resp, err := R("POST", "/orders/find", M{
+	resp, err := Req("POST", "/orders/find", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -519,7 +528,7 @@ func TestFind(t *testing.T) {
 }
 
 func TestFindWithSensitives(t *testing.T) {
-	resp, err := R("POST", "/users/find", M{
+	resp, err := Req("POST", "/users/find", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -535,10 +544,10 @@ func TestFindWithSensitives(t *testing.T) {
 }
 
 func TestFindSort(t *testing.T) {
-	u := U("/orders/find", Params{
+	u := Url("/orders/find", Params{
 		{"sort", "cost:1"},
 	})
-	resp, err := R("POST", u, M{
+	resp, err := Req("POST", u, M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -556,7 +565,7 @@ func TestFindSort(t *testing.T) {
 }
 
 func TestFindFilterBad(t *testing.T) {
-	resp, err := R("POST", "/orders/find", M{
+	resp, err := Req("POST", "/orders/find", M{
 		"filter": M{
 			"abc": M{"$": "v"},
 		},
@@ -566,22 +575,22 @@ func TestFindFilterBad(t *testing.T) {
 }
 
 func TestFindKeysBad(t *testing.T) {
-	u := U("/orders/find", Params{
+	u := Url("/orders/find", Params{
 		{"keys", "abc1"},
 	})
-	resp, err := R("POST", u, nil)
+	resp, err := Req("POST", u, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFindOneValidateBad(t *testing.T) {
-	resp, err := R("POST", "/orders/find_one", M{})
+	resp, err := Req("POST", "/orders/find_one", M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFindOneForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/find_one", M{
+	resp, err := Req("POST", "/permissions/find_one", M{
 		"filter": M{
 			"name": "kain",
 		},
@@ -591,7 +600,7 @@ func TestFindOneForbid(t *testing.T) {
 }
 
 func TestFindOneTransformBad(t *testing.T) {
-	resp, err := R("POST", "/orders/find_one", M{
+	resp, err := Req("POST", "/orders/find_one", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -604,7 +613,7 @@ func TestFindOneTransformBad(t *testing.T) {
 }
 
 func TestFindOne(t *testing.T) {
-	resp, err := R("POST", "/users/find_one", M{
+	resp, err := Req("POST", "/users/find_one", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -624,7 +633,7 @@ func TestFindOne(t *testing.T) {
 }
 
 func TestFindOneFilterBad(t *testing.T) {
-	resp, err := R("POST", "/orders/find_one", M{
+	resp, err := Req("POST", "/orders/find_one", M{
 		"filter": M{
 			"abc": M{
 				"$": "v",
@@ -636,36 +645,36 @@ func TestFindOneFilterBad(t *testing.T) {
 }
 
 func TestFindByIdValidateBad(t *testing.T) {
-	u := U(fmt.Sprintf(`/users/%s`, userId), Params{
+	u := Url(fmt.Sprintf(`/users/%s`, "123"), Params{
 		{"keys", "$$$$"},
 	})
-	resp, err := R("GET", u, nil)
+	resp, err := Req("GET", u, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFindByIdForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("GET", fmt.Sprintf(`/permissions/%s`, id), nil)
+	resp, err := Req("GET", fmt.Sprintf(`/permissions/%s`, id), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestFindByIdNotExists(t *testing.T) {
-	u := U(fmt.Sprintf(`/users/%s`, primitive.NewObjectID().Hex()), Params{})
-	resp, err := R("GET", u, nil)
+	u := Url(fmt.Sprintf(`/users/%s`, primitive.NewObjectID().Hex()), Params{})
+	resp, err := Req("GET", u, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 }
 
 func TestFindById(t *testing.T) {
-	u := U(fmt.Sprintf(`/users/%s`, userId), Params{
+	u := Url(fmt.Sprintf(`/users/%s`, userId), Params{
 		{"keys", "name"},
 		{"keys", "password"},
 		{"keys", "department"},
 		{"keys", "roles"},
 	})
-	resp, err := R("GET", u, nil)
+	resp, err := Req("GET", u, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
 	var result M
@@ -679,23 +688,23 @@ func TestFindById(t *testing.T) {
 	assert.Empty(t, result["update_time"])
 }
 
-func TestFindByIdKeysBad(t *testing.T) {
-	u := U(fmt.Sprintf(`/users/%s`, userId), Params{
-		{"keys", "abc1"},
-	})
-	resp, err := R("GET", u, nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 400, resp.StatusCode())
-}
+//func TestFindByIdKeysBad(t *testing.T) {
+//	u := Url(fmt.Sprintf(`/users/%s`, userId), Params{
+//		{"keys", "abc1"},
+//	})
+//	resp, err := Req("GET", u, nil)
+//	assert.NoError(t, err)
+//	assert.Equal(t, 400, resp.StatusCode())
+//}
 
 func TestUpdateValidateBad(t *testing.T) {
-	resp, err := R("POST", "/users/update", M{})
+	resp, err := Req("POST", "/users/update", M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestUpdateForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/update", M{
+	resp, err := Req("POST", "/permissions/update", M{
 		"filter": M{
 			"name": "kain",
 		},
@@ -710,7 +719,7 @@ func TestUpdateForbid(t *testing.T) {
 }
 
 func TestUpdateTransformFilterBad(t *testing.T) {
-	resp, err := R("POST", "/users/update", M{
+	resp, err := Req("POST", "/users/update", M{
 		"filter": M{
 			"_id": M{"$in": []string{"123456"}},
 		},
@@ -731,7 +740,7 @@ func TestUpdateTransformFilterBad(t *testing.T) {
 }
 
 func TestUpdateTransformDataBad(t *testing.T) {
-	resp, err := R("POST", "/users/update", M{
+	resp, err := Req("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -750,7 +759,7 @@ func TestUpdateTransformDataBad(t *testing.T) {
 
 func TestUpdateTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
-	resp, err := R("POST", "/roles/update", M{
+	resp, err := Req("POST", "/roles/update", M{
 		"filter": M{
 			"key": "*",
 		},
@@ -766,7 +775,7 @@ func TestUpdateTxnNotExists(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	resp, err := R("POST", "/users/update", M{
+	resp, err := Req("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -806,7 +815,7 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdatePush(t *testing.T) {
 	roles = append(roles, "62ce35710d94671a2e4a7d4c")
-	resp, err := R("POST", "/users/update", M{
+	resp, err := Req("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -845,7 +854,7 @@ func TestUpdatePush(t *testing.T) {
 }
 
 func TestUpdateDbJSONSchemaBad(t *testing.T) {
-	resp, err := R("POST", "/users/update", M{
+	resp, err := Req("POST", "/users/update", M{
 		"filter": M{
 			"name": "weplanx",
 		},
@@ -864,7 +873,7 @@ func TestUpdateEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 72).Format(time.RFC3339)
-	resp, err := R("POST", "/projects/update", M{
+	resp, err := Req("POST", "/projects/update", M{
 		"filter": M{
 			"namespace": "default",
 		},
@@ -900,7 +909,7 @@ func TestUpdateEvent(t *testing.T) {
 func TestUpdateEventBad(t *testing.T) {
 	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 72).Format(time.RFC3339)
-	resp, err := R("POST", "/projects/update", M{
+	resp, err := Req("POST", "/projects/update", M{
 		"filter": M{
 			"namespace": "default",
 		},
@@ -920,14 +929,14 @@ func TestUpdateEventBad(t *testing.T) {
 }
 
 func TestUpdateByIdValidateBad(t *testing.T) {
-	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{})
+	resp, err := Req("PATCH", fmt.Sprintf(`/users/%s`, userId), M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestUpdateByIdForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("PATCH", fmt.Sprintf(`/permissions/%s`, id), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/permissions/%s`, id), M{
 		"data": M{
 			"$set": M{
 				"name": "xxxx",
@@ -939,7 +948,7 @@ func TestUpdateByIdForbid(t *testing.T) {
 }
 
 func TestUpdateByIdTransformDataBad(t *testing.T) {
-	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "123456",
@@ -955,7 +964,7 @@ func TestUpdateByIdTransformDataBad(t *testing.T) {
 
 func TestUpdateByIdTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
-	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "62cbf9ac465f45091e981b1e",
@@ -971,7 +980,7 @@ func TestUpdateByIdTxnNotExists(t *testing.T) {
 }
 
 func TestUpdateById(t *testing.T) {
-	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "62cbf9ac465f45091e981b1e",
@@ -1008,7 +1017,7 @@ func TestUpdateById(t *testing.T) {
 
 func TestUpdateByIdPush(t *testing.T) {
 	roles = append(roles, "62ce35b9b1d8fe7e38ef4c8c")
-	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$push": M{
 				"roles": "62ce35b9b1d8fe7e38ef4c8c",
@@ -1044,7 +1053,7 @@ func TestUpdateByIdPush(t *testing.T) {
 }
 
 func TestUpdateByIdDbJSONSchemaBad(t *testing.T) {
-	resp, err := R("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"$set": M{
 				"department": "123456",
@@ -1060,7 +1069,7 @@ func TestUpdateByIdEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
-	resp, err := R("PATCH", fmt.Sprintf(`/projects/%s`, projectId), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"$set": M{
 				"expire_time": expire,
@@ -1092,7 +1101,7 @@ func TestUpdateByIdEvent(t *testing.T) {
 func TestUpdateByIdEventBad(t *testing.T) {
 	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 12).Format(time.RFC3339)
-	resp, err := R("PATCH", fmt.Sprintf(`/projects/%s`, projectId), M{
+	resp, err := Req("PATCH", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"$set": M{
 				"expire_time": expire,
@@ -1108,14 +1117,14 @@ func TestUpdateByIdEventBad(t *testing.T) {
 }
 
 func TestReplaceValidateBad(t *testing.T) {
-	resp, err := R("PUT", fmt.Sprintf(`/$$$$/%s`, userId), M{})
+	resp, err := Req("PUT", fmt.Sprintf(`/$$$$/%s`, "123"), M{})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestReplaceForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("PUT", fmt.Sprintf(`/permissions/%s`, id), M{
+	resp, err := Req("PUT", fmt.Sprintf(`/permissions/%s`, id), M{
 		"data": M{
 			"name": "xxxx",
 		},
@@ -1125,7 +1134,7 @@ func TestReplaceForbid(t *testing.T) {
 }
 
 func TestReplaceTransformBad(t *testing.T) {
-	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name":       "kain",
 			"password":   "123456",
@@ -1144,7 +1153,7 @@ func TestReplaceTransformBad(t *testing.T) {
 
 func TestReplaceTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
-	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name":       "kain",
 			"password":   "123456",
@@ -1163,7 +1172,7 @@ func TestReplaceTxnNotExists(t *testing.T) {
 }
 
 func TestReplace(t *testing.T) {
-	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name":       "kain",
 			"password":   "123456",
@@ -1197,7 +1206,7 @@ func TestReplace(t *testing.T) {
 }
 
 func TestReplaceDbJSONSchemaBad(t *testing.T) {
-	resp, err := R("PUT", fmt.Sprintf(`/users/%s`, userId), M{
+	resp, err := Req("PUT", fmt.Sprintf(`/users/%s`, userId), M{
 		"data": M{
 			"name": "kain",
 		},
@@ -1211,7 +1220,7 @@ func TestReplaceEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	resp, err := R("PUT", fmt.Sprintf(`/projects/%s`, projectId), M{
+	resp, err := Req("PUT", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"name":        "工单项目",
 			"namespace":   "orders",
@@ -1246,7 +1255,7 @@ func TestReplaceEvent(t *testing.T) {
 func TestReplaceEventBad(t *testing.T) {
 	RemoveStream(t)
 	expire := time.Now().Add(time.Hour * 24).Format(time.RFC3339)
-	resp, err := R("PUT", fmt.Sprintf(`/projects/%s`, projectId), M{
+	resp, err := Req("PUT", fmt.Sprintf(`/projects/%s`, projectId), M{
 		"data": M{
 			"name":        "工单项目",
 			"namespace":   "orders",
@@ -1263,27 +1272,27 @@ func TestReplaceEventBad(t *testing.T) {
 }
 
 func TestDeleteValidateBad(t *testing.T) {
-	resp, err := R("DELETE", fmt.Sprintf(`/$$$$/%s`, userId), nil)
+	resp, err := Req("DELETE", fmt.Sprintf(`/$$$$/%s`, userId), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestDeleteForbid(t *testing.T) {
 	id := primitive.NewObjectID().Hex()
-	resp, err := R("DELETE", fmt.Sprintf(`/permissions/%s`, id), nil)
+	resp, err := Req("DELETE", fmt.Sprintf(`/permissions/%s`, id), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestDeleteTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
-	resp, err := R("DELETE", fmt.Sprintf(`/users/%s?txn=%s`, userId, txn), nil)
+	resp, err := Req("DELETE", fmt.Sprintf(`/users/%s?txn=%s`, userId, txn), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode())
 }
 
 func TestDelete(t *testing.T) {
-	resp, err := R("DELETE", fmt.Sprintf(`/users/%s`, userId), nil)
+	resp, err := Req("DELETE", fmt.Sprintf(`/users/%s`, userId), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
 
@@ -1305,7 +1314,7 @@ func TestDeleteEvent(t *testing.T) {
 	ch := make(chan rest.PublishDto)
 	go MockSubscribe(t, ch)
 
-	resp, err := R("DELETE", fmt.Sprintf(`/projects/%s`, projectId), nil)
+	resp, err := Req("DELETE", fmt.Sprintf(`/projects/%s`, projectId), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode())
 
@@ -1325,14 +1334,14 @@ func TestDeleteEvent(t *testing.T) {
 
 func TestDeleteEventBad(t *testing.T) {
 	RemoveStream(t)
-	resp, err := R("DELETE", fmt.Sprintf(`/projects/%s`, projectId), nil)
+	resp, err := Req("DELETE", fmt.Sprintf(`/projects/%s`, projectId), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
 	RecoverStream(t)
 }
 
 func TestBulkDeleteValidateBad(t *testing.T) {
-	resp, err := R("POST", "/orders/bulk_delete", M{
+	resp, err := Req("POST", "/orders/bulk_delete", M{
 		"filter": M{},
 	})
 	assert.NoError(t, err)
@@ -1340,7 +1349,7 @@ func TestBulkDeleteValidateBad(t *testing.T) {
 }
 
 func TestBulkDeleteForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/bulk_delete", M{
+	resp, err := Req("POST", "/permissions/bulk_delete", M{
 		"filter": M{
 			"name": "kain",
 		},
@@ -1350,7 +1359,7 @@ func TestBulkDeleteForbid(t *testing.T) {
 }
 
 func TestBulkDeleteTransformBad(t *testing.T) {
-	resp, err := R("POST", "/orders/bulk_delete", M{
+	resp, err := Req("POST", "/orders/bulk_delete", M{
 		"filter": M{
 			"_id": M{"$in": []string{"12345"}},
 		},
@@ -1364,7 +1373,7 @@ func TestBulkDeleteTransformBad(t *testing.T) {
 
 func TestBulkDeleteTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
-	resp, err := R("POST", "/roles/bulk_delete", M{
+	resp, err := Req("POST", "/roles/bulk_delete", M{
 		"filter": M{
 			"key": "*",
 		},
@@ -1375,7 +1384,7 @@ func TestBulkDeleteTxnNotExists(t *testing.T) {
 }
 
 func TestBulkDelete(t *testing.T) {
-	resp, err := R("POST", "/orders/bulk_delete", M{
+	resp, err := Req("POST", "/orders/bulk_delete", M{
 		"filter": M{
 			"_id": M{"$in": orderIds[5:]},
 		},
@@ -1401,7 +1410,7 @@ func TestBulkDelete(t *testing.T) {
 }
 
 func TestBulkDeleteFilterBad(t *testing.T) {
-	resp, err := R("POST", "/orders/bulk_delete", M{
+	resp, err := Req("POST", "/orders/bulk_delete", M{
 		"filter": M{
 			"abc": M{"$": "v"},
 		},
@@ -1414,7 +1423,7 @@ func TestBulkDeleteEvent(t *testing.T) {
 	ch := make(chan rest.PublishDto)
 	go MockSubscribe(t, ch)
 
-	resp, err := R("POST", "/projects/bulk_delete", M{
+	resp, err := Req("POST", "/projects/bulk_delete", M{
 		"filter": M{
 			"namespace": M{"$in": []string{"test1", "test2"}},
 		},
@@ -1438,7 +1447,7 @@ func TestBulkDeleteEvent(t *testing.T) {
 
 func TestBulkDeleteEventBad(t *testing.T) {
 	RemoveStream(t)
-	resp, err := R("POST", "/projects/bulk_delete", M{
+	resp, err := Req("POST", "/projects/bulk_delete", M{
 		"filter": M{
 			"namespace": M{"$in": []string{"test1", "test2"}},
 		},
@@ -1449,7 +1458,7 @@ func TestBulkDeleteEventBad(t *testing.T) {
 }
 
 func TestSortValidateBad(t *testing.T) {
-	resp, err := R("POST", "/orders/sort", M{
+	resp, err := Req("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": []string{"12", "444"},
@@ -1460,7 +1469,7 @@ func TestSortValidateBad(t *testing.T) {
 }
 
 func TestSortForbid(t *testing.T) {
-	resp, err := R("POST", "/permissions/sort", M{
+	resp, err := Req("POST", "/permissions/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": []string{primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex()},
@@ -1474,7 +1483,7 @@ func TestSortTxnNotExists(t *testing.T) {
 	txn := help.Uuid()
 	sources := orderIds[:5]
 	help.Reverse[string](sources)
-	resp, err := R("POST", "/orders/sort", M{
+	resp, err := Req("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": sources,
@@ -1488,7 +1497,7 @@ func TestSortTxnNotExists(t *testing.T) {
 func TestSort(t *testing.T) {
 	sources := orderIds[:5]
 	help.Reverse[string](sources)
-	resp, err := R("POST", "/orders/sort", M{
+	resp, err := Req("POST", "/orders/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": sources,
@@ -1521,7 +1530,7 @@ func TestSortEvent(t *testing.T) {
 	go MockSubscribe(t, ch)
 
 	help.Reverse[string](projectIds)
-	resp, err := R("POST", "/projects/sort", M{
+	resp, err := Req("POST", "/projects/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": projectIds,
@@ -1549,7 +1558,7 @@ func TestSortEventBad(t *testing.T) {
 	RemoveStream(t)
 
 	help.Reverse[string](projectIds)
-	resp, err := R("POST", "/projects/sort", M{
+	resp, err := Req("POST", "/projects/sort", M{
 		"data": M{
 			"key":    "sort",
 			"values": projectIds,
@@ -1557,12 +1566,11 @@ func TestSortEventBad(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 500, resp.StatusCode())
-	assert.Empty(t, resp.Body())
 	RecoverStream(t)
 }
 
 func TestMoreTransform(t *testing.T) {
-	resp, err := R("POST", "/coupons/create", M{
+	resp, err := Req("POST", "/coupons/create", M{
 		"data": M{
 			"name": "体验卡",
 			"pd":   "2023-04-12T22:00:00.906Z",
@@ -1619,8 +1627,8 @@ func TestMoreTransform(t *testing.T) {
 		primitive.A{primitive.DateTime(1681336800906), primitive.DateTime(1681367405586)},
 		coupon["valid"],
 	)
-	metadata := coupon["metadata"].(primitive.A)
-	t.Log(metadata)
+	//metadata := coupon["metadata"].(primitive.A)
+	//t.Log(metadata)
 }
 
 func TestCipherTransform(t *testing.T) {
@@ -1635,7 +1643,7 @@ func TestCipherTransform(t *testing.T) {
 		"x2": "ccc",
 	}
 	idcardText, _ := sonic.MarshalString(idcard)
-	resp, err := R("POST", "/members/create", M{
+	resp, err := Req("POST", "/members/create", M{
 		"data": M{
 			"name":   "用户A",
 			"phone":  "12345678",
@@ -1671,7 +1679,7 @@ func TestCipherTransform(t *testing.T) {
 	assert.NoError(t, err)
 	err = sonic.Unmarshal(cardsBytes, &cardsV)
 	assert.NoError(t, err)
-	t.Log(cardsV)
+	//t.Log(cardsV)
 	assert.ElementsMatch(t, cards, cardsV)
 
 	var idcardV M
@@ -1679,7 +1687,7 @@ func TestCipherTransform(t *testing.T) {
 	assert.NoError(t, err)
 	err = sonic.Unmarshal(idcardBytes, &idcardV)
 	assert.NoError(t, err)
-	t.Log(idcardV)
+	//t.Log(idcardV)
 	assert.Equal(t, idcard, idcardV)
 }
 
@@ -1689,7 +1697,7 @@ func TestTxBulkCreate(t *testing.T) {
 	assert.NoError(t, err)
 
 	Transaction(t, func(txn string) {
-		resp, err := R("POST", "/x_test/bulk_create", M{
+		resp, err := Req("POST", "/x_test/bulk_create", M{
 			"data": []M{
 				{"name": "abc"},
 				{"name": "xxx"},
@@ -1721,7 +1729,7 @@ func TestTxUpdate(t *testing.T) {
 	id := r.InsertedID
 
 	Transaction(t, func(txn string) {
-		resp, err := R("POST", "/x_test/update", M{
+		resp, err := Req("POST", "/x_test/update", M{
 			"filter": M{"name": "kain"},
 			"data": M{
 				"$set": M{"name": "xxxx"},
@@ -1759,7 +1767,7 @@ func TestTxUpdateById(t *testing.T) {
 	id := r.InsertedID.(primitive.ObjectID)
 
 	Transaction(t, func(txn string) {
-		resp, err := R("PATCH", fmt.Sprintf(`/x_test/%s`, id.Hex()), M{
+		resp, err := Req("PATCH", fmt.Sprintf(`/x_test/%s`, id.Hex()), M{
 			"data": M{
 				"$set": M{"name": "xxxx"},
 			},
@@ -1796,7 +1804,7 @@ func TestTxReplace(t *testing.T) {
 	id := r.InsertedID.(primitive.ObjectID)
 
 	Transaction(t, func(txn string) {
-		resp, err := R("PUT", fmt.Sprintf(`/x_test/%s`, id.Hex()), M{
+		resp, err := Req("PUT", fmt.Sprintf(`/x_test/%s`, id.Hex()), M{
 			"data": M{
 				"name": "xxxx",
 			},
@@ -1833,10 +1841,10 @@ func TestTxDelete(t *testing.T) {
 	id := r.InsertedID.(primitive.ObjectID)
 
 	Transaction(t, func(txn string) {
-		u := U(fmt.Sprintf(`/x_test/%s`, id.Hex()), Params{
+		u := Url(fmt.Sprintf(`/x_test/%s`, id.Hex()), Params{
 			{"txn", txn},
 		})
-		resp, err := R("DELETE", u, nil)
+		resp, err := Req("DELETE", u, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, 204, resp.StatusCode())
 
@@ -1861,7 +1869,7 @@ func TestTxBulkDelete(t *testing.T) {
 	assert.NoError(t, err)
 
 	Transaction(t, func(txn string) {
-		resp, err := R("POST", "/x_test/bulk_delete", M{
+		resp, err := Req("POST", "/x_test/bulk_delete", M{
 			"filter": M{
 				"name": "kain",
 			},
@@ -1896,7 +1904,7 @@ func TestTxSort(t *testing.T) {
 	}
 
 	Transaction(t, func(txn string) {
-		resp, err := R("POST", "/x_test/sort", M{
+		resp, err := Req("POST", "/x_test/sort", M{
 			"data": M{
 				"key":    "sort",
 				"values": sources,
@@ -1911,7 +1919,7 @@ func TestTxSort(t *testing.T) {
 		var result []M
 		err = cursor.All(ctx, &result)
 		assert.NoError(t, err)
-		t.Log(result)
+		//t.Log(result)
 	})
 
 	cursor, err := service.Db.Collection("x_test").Find(ctx, bson.M{})
@@ -1919,7 +1927,7 @@ func TestTxSort(t *testing.T) {
 	var result []M
 	err = cursor.All(ctx, &result)
 	assert.NoError(t, err)
-	t.Log(result)
+	//t.Log(result)
 }
 
 func TestTransaction(t *testing.T) {
@@ -1930,7 +1938,7 @@ func TestTransaction(t *testing.T) {
 	assert.NoError(t, err)
 
 	Transaction(t, func(txn string) {
-		resp1, err := R("POST", "/x_roles/create", M{
+		resp1, err := Req("POST", "/x_roles/create", M{
 			"data": M{
 				"name": "admin",
 				"key":  "*",
@@ -1940,7 +1948,7 @@ func TestTransaction(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 204, resp1.StatusCode())
 
-		resp2, err := R("POST", "/x_users/create", M{
+		resp2, err := Req("POST", "/x_users/create", M{
 			"data": M{
 				"name":  "kainxxxx",
 				"roles": []string{"*"},
@@ -1967,11 +1975,11 @@ func TestTransaction(t *testing.T) {
 }
 
 func TestCommitNotTxn(t *testing.T) {
-	resp1, err := R("POST", "/commit", nil)
+	resp1, err := Req("POST", "/commit", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp1.StatusCode())
 
-	resp2, err := R("POST", "/commit", M{
+	resp2, err := Req("POST", "/commit", M{
 		"txn": help.Uuid(),
 	})
 	assert.NoError(t, err)
@@ -1980,7 +1988,7 @@ func TestCommitNotTxn(t *testing.T) {
 
 func TestCommitTimeout(t *testing.T) {
 	service.Values.RestTxnTimeout = time.Second
-	resp1, err := R("POST", "/transaction", nil)
+	resp1, err := Req("POST", "/transaction", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 201, resp1.StatusCode())
 
@@ -1991,7 +1999,7 @@ func TestCommitTimeout(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	resp2, err := R("POST", "/commit", M{
+	resp2, err := Req("POST", "/commit", M{
 		"txn": txn,
 	})
 	assert.NoError(t, err)

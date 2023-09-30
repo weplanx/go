@@ -2,25 +2,18 @@ package values_test
 
 import (
 	"bytes"
-	"context"
-	"github.com/bytedance/go-tagexpr/v2/binding"
-	"github.com/bytedance/go-tagexpr/v2/validator"
-	"github.com/bytedance/gopkg/util/logger"
 	"github.com/bytedance/sonic"
-	"github.com/bytedance/sonic/decoder"
-	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/common/config"
-	"github.com/cloudwego/hertz/pkg/common/errors"
+	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/common/ut"
-	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol"
 	"github.com/cloudwego/hertz/pkg/route"
+	"github.com/hertz-contrib/requestid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/weplanx/go/cipher"
+	"github.com/weplanx/go/help"
 	"github.com/weplanx/go/values"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"reflect"
@@ -63,8 +56,11 @@ func TestMain(m *testing.M) {
 		values.SetCipher(cipherx),
 		values.SetType(reflect.TypeOf(values.DynamicValues{})),
 	)
-	engine = route.NewEngine(config.NewOptions([]config.Option{}))
-	engine.Use(ErrHandler())
+	engine = route.NewEngine(help.HertzOptions(server.WithDisablePrintRoute(true)))
+	engine.Use(
+		requestid.New(),
+		help.EHandler(),
+	)
 	controller := &values.Controller{Service: service}
 	r := engine.Group("values")
 	{
@@ -113,52 +109,6 @@ func UseNats(namespace string) (err error) {
 		return
 	}
 	return
-}
-
-func ErrHandler() app.HandlerFunc {
-	return func(ctx context.Context, c *app.RequestContext) {
-		c.Next(ctx)
-		err := c.Errors.Last()
-		if err == nil {
-			return
-		}
-
-		if err.IsType(errors.ErrorTypePublic) {
-			statusCode := http.StatusBadRequest
-			result := utils.H{"message": err.Error()}
-			if meta, ok := err.Meta.(map[string]interface{}); ok {
-				if meta["statusCode"] != nil {
-					statusCode = meta["statusCode"].(int)
-				}
-				if meta["code"] != nil {
-					result["code"] = meta["code"]
-				}
-			}
-			c.JSON(statusCode, result)
-			return
-		}
-
-		switch e := err.Err.(type) {
-		case decoder.SyntaxError:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Description(),
-			})
-			break
-		case *binding.Error:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Error(),
-			})
-			break
-		case *validator.Error:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Error(),
-			})
-			break
-		default:
-			logger.Error(err)
-			c.Status(http.StatusInternalServerError)
-		}
-	}
 }
 
 func Reset() (err error) {

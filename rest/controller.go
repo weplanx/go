@@ -20,14 +20,12 @@ type Controller struct {
 }
 
 type CreateDto struct {
-	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Data       M      `json:"data,required" vd:"len($)>0;msg:'document cannot be empty data'"`
+	Collection string `path:"collection" vd:"snake"`
+	Data       M      `json:"data" vd:"gt=0"`
 	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn"`
+	Txn        string `json:"txn" vd:"omitempty,uuid"`
 }
 
-// Create
-// @router /:collection/create [POST]
 func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 	var dto CreateDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -41,7 +39,7 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 	}
 
 	if err := x.Service.Transform(dto.Data, dto.Xdata); err != nil {
-		c.Error(errors.New(err, errors.ErrorTypePublic, nil))
+		c.Error(help.E("rest.transform", err.Error()))
 		return
 	}
 	dto.Data["create_time"] = time.Now()
@@ -71,14 +69,12 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 }
 
 type BulkCreateDto struct {
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Data       []M    `json:"data,required" vd:"len($)>0 && range($,len(#v)>0);msg:'batch documents cannot have empty data'"`
+	Collection string `path:"collection" vd:"snake"`
+	Data       []M    `json:"data" vd:"gt=0"`
 	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn"`
+	Txn        string `json:"txn" vd:"omitempty,uuid"`
 }
 
-// BulkCreate
-// @router /:collection/bulk_create [POST]
 func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 	var dto BulkCreateDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -126,13 +122,11 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 }
 
 type SizeDto struct {
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Filter     M      `json:"filter,required"`
+	Collection string `path:"collection" vd:"snake"`
+	Filter     M      `json:"filter" vd:"required"`
 	Xfilter    M      `json:"xfilter"`
 }
 
-// Size
-// @router /:collection/size [POST]
 func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 	var dto SizeDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -161,17 +155,15 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 }
 
 type FindDto struct {
-	Collection string   `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Pagesize   int64    `header:"x-pagesize" vd:"$>=0 && $<=1000;msg:'the number of pages must be between 1 and 1000'"`
-	Page       int64    `header:"x-page" vd:"$>=0;msg:'the page number must be greater than 0'"`
-	Filter     M        `json:"filter,required"`
+	Collection string   `path:"collection" vd:"required,snake"`
+	Pagesize   int64    `header:"x-pagesize" vd:"omitempty,min=0,max=1000"`
+	Page       int64    `header:"x-page" vd:"omitempty,min=0"`
+	Filter     M        `json:"filter" vd:"required"`
 	Xfilter    M        `json:"xfilter"`
-	Sort       []string `query:"sort" vd:"range($,regexp('^[a-z_]+:(-1|1)$',#v)));msg:'the collation is not standardized'"`
-	Keys       []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'the projection rules are not standardized'"`
+	Sort       []string `query:"sort" vd:"omitempty,dive,sort"`
+	Keys       []string `query:"keys"`
 }
 
-// Find
-// @router /:collection/find [POST]
 func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	var dto FindDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -232,14 +224,12 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 }
 
 type FindOneDto struct {
-	Collection string   `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Filter     M        `json:"filter,required" vd:"len($)>0;msg:'the filter cannot be empty'"`
+	Collection string   `path:"collection" vd:"snake"`
+	Filter     M        `json:"filter" vd:"gt=0"`
 	Xfilter    M        `json:"xfilter"`
-	Keys       []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'the projection rules are not standardized'"`
+	Keys       []string `query:"keys"`
 }
 
-// FindOne
-// @router /:collection/fine_one [POST]
 func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 	var dto FindOneDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -270,13 +260,11 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 }
 
 type FindByIdDto struct {
-	Collection string   `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Id         string   `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
-	Keys       []string `query:"keys" vd:"range($,regexp('^[a-z_]+$',#v));msg:'the projection rules are not standardized'"`
+	Collection string   `path:"collection" vd:"snake"`
+	Id         string   `path:"id" vd:"mongodb"`
+	Keys       []string `query:"keys"`
 }
 
-// FindById
-// @router /:collection/:id [GET]
 func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 	var dto FindByIdDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -303,16 +291,14 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 }
 
 type UpdateDto struct {
-	Collection string `path:"collection" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Filter     M      `json:"filter,required" vd:"len($)>0;msg:'the filter cannot be empty'"`
+	Collection string `path:"collection" vd:"snake"`
+	Filter     M      `json:"filter" vd:"gt=0"`
 	Xfilter    M      `json:"xfilter"`
-	Data       M      `json:"data,required" vd:"len($)>0;msg:'the update cannot be empty'"`
+	Data       M      `json:"data" vd:"gt=0"`
 	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn"`
+	Txn        string `json:"txn" vd:"omitempty,uuid"`
 }
 
-// Update
-// @router /:collection/update [POST]
 func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 	var dto UpdateDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -363,15 +349,13 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 }
 
 type UpdateByIdDto struct {
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
-	Data       M      `json:"data,required" vd:"len($)>0;msg:'the update cannot be empty'"`
+	Collection string `path:"collection" vd:"snake"`
+	Id         string `path:"id" vd:"mongodb"`
+	Data       M      `json:"data" vd:"gt=0"`
 	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn"`
+	Txn        string `json:"txn" vd:"omitempty,uuid"`
 }
 
-// UpdateById
-// @router /:collection/:id [PATCH]
 func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	var dto UpdateByIdDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -419,15 +403,13 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 }
 
 type ReplaceDto struct {
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
-	Data       M      `json:"data,required" vd:"len($)>0;msg:'document cannot be empty data'"`
+	Collection string `path:"collection" vd:"snake"`
+	Id         string `path:"id" vd:"mongodb"`
+	Data       M      `json:"data" vd:"gt=0"`
 	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn"`
+	Txn        string `json:"txn" vd:"omitempty,uuid"`
 }
 
-// Replace
-// @router /:collection/:id [PUT]
 func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 	var dto ReplaceDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -473,13 +455,11 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 }
 
 type DeleteDto struct {
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Id         string `path:"id,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
-	Txn        string `query:"txn"`
+	Collection string `path:"collection" vd:"snake"`
+	Id         string `path:"id" vd:"mongodb"`
+	Txn        string `query:"txn" vd:"omitempty,uuid"`
 }
 
-// Delete
-// @router /:collection/:id [DELETE]
 func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 	var dto DeleteDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -518,14 +498,12 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 }
 
 type BulkDeleteDto struct {
-	Collection string `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Filter     M      `json:"filter,required" vd:"len($)>0;msg:'the filter cannot be empty'"`
+	Collection string `path:"collection" vd:"snake"`
+	Filter     M      `json:"filter" vd:"gt=0"`
 	Xfilter    M      `json:"xfilter"`
-	Txn        string `json:"txn"`
+	Txn        string `json:"txn" vd:"omitempty,uuid"`
 }
 
-// BulkDelete
-// @router /:collection/bulk_delete [POST]
 func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 	var dto BulkDeleteDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -567,18 +545,16 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 }
 
 type SortDto struct {
-	Collection string      `path:"collection,required" vd:"regexp('^[a-z_]+$');msg:'the collection name must be lowercase letters with underscores'"`
-	Data       SortDtoData `json:"data,required"`
-	Txn        string      `json:"txn"`
+	Collection string      `path:"collection" vd:"snake"`
+	Data       SortDtoData `json:"data" vd:"structonly"`
+	Txn        string      `json:"txn" vd:"omitempty,uuid"`
 }
 
 type SortDtoData struct {
-	Key    string               `json:"key,required"`
-	Values []primitive.ObjectID `json:"values,required" vd:"len($)>0;msg:'the submission data must be an array of ObjectId'"`
+	Key    string               `json:"key" vd:"required"`
+	Values []primitive.ObjectID `json:"values" vd:"gt=0,dive,mongodb"`
 }
 
-// Sort
-// @router /:collection/sort [POST]
 func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 	var dto SortDto
 	if err := c.BindAndValidate(&dto); err != nil {
@@ -614,8 +590,6 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 	c.Status(http.StatusNoContent)
 }
 
-// Transaction
-// @router /transaction [POST]
 func (x *Controller) Transaction(ctx context.Context, c *app.RequestContext) {
 	txn := help.Uuid()
 	x.Service.Transaction(ctx, txn)
@@ -625,11 +599,9 @@ func (x *Controller) Transaction(ctx context.Context, c *app.RequestContext) {
 }
 
 type CommitDto struct {
-	Txn string `json:"txn,required"`
+	Txn string `json:"txn" vd:"uuid"`
 }
 
-// Commit
-// @router /commit [POST]
 func (x *Controller) Commit(ctx context.Context, c *app.RequestContext) {
 	var dto CommitDto
 	if err := c.BindAndValidate(&dto); err != nil {

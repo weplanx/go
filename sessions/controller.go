@@ -16,7 +16,7 @@ func (x *Controller) Lists(ctx context.Context, c *app.RequestContext) {
 }
 
 type RemoveDto struct {
-	Uid string `path:"uid,required" vd:"mongoId($);msg:'the document id must be an ObjectId'"`
+	Uid string `path:"uid,required" vd:"mongodb"`
 }
 
 func (x *Controller) Remove(ctx context.Context, c *app.RequestContext) {

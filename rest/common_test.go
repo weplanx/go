@@ -3,18 +3,12 @@ package rest_test
 import (
 	"bytes"
 	"context"
-	"github.com/bytedance/go-tagexpr/v2/binding"
-	"github.com/bytedance/go-tagexpr/v2/validator"
-	"github.com/bytedance/gopkg/util/logger"
 	"github.com/bytedance/sonic"
-	"github.com/bytedance/sonic/decoder"
-	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/common/config"
-	"github.com/cloudwego/hertz/pkg/common/errors"
+	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/common/ut"
-	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol"
 	"github.com/cloudwego/hertz/pkg/route"
+	"github.com/hertz-contrib/requestid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/redis/go-redis/v9"
@@ -26,7 +20,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-	"net/http"
 	"net/url"
 	"os"
 	"testing"
@@ -114,9 +107,11 @@ func TestMain(m *testing.M) {
 	if err := MockStream(ctx); err != nil {
 		panic(err)
 	}
-	help.RegValidate()
-	engine = route.NewEngine(config.NewOptions([]config.Option{}))
-	engine.Use(ErrHandler())
+	engine = route.NewEngine(help.HertzOptions(server.WithDisablePrintRoute(true)))
+	engine.Use(
+		requestid.New(),
+		help.EHandler(),
+	)
 	controller := &rest.Controller{Service: service}
 	r := engine.Group(":collection")
 	{
@@ -197,53 +192,7 @@ func UseNats(ctx context.Context) (err error) {
 	return
 }
 
-func ErrHandler() app.HandlerFunc {
-	return func(ctx context.Context, c *app.RequestContext) {
-		c.Next(ctx)
-		err := c.Errors.Last()
-		if err == nil {
-			return
-		}
-
-		if err.IsType(errors.ErrorTypePublic) {
-			statusCode := http.StatusBadRequest
-			result := utils.H{"message": err.Error()}
-			if meta, ok := err.Meta.(map[string]interface{}); ok {
-				if meta["statusCode"] != nil {
-					statusCode = meta["statusCode"].(int)
-				}
-				if meta["code"] != nil {
-					result["code"] = meta["code"]
-				}
-			}
-			c.JSON(statusCode, result)
-			return
-		}
-
-		switch e := err.Err.(type) {
-		case decoder.SyntaxError:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Description(),
-			})
-			break
-		case *binding.Error:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Error(),
-			})
-			break
-		case *validator.Error:
-			c.JSON(http.StatusBadRequest, utils.H{
-				"message": e.Error(),
-			})
-			break
-		default:
-			logger.Error(err)
-			c.Status(http.StatusInternalServerError)
-		}
-	}
-}
-
-func R(method string, url string, body interface{}) (resp *protocol.Response, err error) {
+func Req(method string, url string, body interface{}) (resp *protocol.Response, err error) {
 	utBody := &ut.Body{}
 	utHeaders := []ut.Header{
 		{Key: "content-type", Value: "application/json"},
@@ -268,7 +217,7 @@ func R(method string, url string, body interface{}) (resp *protocol.Response, er
 
 type Params = [][2]string
 
-func U(path string, params Params) string {
+func Url(path string, params Params) string {
 	u := url.URL{Path: path}
 	query := u.Query()
 	for _, v := range params {
@@ -281,7 +230,7 @@ func U(path string, params Params) string {
 type TransactionFn = func(txn string)
 
 func Transaction(t *testing.T, fn TransactionFn) {
-	resp1, err := R("POST", "/transaction", nil)
+	resp1, err := Req("POST", "/transaction", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 201, resp1.StatusCode())
 
@@ -292,7 +241,7 @@ func Transaction(t *testing.T, fn TransactionFn) {
 
 	fn(txn)
 
-	resp2, err := R("POST", "/commit", M{
+	resp2, err := Req("POST", "/commit", M{
 		"txn": txn,
 	})
 	assert.NoError(t, err)
