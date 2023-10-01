@@ -5,8 +5,6 @@ import (
 	errorsx "errors"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/app/server"
-	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/common/errors"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/go-playground/validator/v10"
@@ -49,7 +47,7 @@ func IsEmpty(i any) bool {
 	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
 }
 
-func HertzOptions(input ...config.Option) *config.Options {
+func Validator() *go_playground.Validator {
 	vd := go_playground.NewValidator()
 	vd.SetValidateTag("vd")
 	vdx := vd.Engine().(*validator.Validate)
@@ -67,16 +65,7 @@ func HertzOptions(input ...config.Option) *config.Options {
 		}
 		return matched
 	})
-	opts := []config.Option{
-		server.WithCustomValidator(vd),
-	}
-	for _, x := range input {
-		opts = append(opts, x)
-	}
-	if os.Getenv("MODE") != "release" {
-		opts = append(opts, server.WithExitWaitTime(0))
-	}
-	return config.NewOptions(opts)
+	return vd
 }
 
 type EMeta struct {

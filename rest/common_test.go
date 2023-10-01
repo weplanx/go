@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/bytedance/sonic"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/cloudwego/hertz/pkg/protocol"
 	"github.com/cloudwego/hertz/pkg/route"
@@ -107,7 +108,11 @@ func TestMain(m *testing.M) {
 	if err := MockStream(ctx); err != nil {
 		panic(err)
 	}
-	engine = route.NewEngine(help.HertzOptions(server.WithDisablePrintRoute(true)))
+	engine = route.NewEngine(config.NewOptions([]config.Option{
+		server.WithExitWaitTime(0),
+		server.WithDisablePrintRoute(true),
+		server.WithCustomValidator(help.Validator()),
+	}))
 	engine.Use(
 		requestid.New(),
 		help.EHandler(),
