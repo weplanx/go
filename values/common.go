@@ -87,6 +87,8 @@ type DynamicValues struct {
 	TencentCosExpired int64 `yaml:"tencent_cos_expired"`
 	// Tencent Cloud COS bucket upload size limit, unit: KB
 	TencentCosLimit int64 `yaml:"tencent_cos_limit"`
+	// Office collaboration platform
+	Collaboration string `yaml:"collaboration"`
 	// Enterprise Collaboration
 	// Lark App ID
 	LarkAppId string `yaml:"lark_app_id"`
@@ -106,13 +108,13 @@ type DynamicValues struct {
 	EmailUsername string `yaml:"email_username"`
 	// Public email password
 	EmailPassword string `yaml:"email_password" secret:"*"`
-	// Openapi url
-	OpenapiUrl string `yaml:"openapi_url"`
+	// ApiGateway url
+	ApiGatewayUrl string `yaml:"api_gateway_url"`
 	// Openapi application authentication key
 	// API gateway application authentication https://cloud.tencent.com/document/product/628/55088
-	OpenapiKey string `yaml:"openapi_key"`
+	ApiGatewayKey string `yaml:"api_gateway_key"`
 	// Openapi Application Authentication Secret
-	OpenapiSecret string `yaml:"openapi_secret" secret:"*"`
+	ApiGatewaySecret string `yaml:"api_gateway_secret" secret:"*"`
 	// RestControls
 	RestControls map[string]*RestControl `yaml:"rest_controls"`
 	// Rest Txn Timeout
