@@ -155,7 +155,7 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 }
 
 type FindDto struct {
-	Collection string   `path:"collection" vd:"required,snake"`
+	Collection string   `path:"collection" vd:"snake"`
 	Pagesize   int64    `header:"x-pagesize" vd:"omitempty,min=0,max=1000"`
 	Page       int64    `header:"x-page" vd:"omitempty,min=0"`
 	Filter     M        `json:"filter" vd:"required"`
