@@ -20,7 +20,6 @@ import (
 )
 
 type Service struct {
-	Namespace string
 	Mgo       *mongo.Client
 	Db        *mongo.Database
 	RDb       *redis.Client
@@ -209,7 +208,7 @@ func (x *Service) Sort(ctx context.Context, name string, key string, ids []primi
 }
 
 func (x *Service) Transaction(ctx context.Context, txn string) {
-	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	key := fmt.Sprintf(`transaction:%s`, txn)
 	x.RDb.LPush(ctx, key, time.Now().Format(time.RFC3339)).Val()
 	x.RDb.Expire(ctx, key, time.Hour*5).Val()
 }
@@ -234,7 +233,7 @@ func (x *Service) TxnNotExists(ctx context.Context, key string) (err error) {
 }
 
 func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err error) {
-	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	key := fmt.Sprintf(`transaction:%s`, txn)
 	if err = x.TxnNotExists(ctx, key); err != nil {
 		return
 	}
@@ -249,7 +248,7 @@ func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err 
 }
 
 func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err error) {
-	key := fmt.Sprintf(`%s:transaction:%s`, x.Namespace, txn)
+	key := fmt.Sprintf(`transaction:%s`, txn)
 	if err = x.TxnNotExists(ctx, key); err != nil {
 		return
 	}
@@ -461,7 +460,7 @@ func (x *Service) Publish(ctx context.Context, name string, dto PublishDto) (err
 		}
 
 		b, _ := sonic.Marshal(dto)
-		subject := fmt.Sprintf(`%s.events.%s`, x.Namespace, name)
+		subject := fmt.Sprintf(`events.%s`, name)
 		if _, err = x.JetStream.Publish(subject, b, nats.Context(ctx)); err != nil {
 			return
 		}

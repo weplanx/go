@@ -9,34 +9,15 @@ import (
 )
 
 type Captcha struct {
-	Namespace string
-	RDb       *redis.Client
+	RDb *redis.Client
 }
 
-func New(options ...Option) *Captcha {
-	x := new(Captcha)
-	for _, v := range options {
-		v(x)
-	}
-	return x
-}
-
-type Option func(x *Captcha)
-
-func SetNamespace(v string) Option {
-	return func(x *Captcha) {
-		x.Namespace = v
-	}
-}
-
-func SetRedis(v *redis.Client) Option {
-	return func(x *Captcha) {
-		x.RDb = v
-	}
+func New(rdb *redis.Client) *Captcha {
+	return &Captcha{RDb: rdb}
 }
 
 func (x *Captcha) Key(name string) string {
-	return fmt.Sprintf(`%s:captcha:%s`, x.Namespace, name)
+	return fmt.Sprintf(`captcha:%s`, name)
 }
 
 func (x *Captcha) Create(ctx context.Context, name string, code string, ttl time.Duration) string {

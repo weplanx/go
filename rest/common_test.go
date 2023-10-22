@@ -87,10 +87,8 @@ func TestMain(m *testing.M) {
 	if err := UseNats(ctx); err != nil {
 		panic(err)
 	}
-	namespace := os.Getenv("NAMESPACE")
 	xcipher, _ := cipher.New("6ixSiEXaqxsJTozbnxQ76CWdZXB2JazK")
 	service = rest.New(
-		rest.SetNamespace(namespace),
 		rest.SetMongoClient(mgo),
 		rest.SetDatabase(db),
 		rest.SetRedis(rdb),

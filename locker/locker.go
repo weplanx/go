@@ -9,34 +9,15 @@ import (
 )
 
 type Locker struct {
-	Namespace string
-	RDb       *redis.Client
+	RDb *redis.Client
 }
 
-func New(options ...Option) *Locker {
-	x := new(Locker)
-	for _, v := range options {
-		v(x)
-	}
-	return x
-}
-
-type Option func(x *Locker)
-
-func SetNamespace(v string) Option {
-	return func(x *Locker) {
-		x.Namespace = v
-	}
-}
-
-func SetRedis(v *redis.Client) Option {
-	return func(x *Locker) {
-		x.RDb = v
-	}
+func New(rdb *redis.Client) *Locker {
+	return &Locker{RDb: rdb}
 }
 
 func (x *Locker) Key(name string) string {
-	return fmt.Sprintf(`%s:locker:%s`, x.Namespace, name)
+	return fmt.Sprintf(`locker:%s`, name)
 }
 
 func (x *Locker) Update(ctx context.Context, name string, ttl time.Duration) int64 {

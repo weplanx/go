@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -55,7 +54,7 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -65,7 +64,7 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, r)
+	c.JSON(201, r)
 }
 
 type BulkCreateDto struct {
@@ -108,7 +107,7 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -118,7 +117,7 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, r)
+	c.JSON(201, r)
 }
 
 type SizeDto struct {
@@ -151,7 +150,7 @@ func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.Header("x-total", strconv.Itoa(int(size)))
-	c.Status(http.StatusNoContent)
+	c.Status(204)
 }
 
 type FindDto struct {
@@ -220,7 +219,7 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.Header("x-total", strconv.Itoa(int(size)))
-	c.JSON(http.StatusOK, data)
+	c.JSON(200, data)
 }
 
 type FindOneDto struct {
@@ -256,7 +255,7 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, data)
+	c.JSON(200, data)
 }
 
 type FindByIdDto struct {
@@ -287,7 +286,7 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, data)
+	c.JSON(200, data)
 }
 
 type UpdateDto struct {
@@ -335,7 +334,7 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -345,7 +344,7 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, r)
+	c.JSON(200, r)
 }
 
 type UpdateByIdDto struct {
@@ -389,7 +388,7 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -399,7 +398,7 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, r)
+	c.JSON(200, r)
 }
 
 type ReplaceDto struct {
@@ -441,7 +440,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -451,7 +450,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, r)
+	c.JSON(200, r)
 }
 
 type DeleteDto struct {
@@ -484,7 +483,7 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -494,7 +493,7 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, r)
+	c.JSON(200, r)
 }
 
 type BulkDeleteDto struct {
@@ -531,7 +530,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -541,7 +540,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, r)
+	c.JSON(200, r)
 }
 
 type SortDto struct {
@@ -577,7 +576,7 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.Status(204)
 		return
 	}
 
@@ -587,13 +586,13 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.Status(204)
 }
 
 func (x *Controller) Transaction(ctx context.Context, c *app.RequestContext) {
 	txn := help.Uuid()
 	x.Service.Transaction(ctx, txn)
-	c.JSON(http.StatusCreated, utils.H{
+	c.JSON(201, utils.H{
 		"txn": txn,
 	})
 }
@@ -615,5 +614,5 @@ func (x *Controller) Commit(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, r)
+	c.JSON(200, r)
 }

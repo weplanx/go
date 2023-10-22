@@ -17,12 +17,6 @@ func New(options ...Option) *Service {
 
 type Option func(x *Service)
 
-func SetNamespace(v string) Option {
-	return func(x *Service) {
-		x.Namespace = v
-	}
-}
-
 func SetKeyValue(v nats.KeyValue) Option {
 	return func(x *Service) {
 		x.KeyValue = v

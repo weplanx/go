@@ -52,7 +52,6 @@ func TestMain(m *testing.M) {
 		log.Fatalln(err)
 	}
 	service = values.New(
-		values.SetNamespace(namespace),
 		values.SetKeyValue(keyvalue),
 		values.SetCipher(cipherx),
 		values.SetType(reflect.TypeOf(values.DynamicValues{})),

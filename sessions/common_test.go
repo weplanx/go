@@ -41,12 +41,10 @@ var DEFAULT = values.DynamicValues{
 var v = DEFAULT
 
 func TestMain(m *testing.M) {
-	namespace := os.Getenv("NAMESPACE")
 	if err := UseRedis(); err != nil {
 		log.Fatalln(err)
 	}
 	service = sessions.New(
-		sessions.SetNamespace(namespace),
 		sessions.SetRedis(rdb),
 		sessions.SetDynamicValues(&v),
 	)

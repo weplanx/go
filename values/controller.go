@@ -3,7 +3,6 @@ package values
 import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
-	"net/http"
 )
 
 type Controller struct {
@@ -26,7 +25,7 @@ func (x *Controller) Set(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.Status(204)
 }
 
 type GetDto struct {
@@ -46,7 +45,7 @@ func (x *Controller) Get(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, data)
+	c.JSON(200, data)
 }
 
 type RemoveDto struct {
@@ -65,5 +64,5 @@ func (x *Controller) Remove(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.Status(204)
 }

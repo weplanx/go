@@ -139,8 +139,8 @@ func MockDb(ctx context.Context) (err error) {
 func MockStream(ctx context.Context) (err error) {
 	for k, v := range service.Values.RestControls {
 		if v.Event {
-			name := fmt.Sprintf(`%s:events:%s`, service.Namespace, k)
-			subject := fmt.Sprintf(`%s.events.%s`, service.Namespace, k)
+			name := fmt.Sprintf(`EVENT_%s`, k)
+			subject := fmt.Sprintf(`events.%s`, k)
 			js.DeleteStream(name)
 			if _, err := js.AddStream(&nats.StreamConfig{
 				Name:      name,
@@ -155,8 +155,8 @@ func MockStream(ctx context.Context) (err error) {
 }
 
 func MockSubscribe(t *testing.T, ch chan rest.PublishDto) {
-	name := fmt.Sprintf(`%s:events:%s`, service.Namespace, "projects")
-	subject := fmt.Sprintf(`%s.events.%s`, service.Namespace, "projects")
+	name := fmt.Sprintf(`EVENT_%s`, "projects")
+	subject := fmt.Sprintf(`events.%s`, "projects")
 	_, err := service.JetStream.QueueSubscribe(subject, name, func(msg *nats.Msg) {
 		var data rest.PublishDto
 		err := sonic.Unmarshal(msg.Data, &data)
@@ -171,14 +171,14 @@ func MockSubscribe(t *testing.T, ch chan rest.PublishDto) {
 }
 
 func RemoveStream(t *testing.T) {
-	name := fmt.Sprintf(`%s:events:%s`, service.Namespace, "projects")
+	name := fmt.Sprintf(`EVENT_%s`, "projects")
 	err := service.JetStream.DeleteStream(name)
 	assert.NoError(t, err)
 }
 
 func RecoverStream(t *testing.T) {
-	name := fmt.Sprintf(`%s:events:%s`, service.Namespace, "projects")
-	subject := fmt.Sprintf(`%s.events.%s`, service.Namespace, "projects")
+	name := fmt.Sprintf(`EVENT_%s`, "projects")
+	subject := fmt.Sprintf(`events.%s`, "projects")
 	_, err := service.JetStream.AddStream(&nats.StreamConfig{
 		Name:      name,
 		Subjects:  []string{subject},

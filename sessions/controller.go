@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/utils"
-	"net/http"
 )
 
 type Controller struct {
@@ -12,7 +11,7 @@ type Controller struct {
 }
 
 func (x *Controller) Lists(ctx context.Context, c *app.RequestContext) {
-	c.JSON(http.StatusOK, x.Service.Lists(ctx))
+	c.JSON(200, x.Service.Lists(ctx))
 }
 
 type RemoveDto struct {
@@ -25,13 +24,13 @@ func (x *Controller) Remove(ctx context.Context, c *app.RequestContext) {
 		c.Error(err)
 		return
 	}
-	c.JSON(http.StatusOK, utils.H{
+	c.JSON(200, utils.H{
 		"DeletedCount": x.Service.Remove(ctx, dto.Uid),
 	})
 }
 
 func (x *Controller) Clear(ctx context.Context, c *app.RequestContext) {
-	c.JSON(http.StatusOK, utils.H{
+	c.JSON(200, utils.H{
 		"DeletedCount": x.Service.Clear(ctx),
 	})
 }

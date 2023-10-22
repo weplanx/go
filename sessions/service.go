@@ -9,13 +9,12 @@ import (
 )
 
 type Service struct {
-	Namespace string
-	RDb       *redis.Client
-	Values    *values.DynamicValues
+	RDb    *redis.Client
+	Values *values.DynamicValues
 }
 
 func (x *Service) Key(name string) string {
-	return fmt.Sprintf(`%s:sessions:%s`, x.Namespace, name)
+	return fmt.Sprintf(`sessions:%s`, name)
 }
 
 type ScanFn func(key string)

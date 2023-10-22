@@ -14,15 +14,11 @@ import (
 var x *captcha.Captcha
 
 func TestMain(m *testing.M) {
-	namespace := os.Getenv("NAMESPACE")
 	opts, err := redis.ParseURL(os.Getenv("DATABASE_REDIS"))
 	if err != nil {
 		log.Fatalln(err)
 	}
-	x = captcha.New(
-		captcha.SetNamespace(namespace),
-		captcha.SetRedis(redis.NewClient(opts)),
-	)
+	x = captcha.New(redis.NewClient(opts))
 	os.Exit(m.Run())
 }
 
