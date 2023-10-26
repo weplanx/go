@@ -57,7 +57,7 @@ func TestDeleteDurable(t *testing.T) {
 	assert.NoError(t, err)
 
 	id := r.InsertedID.(primitive.ObjectID)
-	_, err = service.Delete(ctx, "x_users", id)
+	_, err = service.Delete(ctx, "x_users", id, false)
 
 	count, err := service.Db.Collection("x_users").CountDocuments(ctx, bson.M{"_id": id})
 	assert.NoError(t, err)

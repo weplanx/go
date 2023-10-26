@@ -487,7 +487,7 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	r, err := x.Service.Delete(ctx, dto.Collection, id)
+	r, err := x.Service.Delete(ctx, dto.Collection, id, false)
 	if err != nil {
 		c.Error(err)
 		return
@@ -534,7 +534,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	r, err := x.Service.BulkDelete(ctx, dto.Collection, dto.Filter)
+	r, err := x.Service.BulkDelete(ctx, dto.Collection, dto.Filter, false)
 	if err != nil {
 		c.Error(err)
 		return

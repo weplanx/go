@@ -1327,6 +1327,8 @@ func TestDeleteEvent(t *testing.T) {
 	case msg := <-ch:
 		assert.Equal(t, rest.ActionDelete, msg.Action)
 		assert.Equal(t, projectId, msg.Id)
+		t.Log(msg.Data)
+		assert.Equal(t, projectId, msg.Data.(M)["_id"])
 		assert.Equal(t, result, msg.Result)
 		break
 	}
@@ -1425,7 +1427,7 @@ func TestBulkDeleteEvent(t *testing.T) {
 
 	resp, err := Req("POST", "/projects/bulk_delete", M{
 		"filter": M{
-			"namespace": M{"$in": []string{"test1", "test2"}},
+			"namespace": M{"$in": []string{"test8", "test9"}},
 		},
 	})
 	assert.NoError(t, err)
@@ -1438,8 +1440,8 @@ func TestBulkDeleteEvent(t *testing.T) {
 	select {
 	case msg := <-ch:
 		assert.Equal(t, rest.ActionBulkDelete, msg.Action)
-		assert.Equal(t, M{"$in": []interface{}{"test1", "test2"}}, msg.Filter["namespace"])
-		//assert.Equal(t, 2, len(msg.Data.([]interface{})))
+		assert.Equal(t, M{"$in": []interface{}{"test8", "test9"}}, msg.Filter["namespace"])
+		assert.Equal(t, 2, len(msg.Data.([]interface{})))
 		assert.Equal(t, result, msg.Result)
 		break
 	}

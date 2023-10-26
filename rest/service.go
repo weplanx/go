@@ -154,10 +154,18 @@ func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectI
 	return
 }
 
-func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID) (result interface{}, err error) {
+func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID, transaction bool) (result interface{}, err error) {
 	filter := M{
 		"_id":      id,
 		"_durable": bson.M{"$exists": false},
+	}
+	var doc M
+	if !transaction {
+		if err = x.Db.Collection(name).
+			FindOne(ctx, filter).
+			Decode(&doc); err != nil {
+			return
+		}
 	}
 	if result, err = x.Db.Collection(name).
 		DeleteOne(ctx, filter); err != nil {
@@ -166,6 +174,7 @@ func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionDelete,
 		Id:     id.Hex(),
+		Data:   doc,
 		Result: result,
 	}); err != nil {
 		return
@@ -173,14 +182,26 @@ func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID
 	return
 }
 
-func (x *Service) BulkDelete(ctx context.Context, name string, filter M) (result interface{}, err error) {
+func (x *Service) BulkDelete(ctx context.Context, name string, filter M, transaction bool) (result interface{}, err error) {
 	filter["_durable"] = bson.M{"$exists": false}
-	if result, err = x.Db.Collection(name).DeleteMany(ctx, filter); err != nil {
+	var docs []M
+	if !transaction {
+		var cursor *mongo.Cursor
+		if cursor, err = x.Db.Collection(name).Find(ctx, filter); err != nil {
+			return
+		}
+		if err = cursor.All(ctx, &docs); err != nil {
+			return
+		}
+	}
+	if result, err = x.Db.Collection(name).
+		DeleteMany(ctx, filter); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionBulkDelete,
 		Filter: filter,
+		Data:   docs,
 		Result: result,
 	}); err != nil {
 		return
@@ -315,9 +336,9 @@ func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ 
 	case ActionReplace:
 		return x.Replace(ctx, dto.Name, dto.Id, dto.Data.(M))
 	case ActionDelete:
-		return x.Delete(ctx, dto.Name, dto.Id)
+		return x.Delete(ctx, dto.Name, dto.Id, true)
 	case ActionBulkDelete:
-		return x.BulkDelete(ctx, dto.Name, dto.Filter)
+		return x.BulkDelete(ctx, dto.Name, dto.Filter, true)
 	case ActionSort:
 		data := dto.Data.(M)
 		var ids []primitive.ObjectID
