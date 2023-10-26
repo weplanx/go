@@ -47,28 +47,28 @@ const (
 	ActionSort       = 8
 )
 
-func (x *Service) Create(ctx context.Context, name string, doc M) (r interface{}, err error) {
-	if r, err = x.Db.Collection(name).InsertOne(ctx, doc); err != nil {
+func (x *Service) Create(ctx context.Context, name string, doc M) (result interface{}, err error) {
+	if result, err = x.Db.Collection(name).InsertOne(ctx, doc); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionCreate,
 		Data:   doc,
-		Result: r,
+		Result: result,
 	}); err != nil {
 		return
 	}
 	return
 }
 
-func (x *Service) BulkCreate(ctx context.Context, name string, docs []interface{}) (r interface{}, err error) {
-	if r, err = x.Db.Collection(name).InsertMany(ctx, docs); err != nil {
+func (x *Service) BulkCreate(ctx context.Context, name string, docs []interface{}) (result interface{}, err error) {
+	if result, err = x.Db.Collection(name).InsertMany(ctx, docs); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionBulkCreate,
 		Data:   docs,
-		Result: r,
+		Result: result,
 	}); err != nil {
 		return
 	}
@@ -107,102 +107,97 @@ func (x *Service) FindOne(ctx context.Context, name string, filter M, option *op
 	return
 }
 
-func (x *Service) Update(ctx context.Context, name string, filter M, update M) (r interface{}, err error) {
-	if r, err = x.Db.Collection(name).UpdateMany(ctx, filter, update); err != nil {
+func (x *Service) Update(ctx context.Context, name string, filter M, update M) (result interface{}, err error) {
+	if result, err = x.Db.Collection(name).UpdateMany(ctx, filter, update); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionUpdate,
 		Filter: filter,
 		Data:   update,
-		Result: r,
+		Result: result,
 	}); err != nil {
 		return
 	}
 	return
 }
 
-func (x *Service) UpdateById(ctx context.Context, name string, id primitive.ObjectID, update M) (r interface{}, err error) {
+func (x *Service) UpdateById(ctx context.Context, name string, id primitive.ObjectID, update M) (result interface{}, err error) {
 	filter := M{"_id": id}
-	if r, err = x.Db.Collection(name).UpdateOne(ctx, filter, update); err != nil {
+	if result, err = x.Db.Collection(name).UpdateOne(ctx, filter, update); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionUpdateById,
 		Id:     id.Hex(),
 		Data:   update,
-		Result: r,
+		Result: result,
 	}); err != nil {
 		return
 	}
 	return
 }
 
-func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectID, doc M) (r interface{}, err error) {
+func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectID, doc M) (result interface{}, err error) {
 	filter := M{"_id": id}
-	if r, err = x.Db.Collection(name).ReplaceOne(ctx, filter, doc); err != nil {
+	if result, err = x.Db.Collection(name).ReplaceOne(ctx, filter, doc); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionReplace,
 		Id:     id.Hex(),
 		Data:   doc,
-		Result: r,
+		Result: result,
 	}); err != nil {
 		return
 	}
 	return
 }
 
-func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID) (r interface{}, err error) {
+func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID) (result interface{}, err error) {
 	filter := M{
-		"_id":             id,
-		"metadata.retain": bson.M{"$exists": false},
+		"_id":      id,
+		"_durable": bson.M{"$exists": false},
 	}
-	if r, err = x.Db.Collection(name).DeleteOne(ctx, filter); err != nil {
+	if result, err = x.Db.Collection(name).
+		DeleteOne(ctx, filter); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionDelete,
 		Id:     id.Hex(),
-		Result: r,
+		Result: result,
 	}); err != nil {
 		return
 	}
 	return
 }
 
-func (x *Service) BulkDelete(ctx context.Context, name string, filter M) (r interface{}, err error) {
-	filter["metadata.undeletable"] = bson.M{"$exists": false}
-	if r, err = x.Db.Collection(name).DeleteMany(ctx, filter); err != nil {
+func (x *Service) BulkDelete(ctx context.Context, name string, filter M) (result interface{}, err error) {
+	filter["_durable"] = bson.M{"$exists": false}
+	if result, err = x.Db.Collection(name).DeleteMany(ctx, filter); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
 		Action: ActionBulkDelete,
-		Data:   filter,
-		Result: r,
+		Filter: filter,
+		Result: result,
 	}); err != nil {
 		return
 	}
 	return
 }
 
-func (x *Service) Sort(ctx context.Context, name string, key string, ids []primitive.ObjectID) (r interface{}, err error) {
+func (x *Service) Sort(ctx context.Context, name string, key string, ids []primitive.ObjectID) (result interface{}, err error) {
 	var wms []mongo.WriteModel
 	for i, id := range ids {
-		update := M{
-			"$set": M{
-				key:           i,
-				"update_time": time.Now(),
-			},
-		}
-
+		update := M{"$set": M{key: i, "update_time": time.Now()}}
 		wms = append(wms, mongo.NewUpdateOneModel().
 			SetFilter(M{"_id": id}).
 			SetUpdate(update),
 		)
 	}
-	if r, err = x.Db.Collection(name).BulkWrite(ctx, wms); err != nil {
+	if result, err = x.Db.Collection(name).BulkWrite(ctx, wms); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
@@ -211,7 +206,7 @@ func (x *Service) Sort(ctx context.Context, name string, key string, ids []primi
 			"key":    key,
 			"values": ids,
 		},
-		Result: r,
+		Result: result,
 	}); err != nil {
 		return
 	}

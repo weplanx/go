@@ -46,15 +46,13 @@ func TestMorePipe(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestDeleteRetain(t *testing.T) {
+func TestDeleteDurable(t *testing.T) {
 	ctx := context.TODO()
 	err := service.Db.Collection("x_users").Drop(ctx)
 	assert.NoError(t, err)
 	r, err := service.Db.Collection("x_users").InsertOne(ctx, bson.M{
-		"name": "kain",
-		"metadata": bson.M{
-			"retain": true,
-		},
+		"name":     "kain",
+		"_durable": true,
 	})
 	assert.NoError(t, err)
 

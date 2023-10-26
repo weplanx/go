@@ -1438,8 +1438,8 @@ func TestBulkDeleteEvent(t *testing.T) {
 	select {
 	case msg := <-ch:
 		assert.Equal(t, rest.ActionBulkDelete, msg.Action)
-		data := msg.Data.(M)
-		assert.Equal(t, M{"$in": []interface{}{"test1", "test2"}}, data["namespace"])
+		assert.Equal(t, M{"$in": []interface{}{"test1", "test2"}}, msg.Filter["namespace"])
+		//assert.Equal(t, 2, len(msg.Data.([]interface{})))
 		assert.Equal(t, result, msg.Result)
 		break
 	}
