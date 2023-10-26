@@ -36,12 +36,23 @@ func (x *Service) IsForbid(name string) bool {
 	return !x.Values.RestControls[name].Status
 }
 
+const (
+	ActionCreate     = 1
+	ActionBulkCreate = 2
+	ActionUpdate     = 3
+	ActionUpdateById = 4
+	ActionReplace    = 5
+	ActionDelete     = 6
+	ActionBulkDelete = 7
+	ActionSort       = 8
+)
+
 func (x *Service) Create(ctx context.Context, name string, doc M) (r interface{}, err error) {
 	if r, err = x.Db.Collection(name).InsertOne(ctx, doc); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "create",
+		Action: ActionCreate,
 		Data:   doc,
 		Result: r,
 	}); err != nil {
@@ -55,7 +66,7 @@ func (x *Service) BulkCreate(ctx context.Context, name string, docs []interface{
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "bulk_create",
+		Action: ActionBulkCreate,
 		Data:   docs,
 		Result: r,
 	}); err != nil {
@@ -101,7 +112,7 @@ func (x *Service) Update(ctx context.Context, name string, filter M, update M) (
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "update",
+		Action: ActionUpdate,
 		Filter: filter,
 		Data:   update,
 		Result: r,
@@ -117,7 +128,7 @@ func (x *Service) UpdateById(ctx context.Context, name string, id primitive.Obje
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "update_by_id",
+		Action: ActionUpdateById,
 		Id:     id.Hex(),
 		Data:   update,
 		Result: r,
@@ -133,7 +144,7 @@ func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectI
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "replace",
+		Action: ActionReplace,
 		Id:     id.Hex(),
 		Data:   doc,
 		Result: r,
@@ -152,7 +163,7 @@ func (x *Service) Delete(ctx context.Context, name string, id primitive.ObjectID
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "delete",
+		Action: ActionDelete,
 		Id:     id.Hex(),
 		Result: r,
 	}); err != nil {
@@ -167,7 +178,7 @@ func (x *Service) BulkDelete(ctx context.Context, name string, filter M) (r inte
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "bulk_delete",
+		Action: ActionBulkDelete,
 		Data:   filter,
 		Result: r,
 	}); err != nil {
@@ -195,7 +206,7 @@ func (x *Service) Sort(ctx context.Context, name string, key string, ids []primi
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
-		Action: "sort",
+		Action: ActionSort,
 		Data: M{
 			"key":    key,
 			"values": ids,
@@ -214,7 +225,7 @@ func (x *Service) Transaction(ctx context.Context, txn string) {
 }
 
 type PendingDto struct {
-	Action string             `json:"action"`
+	Action int                `json:"action"`
 	Name   string             `json:"name"`
 	Id     primitive.ObjectID `json:"id,omitempty"`
 	Filter M                  `json:"filter,omitempty"`
@@ -298,21 +309,21 @@ func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err er
 
 func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ error) {
 	switch dto.Action {
-	case "create":
+	case ActionCreate:
 		return x.Create(ctx, dto.Name, dto.Data.(M))
-	case "bulk_create":
+	case ActionBulkCreate:
 		return x.BulkCreate(ctx, dto.Name, dto.Data.([]interface{}))
-	case "update":
+	case ActionUpdate:
 		return x.Update(ctx, dto.Name, dto.Filter, dto.Data.(M))
-	case "update_by_id":
+	case ActionUpdateById:
 		return x.UpdateById(ctx, dto.Name, dto.Id, dto.Data.(M))
-	case "replace":
+	case ActionReplace:
 		return x.Replace(ctx, dto.Name, dto.Id, dto.Data.(M))
-	case "delete":
+	case ActionDelete:
 		return x.Delete(ctx, dto.Name, dto.Id)
-	case "bulk_delete":
+	case ActionBulkDelete:
 		return x.BulkDelete(ctx, dto.Name, dto.Filter)
-	case "sort":
+	case ActionSort:
 		data := dto.Data.(M)
 		var ids []primitive.ObjectID
 		for _, v := range data["values"].([]interface{}) {
@@ -446,7 +457,7 @@ func (x *Service) Sensitive(name string, v M) {
 }
 
 type PublishDto struct {
-	Action string      `json:"action"`
+	Action int         `json:"action"`
 	Id     string      `json:"id,omitempty"`
 	Filter M           `json:"filter,omitempty"`
 	Data   interface{} `json:"data,omitempty"`

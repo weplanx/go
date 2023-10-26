@@ -46,7 +46,7 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "create",
+			Action: ActionCreate,
 			Name:   dto.Collection,
 			Data:   dto.Data,
 		}); err != nil {
@@ -99,7 +99,7 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "bulk_create",
+			Action: ActionBulkCreate,
 			Name:   dto.Collection,
 			Data:   dto.Data,
 		}); err != nil {
@@ -325,7 +325,7 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "update",
+			Action: ActionUpdate,
 			Name:   dto.Collection,
 			Filter: dto.Filter,
 			Data:   dto.Data,
@@ -379,7 +379,7 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "update_by_id",
+			Action: ActionUpdateById,
 			Name:   dto.Collection,
 			Id:     id,
 			Data:   dto.Data,
@@ -431,7 +431,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "replace",
+			Action: ActionReplace,
 			Name:   dto.Collection,
 			Id:     id,
 			Data:   dto.Data,
@@ -475,7 +475,7 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "delete",
+			Action: ActionDelete,
 			Name:   dto.Collection,
 			Id:     id,
 		}); err != nil {
@@ -522,7 +522,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "bulk_delete",
+			Action: ActionBulkDelete,
 			Name:   dto.Collection,
 			Filter: dto.Filter,
 		}); err != nil {
@@ -568,7 +568,7 @@ func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
-			Action: "sort",
+			Action: ActionSort,
 			Name:   dto.Collection,
 			Data:   dto.Data,
 		}); err != nil {

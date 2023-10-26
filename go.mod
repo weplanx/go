@@ -13,7 +13,7 @@ require (
 	github.com/hertz-contrib/binding v0.1.0
 	github.com/hertz-contrib/requestid v1.1.0
 	github.com/nats-io/nats.go v1.31.0
-	github.com/nats-io/nkeys v0.4.5
+	github.com/nats-io/nkeys v0.4.6
 	github.com/redis/go-redis/v9 v9.2.1
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.1
