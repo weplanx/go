@@ -550,8 +550,8 @@ type SortDto struct {
 }
 
 type SortDtoData struct {
-	Key    string               `json:"key" vd:"required"`
-	Values []primitive.ObjectID `json:"values" vd:"gt=0,dive,mongodb"`
+	Key    string               `json:"key"  vd:"required"`
+	Values []primitive.ObjectID `json:"values"  vd:"gt=0,dive,mongodb"`
 }
 
 func (x *Controller) Sort(ctx context.Context, c *app.RequestContext) {

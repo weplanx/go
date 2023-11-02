@@ -47,7 +47,7 @@ const (
 	ActionSort       = 8
 )
 
-func (x *Service) Create(ctx context.Context, name string, doc M) (result interface{}, err error) {
+func (x *Service) Create(ctx context.Context, name string, doc interface{}) (result interface{}, err error) {
 	if result, err = x.Db.Collection(name).InsertOne(ctx, doc); err != nil {
 		return
 	}
@@ -107,7 +107,7 @@ func (x *Service) FindOne(ctx context.Context, name string, filter M, option *op
 	return
 }
 
-func (x *Service) Update(ctx context.Context, name string, filter M, update M) (result interface{}, err error) {
+func (x *Service) Update(ctx context.Context, name string, filter M, update interface{}) (result interface{}, err error) {
 	if result, err = x.Db.Collection(name).UpdateMany(ctx, filter, update); err != nil {
 		return
 	}
@@ -122,7 +122,7 @@ func (x *Service) Update(ctx context.Context, name string, filter M, update M) (
 	return
 }
 
-func (x *Service) UpdateById(ctx context.Context, name string, id primitive.ObjectID, update M) (result interface{}, err error) {
+func (x *Service) UpdateById(ctx context.Context, name string, id primitive.ObjectID, update interface{}) (result interface{}, err error) {
 	filter := M{"_id": id}
 	if result, err = x.Db.Collection(name).UpdateOne(ctx, filter, update); err != nil {
 		return
@@ -138,7 +138,7 @@ func (x *Service) UpdateById(ctx context.Context, name string, id primitive.Obje
 	return
 }
 
-func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectID, doc M) (result interface{}, err error) {
+func (x *Service) Replace(ctx context.Context, name string, id primitive.ObjectID, doc interface{}) (result interface{}, err error) {
 	filter := M{"_id": id}
 	if result, err = x.Db.Collection(name).ReplaceOne(ctx, filter, doc); err != nil {
 		return
@@ -241,11 +241,11 @@ func (x *Service) Transaction(ctx context.Context, txn string) {
 }
 
 type PendingDto struct {
-	Action int                `json:"action"`
-	Name   string             `json:"name"`
-	Id     primitive.ObjectID `json:"id,omitempty"`
-	Filter M                  `json:"filter,omitempty"`
-	Data   interface{}        `json:"data,omitempty"`
+	Action int                `bson:"action"`
+	Name   string             `bson:"name"`
+	Id     primitive.ObjectID `bson:"id,omitempty"`
+	Filter M                  `bson:"filter,omitempty"`
+	Data   interface{}        `bson:"data,omitempty"`
 }
 
 func (x *Service) TxnNotExists(ctx context.Context, key string) (err error) {
@@ -265,7 +265,7 @@ func (x *Service) Pending(ctx context.Context, txn string, dto PendingDto) (err 
 		return
 	}
 	var b []byte
-	if b, err = sonic.Marshal(dto); err != nil {
+	if b, err = bson.Marshal(dto); err != nil {
 		return
 	}
 	if err = x.RDb.LPush(ctx, key, b).Err(); err != nil {
@@ -309,7 +309,7 @@ func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err er
 				return
 			}
 			var dto PendingDto
-			if err = sonic.Unmarshal(b, &dto); err != nil {
+			if err = bson.Unmarshal(b, &dto); err != nil {
 				return
 			}
 			var r interface{}
@@ -326,27 +326,36 @@ func (x *Service) Commit(ctx context.Context, txn string) (_ interface{}, err er
 func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ error) {
 	switch dto.Action {
 	case ActionCreate:
-		return x.Create(ctx, dto.Name, dto.Data.(M))
+		return x.Create(ctx, dto.Name, dto.Data)
 	case ActionBulkCreate:
-		return x.BulkCreate(ctx, dto.Name, dto.Data.([]interface{}))
+		return x.BulkCreate(ctx, dto.Name, dto.Data.(primitive.A))
 	case ActionUpdate:
-		return x.Update(ctx, dto.Name, dto.Filter, dto.Data.(M))
+		return x.Update(ctx, dto.Name, dto.Filter, dto.Data)
 	case ActionUpdateById:
-		return x.UpdateById(ctx, dto.Name, dto.Id, dto.Data.(M))
+		return x.UpdateById(ctx, dto.Name, dto.Id, dto.Data)
 	case ActionReplace:
-		return x.Replace(ctx, dto.Name, dto.Id, dto.Data.(M))
+		return x.Replace(ctx, dto.Name, dto.Id, dto.Data)
 	case ActionDelete:
 		return x.Delete(ctx, dto.Name, dto.Id, true)
 	case ActionBulkDelete:
 		return x.BulkDelete(ctx, dto.Name, dto.Filter, true)
 	case ActionSort:
-		data := dto.Data.(M)
+		data := dto.Data.(primitive.D)
+		var key string
 		var ids []primitive.ObjectID
-		for _, v := range data["values"].([]interface{}) {
-			id, _ := primitive.ObjectIDFromHex(v.(string))
-			ids = append(ids, id)
+		for _, v := range data {
+			switch v.Key {
+			case "key":
+				key = v.Value.(string)
+				break
+			case "values":
+				for _, id := range v.Value.(primitive.A) {
+					ids = append(ids, id.(primitive.ObjectID))
+				}
+				break
+			}
 		}
-		return x.Sort(ctx, dto.Name, data["key"].(string), ids)
+		return x.Sort(ctx, dto.Name, key, ids)
 	}
 	return
 }
