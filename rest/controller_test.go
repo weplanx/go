@@ -688,15 +688,6 @@ func TestFindById(t *testing.T) {
 	assert.Empty(t, result["update_time"])
 }
 
-//func TestFindByIdKeysBad(t *testing.T) {
-//	u := Url(fmt.Sprintf(`/users/%s`, userId), Params{
-//		{"keys", "abc1"},
-//	})
-//	resp, err := Req("GET", u, nil)
-//	assert.NoError(t, err)
-//	assert.Equal(t, 400, resp.StatusCode())
-//}
-
 func TestUpdateValidateBad(t *testing.T) {
 	resp, err := Req("POST", "/users/update", M{})
 	assert.NoError(t, err)
@@ -1571,6 +1562,8 @@ func TestSortEventBad(t *testing.T) {
 	RecoverStream(t)
 }
 
+var couponId primitive.ObjectID
+
 func TestMoreTransform(t *testing.T) {
 	resp, err := Req("POST", "/coupons/create", M{
 		"data": M{
@@ -1615,11 +1608,11 @@ func TestMoreTransform(t *testing.T) {
 	assert.NotEmpty(t, result)
 
 	id := result["InsertedID"].(string)
-	oid, _ := primitive.ObjectIDFromHex(id)
+	couponId, _ = primitive.ObjectIDFromHex(id)
 
 	var coupon M
 	err = service.Db.Collection("coupons").FindOne(context.TODO(), bson.M{
-		"_id": oid,
+		"_id": couponId,
 	}).Decode(&coupon)
 	assert.NoError(t, err)
 
@@ -1629,8 +1622,6 @@ func TestMoreTransform(t *testing.T) {
 		primitive.A{primitive.DateTime(1681336800906), primitive.DateTime(1681367405586)},
 		coupon["valid"],
 	)
-	//metadata := coupon["metadata"].(primitive.A)
-	//t.Log(metadata)
 }
 
 func TestCipherTransform(t *testing.T) {
@@ -2006,4 +1997,57 @@ func TestCommitTimeout(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp2.StatusCode())
+}
+
+func TestUpdateByIdWithArrayFilters(t *testing.T) {
+	resp, err := Req("PATCH", fmt.Sprintf(`/coupons/%s`, couponId.Hex()), M{
+		"data": M{
+			"$set": M{
+				"metadata.$[i].version": "v1",
+			},
+		},
+		"arrayFilters": []M{
+			{"i.name": "aps"},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode(), string(resp.Body()))
+
+	ctx := context.TODO()
+	var data M
+	err = service.Db.Collection("coupons").
+		FindOne(ctx, bson.M{"_id": couponId}).
+		Decode(&data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "体验卡", data["name"])
+	assert.Equal(t, "v1", data["metadata"].(primitive.A)[0].(M)["version"])
+}
+
+func TestUpdateWithArrayFilters(t *testing.T) {
+	resp, err := Req("POST", "/coupons/update", M{
+		"filter": M{
+			"name": "体验卡",
+		},
+		"data": M{
+			"$set": M{
+				"metadata.$[i].version": "v2",
+			},
+		},
+		"arrayFilters": []M{
+			{"i.name": "aps"},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode(), string(resp.Body()))
+
+	ctx := context.TODO()
+	var data M
+	err = service.Db.Collection("coupons").
+		FindOne(ctx, bson.M{"_id": couponId}).
+		Decode(&data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "体验卡", data["name"])
+	assert.Equal(t, "v2", data["metadata"].(primitive.A)[0].(M)["version"])
 }

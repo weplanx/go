@@ -7,7 +7,7 @@ require (
 	github.com/bytedance/sonic v1.10.2
 	github.com/cloudwego/hertz v0.7.1
 	github.com/go-faker/faker/v4 v4.2.0
-	github.com/go-playground/validator/v10 v10.15.5
+	github.com/go-playground/validator/v10 v10.16.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.4.0
 	github.com/hertz-contrib/binding v0.1.0
@@ -56,11 +56,11 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
-	golang.org/x/arch v0.5.0 // indirect
+	golang.org/x/arch v0.6.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

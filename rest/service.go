@@ -107,8 +107,8 @@ func (x *Service) FindOne(ctx context.Context, name string, filter M, option *op
 	return
 }
 
-func (x *Service) Update(ctx context.Context, name string, filter M, update interface{}) (result interface{}, err error) {
-	if result, err = x.Db.Collection(name).UpdateMany(ctx, filter, update); err != nil {
+func (x *Service) Update(ctx context.Context, name string, filter M, update interface{}, option *options.UpdateOptions) (result interface{}, err error) {
+	if result, err = x.Db.Collection(name).UpdateMany(ctx, filter, update, option); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
@@ -122,9 +122,9 @@ func (x *Service) Update(ctx context.Context, name string, filter M, update inte
 	return
 }
 
-func (x *Service) UpdateById(ctx context.Context, name string, id primitive.ObjectID, update interface{}) (result interface{}, err error) {
+func (x *Service) UpdateById(ctx context.Context, name string, id primitive.ObjectID, update interface{}, option *options.UpdateOptions) (result interface{}, err error) {
 	filter := M{"_id": id}
-	if result, err = x.Db.Collection(name).UpdateOne(ctx, filter, update); err != nil {
+	if result, err = x.Db.Collection(name).UpdateOne(ctx, filter, update, option); err != nil {
 		return
 	}
 	if err = x.Publish(ctx, name, PublishDto{
@@ -330,9 +330,9 @@ func (x *Service) Invoke(ctx context.Context, dto PendingDto) (_ interface{}, _ 
 	case ActionBulkCreate:
 		return x.BulkCreate(ctx, dto.Name, dto.Data.(primitive.A))
 	case ActionUpdate:
-		return x.Update(ctx, dto.Name, dto.Filter, dto.Data)
+		return x.Update(ctx, dto.Name, dto.Filter, dto.Data, nil)
 	case ActionUpdateById:
-		return x.UpdateById(ctx, dto.Name, dto.Id, dto.Data)
+		return x.UpdateById(ctx, dto.Name, dto.Id, dto.Data, nil)
 	case ActionReplace:
 		return x.Replace(ctx, dto.Name, dto.Id, dto.Data)
 	case ActionDelete:

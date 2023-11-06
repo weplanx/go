@@ -21,8 +21,8 @@ type Controller struct {
 type CreateDto struct {
 	Collection string `path:"collection" vd:"snake"`
 	Data       M      `json:"data" vd:"gt=0"`
-	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn" vd:"omitempty,uuid"`
+	Xdata      M      `json:"xdata，omitempty"`
+	Txn        string `json:"txn，omitempty" vd:"omitempty,uuid"`
 }
 
 func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
@@ -70,8 +70,8 @@ func (x *Controller) Create(ctx context.Context, c *app.RequestContext) {
 type BulkCreateDto struct {
 	Collection string `path:"collection" vd:"snake"`
 	Data       []M    `json:"data" vd:"gt=0"`
-	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn" vd:"omitempty,uuid"`
+	Xdata      M      `json:"xdata,omitempty"`
+	Txn        string `json:"txn,omitempty" vd:"omitempty,uuid"`
 }
 
 func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
@@ -123,7 +123,7 @@ func (x *Controller) BulkCreate(ctx context.Context, c *app.RequestContext) {
 type SizeDto struct {
 	Collection string `path:"collection" vd:"snake"`
 	Filter     M      `json:"filter" vd:"required"`
-	Xfilter    M      `json:"xfilter"`
+	Xfilter    M      `json:"xfilter,omitempty"`
 }
 
 func (x *Controller) Size(ctx context.Context, c *app.RequestContext) {
@@ -158,9 +158,9 @@ type FindDto struct {
 	Pagesize   int64    `header:"x-pagesize" vd:"omitempty,min=0,max=1000"`
 	Page       int64    `header:"x-page" vd:"omitempty,min=0"`
 	Filter     M        `json:"filter" vd:"required"`
-	Xfilter    M        `json:"xfilter"`
-	Sort       []string `query:"sort" vd:"omitempty,dive,sort"`
-	Keys       []string `query:"keys"`
+	Xfilter    M        `json:"xfilter,omitempty"`
+	Sort       []string `query:"sort,omitempty" vd:"omitempty,dive,sort"`
+	Keys       []string `query:"keys,omitempty"`
 }
 
 func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
@@ -225,8 +225,8 @@ func (x *Controller) Find(ctx context.Context, c *app.RequestContext) {
 type FindOneDto struct {
 	Collection string   `path:"collection" vd:"snake"`
 	Filter     M        `json:"filter" vd:"gt=0"`
-	Xfilter    M        `json:"xfilter"`
-	Keys       []string `query:"keys"`
+	Xfilter    M        `json:"xfilter,omitempty"`
+	Keys       []string `query:"keys,omitempty"`
 }
 
 func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
@@ -261,7 +261,7 @@ func (x *Controller) FindOne(ctx context.Context, c *app.RequestContext) {
 type FindByIdDto struct {
 	Collection string   `path:"collection" vd:"snake"`
 	Id         string   `path:"id" vd:"mongodb"`
-	Keys       []string `query:"keys"`
+	Keys       []string `query:"keys,omitempty"`
 }
 
 func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
@@ -290,12 +290,13 @@ func (x *Controller) FindById(ctx context.Context, c *app.RequestContext) {
 }
 
 type UpdateDto struct {
-	Collection string `path:"collection" vd:"snake"`
-	Filter     M      `json:"filter" vd:"gt=0"`
-	Xfilter    M      `json:"xfilter"`
-	Data       M      `json:"data" vd:"gt=0"`
-	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn" vd:"omitempty,uuid"`
+	Collection   string        `path:"collection" vd:"snake"`
+	Filter       M             `json:"filter" vd:"gt=0"`
+	Xfilter      M             `json:"xfilter,omitempty"`
+	Data         M             `json:"data" vd:"gt=0"`
+	Xdata        M             `json:"xdata,omitempty"`
+	ArrayFilters []interface{} `json:"arrayFilters,omitempty"`
+	Txn          string        `json:"txn,omitempty" vd:"omitempty,uuid"`
 }
 
 func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
@@ -322,6 +323,10 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 		dto.Data["$set"] = M{}
 	}
 	dto.Data["$set"].(M)["update_time"] = time.Now()
+	opt := options.Update()
+	if dto.ArrayFilters != nil {
+		opt = opt.SetArrayFilters(options.ArrayFilters{Filters: dto.ArrayFilters})
+	}
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
@@ -338,7 +343,7 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	r, err := x.Service.Update(ctx, dto.Collection, dto.Filter, dto.Data)
+	r, err := x.Service.Update(ctx, dto.Collection, dto.Filter, dto.Data, opt)
 	if err != nil {
 		c.Error(err)
 		return
@@ -348,11 +353,12 @@ func (x *Controller) Update(ctx context.Context, c *app.RequestContext) {
 }
 
 type UpdateByIdDto struct {
-	Collection string `path:"collection" vd:"snake"`
-	Id         string `path:"id" vd:"mongodb"`
-	Data       M      `json:"data" vd:"gt=0"`
-	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn" vd:"omitempty,uuid"`
+	Collection   string        `path:"collection" vd:"snake"`
+	Id           string        `path:"id" vd:"mongodb"`
+	Data         M             `json:"data" vd:"gt=0"`
+	Xdata        M             `json:"xdata,omitempty"`
+	ArrayFilters []interface{} `json:"arrayFilters,omitempty"`
+	Txn          string        `json:"txn,omitempty" vd:"omitempty,uuid"`
 }
 
 func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
@@ -376,6 +382,10 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 	}
 	dto.Data["$set"].(M)["update_time"] = time.Now()
 	id, _ := primitive.ObjectIDFromHex(dto.Id)
+	opt := options.Update()
+	if dto.ArrayFilters != nil {
+		opt = opt.SetArrayFilters(options.ArrayFilters{Filters: dto.ArrayFilters})
+	}
 
 	if dto.Txn != "" {
 		if err := x.Service.Pending(ctx, dto.Txn, PendingDto{
@@ -392,7 +402,7 @@ func (x *Controller) UpdateById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	r, err := x.Service.UpdateById(ctx, dto.Collection, id, dto.Data)
+	r, err := x.Service.UpdateById(ctx, dto.Collection, id, dto.Data, opt)
 	if err != nil {
 		c.Error(err)
 		return
@@ -405,8 +415,8 @@ type ReplaceDto struct {
 	Collection string `path:"collection" vd:"snake"`
 	Id         string `path:"id" vd:"mongodb"`
 	Data       M      `json:"data" vd:"gt=0"`
-	Xdata      M      `json:"xdata"`
-	Txn        string `json:"txn" vd:"omitempty,uuid"`
+	Xdata      M      `json:"xdata,omitempty"`
+	Txn        string `json:"txn,omitempty" vd:"omitempty,uuid"`
 }
 
 func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
@@ -456,7 +466,7 @@ func (x *Controller) Replace(ctx context.Context, c *app.RequestContext) {
 type DeleteDto struct {
 	Collection string `path:"collection" vd:"snake"`
 	Id         string `path:"id" vd:"mongodb"`
-	Txn        string `query:"txn" vd:"omitempty,uuid"`
+	Txn        string `query:"txn,omitempty" vd:"omitempty,uuid"`
 }
 
 func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
@@ -499,8 +509,8 @@ func (x *Controller) Delete(ctx context.Context, c *app.RequestContext) {
 type BulkDeleteDto struct {
 	Collection string `path:"collection" vd:"snake"`
 	Filter     M      `json:"filter" vd:"gt=0"`
-	Xfilter    M      `json:"xfilter"`
-	Txn        string `json:"txn" vd:"omitempty,uuid"`
+	Xfilter    M      `json:"xfilter,omitempty"`
+	Txn        string `json:"txn,omitempty" vd:"omitempty,uuid"`
 }
 
 func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
@@ -546,7 +556,7 @@ func (x *Controller) BulkDelete(ctx context.Context, c *app.RequestContext) {
 type SortDto struct {
 	Collection string      `path:"collection" vd:"snake"`
 	Data       SortDtoData `json:"data" vd:"structonly"`
-	Txn        string      `json:"txn" vd:"omitempty,uuid"`
+	Txn        string      `json:"txn,omitempty" vd:"omitempty,uuid"`
 }
 
 type SortDtoData struct {
