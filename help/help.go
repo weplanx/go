@@ -43,10 +43,8 @@ func IsEmpty(i any) bool {
 	case reflect.Interface, reflect.Ptr, reflect.Func, reflect.Chan:
 		return v.IsNil()
 	default:
-		panic("unhandled default case")
+		return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
 	}
-
-	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
 }
 
 func Validator() *go_playground.Validator {
