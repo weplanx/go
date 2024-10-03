@@ -2,7 +2,7 @@ package help
 
 import (
 	"context"
-	errorsx "errors"
+	errx "errors"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/errors"
@@ -20,7 +20,7 @@ func Ptr[T any](i T) *T {
 }
 
 func IsEmpty(i any) bool {
-	if i == nil || i == "" || i == false {
+	if i == nil || i == "" {
 		return true
 	}
 
@@ -42,6 +42,8 @@ func IsEmpty(i any) bool {
 		return v.Float() == 0
 	case reflect.Interface, reflect.Ptr, reflect.Func, reflect.Chan:
 		return v.IsNil()
+	default:
+		panic("unhandled default case")
 	}
 
 	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
@@ -98,7 +100,7 @@ func EHandler() app.HandlerFunc {
 		}
 
 		var ves validator.ValidationErrors
-		if errorsx.As(e.Err, &ves) {
+		if errx.As(e.Err, &ves) {
 			message := make([]interface{}, len(ves))
 			for i, v := range ves {
 				message[i] = utils.H{
