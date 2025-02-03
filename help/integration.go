@@ -2,6 +2,9 @@ package help
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	errx "errors"
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -47,6 +50,17 @@ func IsEmpty(i any) bool {
 	}
 }
 
+func Sha256hex(s string) string {
+	b := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(b[:])
+}
+
+func HmacSha256(s, key string) string {
+	hashed := hmac.New(sha256.New, []byte(key))
+	hashed.Write([]byte(s))
+	return string(hashed.Sum(nil))
+}
+
 func Validator() *go_playground.Validator {
 	vd := go_playground.NewValidator()
 	vd.SetValidateTag("vd")
@@ -68,15 +82,34 @@ func Validator() *go_playground.Validator {
 	return vd
 }
 
-type EMeta struct {
-	Code string
+type R struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
 }
 
-func E(code string, msg string) *errors.Error {
-	return errors.NewPublic(msg).SetMeta(&EMeta{Code: code})
+func Ok() R {
+	return R{
+		Code:    0,
+		Message: "ok",
+	}
 }
 
-func EHandler() app.HandlerFunc {
+func Fail(code int64, msg string) R {
+	return R{
+		Code:    code,
+		Message: msg,
+	}
+}
+
+type ErrorMeta struct {
+	Code int64
+}
+
+func E(code int64, msg string) *errors.Error {
+	return errors.NewPublic(msg).SetMeta(&ErrorMeta{Code: code})
+}
+
+func ErrorHandler() app.HandlerFunc {
 	release := os.Getenv("MODE") == "release"
 	return func(ctx context.Context, c *app.RequestContext) {
 		c.Next(ctx)
@@ -86,12 +119,9 @@ func EHandler() app.HandlerFunc {
 		}
 
 		if e.IsType(errors.ErrorTypePublic) {
-			r := utils.H{
-				"code": "system.*",
-				"msg":  e.Error(),
-			}
-			if meta, ok := e.Meta.(*EMeta); ok {
-				r["code"] = meta.Code
+			r := R{Code: 0, Message: e.Error()}
+			if meta, ok := e.Meta.(*ErrorMeta); ok {
+				r.Code = meta.Code
 			}
 			c.JSON(400, r)
 			return
@@ -108,7 +138,7 @@ func EHandler() app.HandlerFunc {
 				}
 			}
 			c.JSON(400, utils.H{
-				"code":    "system.validation",
+				"code":    0,
 				"message": message,
 			})
 			return
