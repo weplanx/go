@@ -35,10 +35,10 @@ var otherToken string
 
 func TestCreate(t *testing.T) {
 	var err error
-	token, err = x1.Create(userId1, jti1, time.Hour*2)
+	token, err = x1.Create(passport.NewClaims(userId1, time.Hour*2).SetJTI(jti1))
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
-	otherToken, err = x2.Create(userId2, jti2, time.Hour*2)
+	otherToken, err = x2.Create(passport.NewClaims(userId2, time.Hour*2).SetJTI(jti2))
 	assert.NoError(t, err)
 	assert.NotEmpty(t, otherToken)
 }
@@ -49,13 +49,13 @@ func TestVerify(t *testing.T) {
 	clamis1, err = x1.Verify(token)
 	assert.NoError(t, err)
 	assert.Equal(t, clamis1.ID, jti1)
-	assert.Equal(t, clamis1.UserId, userId1)
+	assert.Equal(t, clamis1.ActiveId, userId1)
 	assert.Equal(t, clamis1.Issuer, x1.Issuer)
 	var clamis2 passport.Claims
 	clamis2, err = x2.Verify(otherToken)
 	assert.NoError(t, err)
 	assert.Equal(t, clamis2.ID, jti2)
-	assert.Equal(t, clamis2.UserId, userId2)
+	assert.Equal(t, clamis2.ActiveId, userId2)
 	assert.Equal(t, clamis2.Issuer, x2.Issuer)
 
 	_, err = x1.Verify(otherToken)
@@ -66,7 +66,7 @@ func TestVerify(t *testing.T) {
 
 func TestSigningMethodHS384(t *testing.T) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS384, passport.Claims{
-		UserId: userId1,
+		ActiveId: userId1,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(2 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -89,7 +89,7 @@ cT+KvIIC8W/e9k0W7Cm72M1P9jU7SLf/vg==
 
 func TestOtherSigningMethod(t *testing.T) {
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, passport.Claims{
-		UserId: userId1,
+		ActiveId: userId1,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(2 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

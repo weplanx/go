@@ -34,21 +34,40 @@ func SetKey(v string) Option {
 }
 
 type Claims struct {
-	UserId string
+	ActiveId string
+	RoleId   string
+
 	jwt.RegisteredClaims
 }
 
-func (x *Passport) Create(userId string, jti string, expire time.Duration) (tokenString string, err error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		UserId: userId,
+func NewClaims(activeId string, expire time.Duration) *Claims {
+	return &Claims{
+		ActiveId: activeId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expire)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    x.Issuer,
-			ID:        jti,
 		},
-	})
+	}
+}
+
+func (x *Claims) SetJTI(v string) *Claims {
+	x.RegisteredClaims.ID = v
+	return x
+}
+
+func (x *Claims) SetIssuer(v string) *Claims {
+	x.Issuer = v
+	return x
+}
+
+func (x *Claims) SetRoleId(v string) *Claims {
+	x.RoleId = v
+	return x
+}
+
+func (x *Passport) Create(claims *Claims) (tokenString string, err error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(x.Key))
 }
 
