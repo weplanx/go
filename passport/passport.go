@@ -35,7 +35,7 @@ func SetKey(v string) Option {
 
 type Claims struct {
 	ActiveId string
-	RoleId   string
+	Data     map[string]interface{}
 
 	jwt.RegisteredClaims
 }
@@ -61,8 +61,8 @@ func (x *Claims) SetIssuer(v string) *Claims {
 	return x
 }
 
-func (x *Claims) SetRoleId(v string) *Claims {
-	x.RoleId = v
+func (x *Claims) SetData(v map[string]interface{}) *Claims {
+	x.Data = v
 	return x
 }
 
