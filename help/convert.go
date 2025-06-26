@@ -1,7 +1,9 @@
 package help
 
 import (
+	"bytes"
 	"math/rand"
+	"sort"
 )
 
 func Reverse[T any](v []T) {
@@ -37,4 +39,27 @@ func ShuffleString(v string) string {
 		}
 	}
 	return string(runes)
+}
+
+func MapToSignText(d map[string]string) string {
+	keys := make([]string, 0, len(d))
+	for k := range d {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var buf bytes.Buffer
+	for i, k := range keys {
+		v, _ := d[k]
+		if v == "" {
+			continue
+		}
+		if i > 0 {
+			buf.WriteByte('&')
+		}
+		buf.WriteString(k)
+		buf.WriteByte('=')
+		buf.WriteString(v)
+	}
+	return buf.String()
 }

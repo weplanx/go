@@ -29,3 +29,50 @@ func TestShuffleString(t *testing.T) {
 	v := help.ShuffleString("abcdefg")
 	t.Log(v)
 }
+
+type Sign struct {
+	input    map[string]string
+	expected string
+}
+
+func TestMapToSignText(t *testing.T) {
+	mocks := []Sign{
+		{
+			input:    map[string]string{},
+			expected: "",
+		},
+		{
+			input:    map[string]string{"key1": "value1"},
+			expected: "key1=value1",
+		},
+		{
+			input: map[string]string{
+				"b": "2",
+				"a": "1",
+				"c": "3",
+			},
+			expected: "a=1&b=2&c=3",
+		},
+		{
+			input: map[string]string{
+				"key2": "",
+				"key1": "value1",
+				"key3": "value3",
+			},
+			expected: "key1=value1&key3=value3",
+		},
+		{
+			input: map[string]string{
+				"key3": "",
+				"key4": "",
+				"key1": "123",
+				"key2": "value2",
+			},
+			expected: "key1=123&key2=value2",
+		},
+	}
+	for _, m := range mocks {
+		result := help.MapToSignText(m.input)
+		assert.Equal(t, m.expected, result)
+	}
+}
