@@ -67,6 +67,7 @@ func (x *Claims) SetData(v map[string]interface{}) *Claims {
 }
 
 func (x *Passport) Create(claims *Claims) (tokenString string, err error) {
+	claims.SetIssuer(x.Issuer)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(x.Key))
 }
