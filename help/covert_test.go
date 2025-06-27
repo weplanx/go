@@ -31,38 +31,38 @@ func TestShuffleString(t *testing.T) {
 }
 
 type Sign struct {
-	input    map[string]string
+	input    map[string]any
 	expected string
 }
 
 func TestMapToSignText(t *testing.T) {
 	mocks := []Sign{
 		{
-			input:    map[string]string{},
+			input:    map[string]any{},
 			expected: "",
 		},
 		{
-			input:    map[string]string{"key1": "value1"},
+			input:    map[string]any{"key1": "value1"},
 			expected: "key1=value1",
 		},
 		{
-			input: map[string]string{
+			input: map[string]any{
 				"b": "2",
-				"a": "1",
+				"a": 1,
 				"c": "3",
 			},
 			expected: "a=1&b=2&c=3",
 		},
 		{
-			input: map[string]string{
-				"key2": "",
+			input: map[string]any{
+				"key2": true,
 				"key1": "value1",
 				"key3": "value3",
 			},
-			expected: "key1=value1&key3=value3",
+			expected: "key1=value1&key2=true&key3=value3",
 		},
 		{
-			input: map[string]string{
+			input: map[string]any{
 				"key3": "",
 				"key4": "",
 				"key1": "123",

@@ -2,8 +2,10 @@ package help
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
 	"sort"
+	"strconv"
 )
 
 func Reverse[T any](v []T) {
@@ -41,7 +43,7 @@ func ShuffleString(v string) string {
 	return string(runes)
 }
 
-func MapToSignText(d map[string]string) string {
+func MapToSignText(d map[string]any) string {
 	keys := make([]string, 0, len(d))
 	for k := range d {
 		keys = append(keys, k)
@@ -49,17 +51,40 @@ func MapToSignText(d map[string]string) string {
 	sort.Strings(keys)
 
 	var buf bytes.Buffer
-	for i, k := range keys {
-		v, _ := d[k]
-		if v == "" {
+	first := true
+	for _, k := range keys {
+		v := d[k]
+		if v == nil {
 			continue
 		}
-		if i > 0 {
+
+		var strVal string
+		switch val := v.(type) {
+		case string:
+			strVal = val
+		case int:
+			strVal = strconv.Itoa(val)
+		case int64:
+			strVal = strconv.FormatInt(val, 10)
+		case float64:
+			strVal = strconv.FormatFloat(val, 'f', -1, 64)
+		case bool:
+			strVal = strconv.FormatBool(val)
+		default:
+			strVal = fmt.Sprintf("%v", val)
+		}
+
+		if strVal == "" {
+			continue
+		}
+
+		if !first {
 			buf.WriteByte('&')
 		}
 		buf.WriteString(k)
 		buf.WriteByte('=')
-		buf.WriteString(v)
+		buf.WriteString(strVal)
+		first = false
 	}
 	return buf.String()
 }
